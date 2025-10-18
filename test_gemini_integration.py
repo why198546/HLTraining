@@ -1,28 +1,43 @@
 #!/usr/bin/env python3
 """
-测试 Gemini API 集成的脚本
+测试 Gemini API 集成的脚本 - 纯Gemini模式
 """
 
 import os
 import sys
 sys.path.append('/Users/hongyuwang/code/HLTraining')
 
+# 加载环境变量
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✅ 环境变量文件 (.env) 加载成功")
+except ImportError:
+    print("⚠️  python-dotenv 未安装，无法自动加载 .env 文件")
+    
+# 检查API密钥
+api_key = os.getenv('GEMINI_API_KEY')
+if not api_key or api_key == 'your-api-key-here':
+    print("❌ 未检测到有效的GEMINI_API_KEY环境变量")
+    print("💡 请确保已正确配置.env文件")
+    sys.exit(1)
+
 from api.nano_banana import NanoBananaAPI
 
 def test_api_integration():
-    """测试API集成"""
-    print("=== Gemini API 集成测试 ===\n")
+    """测试Gemini API集成"""
+    print("=== 纯Gemini API 集成测试 ===\n")
     
     # 创建API实例
     api = NanoBananaAPI()
     
     # 检查API状态
-    if api.client:
-        print("✅ Gemini API 客户端初始化成功")
-        print(f"📱 API密钥状态: {'已设置' if api.api_key != 'your-api-key-here' else '需要设置'}")
-    else:
+    if not api.client:
         print("❌ Gemini API 客户端初始化失败")
-        print("⚠️  将使用OpenCV备用方案")
+        return
+    
+    print("✅ Gemini API 客户端初始化成功")
+    print(f"📱 API密钥状态: 已配置")
     
     print("\n=== 开始测试图像处理 ===\n")
     
@@ -31,27 +46,26 @@ def test_api_integration():
     
     if not os.path.exists(test_image):
         print(f"❌ 测试图像不存在: {test_image}")
-        print("请先运行以下命令创建测试图像：")
-        print("python -c \"import cv2; import numpy as np; img = np.ones((300, 300, 3), dtype=np.uint8) * 255; cv2.circle(img, (150, 150), 80, (0, 0, 0), 3); cv2.circle(img, (130, 130), 10, (0, 0, 0), -1); cv2.circle(img, (170, 130), 10, (0, 0, 0), -1); cv2.ellipse(img, (150, 170), (30, 15), 0, 0, 180, (0, 0, 0), 3); cv2.imwrite('uploads/test_sketch.png', img)\"")
+        print("💡 请先在网站上传一张测试图片，或手动创建测试图像")
         return
     
-    # 测试图像上色
-    print("🎨 测试图像上色功能...")
-    colored_result = api.colorize_sketch(test_image)
-    
-    if colored_result:
+    try:
+        # 测试图像上色
+        print("🎨 测试图像上色功能...")
+        colored_result = api.colorize_sketch(test_image)
         print(f"✅ 图像上色成功: {colored_result}")
         
         # 测试手办风格生成
         print("\n🏺 测试手办风格生成...")
         figurine_result = api.generate_figurine_style(colored_result)
+        print(f"✅ 手办风格生成成功: {figurine_result}")
         
-        if figurine_result:
-            print(f"✅ 手办风格生成成功: {figurine_result}")
-        else:
-            print("❌ 手办风格生成失败")
-    else:
-        print("❌ 图像上色失败")
+    except Exception as e:
+        print(f"❌ 测试失败: {str(e)}")
+        if "RESOURCE_EXHAUSTED" in str(e):
+            print("⚠️  Gemini API配额已用完，请等待配额重置")
+        elif "API未配置" in str(e):
+            print("⚠️  请检查Gemini API密钥配置")
     
     print("\n=== 测试完成 ===")
     

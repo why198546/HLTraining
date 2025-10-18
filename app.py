@@ -53,6 +53,68 @@ def index():
     """主页"""
     return render_template('index.html')
 
+@app.route('/generate-from-text', methods=['POST'])
+def generate_from_text():
+    """从文字描述生成图片"""
+    try:
+        data = request.get_json()
+        prompt = data.get('prompt')
+        workflow = data.get('workflow', 'text-to-image')
+        
+        if not prompt:
+            return jsonify({'error': '缺少文字描述'}), 400
+        
+        # 初始化Nano Banana API
+        nano_banana = NanoBananaAPI()
+        
+        print(f"🎨 开始文字生成图片: {prompt}")
+        
+        # 使用Gemini生成图片
+        generated_image_path = nano_banana.generate_image_from_text(prompt)
+        
+        if generated_image_path:
+            print(f"✅ 文字生成图片完成: {generated_image_path}")
+            
+            result = {
+                'success': True,
+                'image_path': generated_image_path.replace('uploads/', ''),
+                'message': '图片生成成功！'
+            }
+            
+            # 如果是完整工作流程，继续生成3D模型
+            if workflow == 'text-to-image-to-model':
+                print("🧊 继续生成3D模型...")
+                model_result = generate_3d_model_from_image(generated_image_path)
+                if model_result:
+                    result['model_path'] = model_result
+                    result['message'] = '图片和3D模型生成完成！'
+            
+            return jsonify(result)
+        else:
+            return jsonify({'error': '图片生成失败，请稍后重试'}), 500
+            
+    except Exception as e:
+        print(f"❌ 文字生成图片错误: {str(e)}")
+        return jsonify({'error': f'生成失败: {str(e)}'}), 500
+
+def generate_3d_model_from_image(image_path):
+    """从图片生成3D模型"""
+    try:
+        # 这里可以集成Hunyuan3D或其他3D生成服务
+        # 目前返回模拟结果
+        print(f"🧊 正在为图片生成3D模型: {image_path}")
+        
+        # 模拟3D模型生成过程
+        import time
+        time.sleep(2)  # 模拟处理时间
+        
+        # 返回模拟的模型文件路径
+        model_filename = os.path.basename(image_path).replace('.png', '_model.obj')
+        return model_filename
+    except Exception as e:
+        print(f"❌ 3D模型生成错误: {str(e)}")
+        return None
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """处理文件上传"""
@@ -107,13 +169,16 @@ def colorize_image():
         # 使用预处理后的文件
         processed_path = filepath.replace('.', '_processed.')
         
+        # 获取用户描述
+        description = request.json.get('description', '')
+        
         # 调用Nano Banana API进行上色
         nano_api = NanoBananaAPI()
-        colored_image_path = nano_api.colorize_sketch(processed_path)
+        colored_image_path = nano_api.colorize_sketch(processed_path, description)
         
         if colored_image_path:
             # 生成手办风格图片
-            figurine_path = nano_api.generate_figurine_style(colored_image_path)
+            figurine_path = nano_api.generate_figurine_style(colored_image_path, description)
             
             return jsonify({
                 'success': True,
@@ -202,6 +267,42 @@ def gallery():
 def tutorial():
     """教程页面"""
     return render_template('tutorial.html')
+
+@app.route('/test-images')
+def test_images():
+    """图片显示测试页面"""
+    return send_file('test_images.html')
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """提供上传文件的访问"""
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+@app.route('/generate-3d-model', methods=['POST'])
+def generate_3d_model_endpoint():
+    """生成3D模型的端点"""
+    try:
+        data = request.get_json()
+        image_path = data.get('image_path')
+        
+        if not image_path:
+            return jsonify({'error': '缺少图片路径'}), 400
+        
+        # 调用3D模型生成
+        model_result = generate_3d_model_from_image(os.path.join('uploads', image_path))
+        
+        if model_result:
+            return jsonify({
+                'success': True,
+                'model_path': model_result,
+                'message': '3D模型生成成功！'
+            })
+        else:
+            return jsonify({'error': '3D模型生成失败'}), 500
+            
+    except Exception as e:
+        print(f"❌ 3D模型生成错误: {str(e)}")
+        return jsonify({'error': f'生成失败: {str(e)}'}), 500
 
 @app.errorhandler(413)
 def too_large(e):

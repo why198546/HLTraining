@@ -1,0 +1,226 @@
+import requests
+import os
+import json
+import time
+from PIL import Image
+import base64
+import io
+
+class NanoBananaAPI:
+    """Nano Banana API类 - 调用真实的Nano Banana图像处理服务"""
+    
+    def __init__(self):
+        # 从环境变量获取API密钥
+        self.api_key = os.getenv('NANO_BANANA_API_KEY', 'your-nano-banana-api-key-here')
+        self.base_url = 'https://api.nanobanana.ai/v1'  # Nano Banana API基础URL
+        self.upload_folder = 'uploads'
+        
+        # 检查API密钥
+        if self.api_key == 'your-nano-banana-api-key-here':
+            print("⚠️  未设置Nano Banana API密钥")
+        else:
+            print("✅ Nano Banana API 密钥已配置")
+        
+
+        
+    def _colorize_with_gemini(self, image_path):
+        """使用Gemini 2.5 Flash Image模型进行智能上色"""
+        try:
+            if not self.client:
+                raise Exception("Gemini客户端未初始化，请检查API密钥配置")
+            
+            # 读取图像
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # 构建专为儿童设计的上色提示
+            prompt = """
+请为这张手绘简笔画添加鲜艳、明亮的颜色，适合10-14岁的儿童。要求：
+1. 使用明亮、饱和的颜色（如红色、蓝色、黄色、绿色、紫色、橙色等）
+2. 保持原始线条清晰可见
+3. 创造一个有趣、吸引人的卡通风格
+4. 确保颜色搭配和谐，适合儿童审美
+5. 如果图像中有人物，请使用友好、温馨的色调
+6. 如果是动物或物体，请使用生动活泼的颜色
+
+请生成一张完全上色的图像，保持原始构图不变。
+"""
+            
+            # 调用Gemini API
+            print("正在使用Gemini 2.5 Flash Image进行智能上色...")
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(
+                        data=image_bytes, 
+                        mime_type='image/png'
+                    )
+                ]
+            )
+            
+            # 提取生成的图像
+            image_parts = [
+                part.inline_data.data
+                for part in response.candidates[0].content.parts
+                if part.inline_data
+            ]
+            
+            if image_parts:
+                # 将生成的图像转换为PIL图像
+                from io import BytesIO
+                image = Image.open(BytesIO(image_parts[0]))
+                return image
+            else:
+                print("Gemini API没有返回图像数据")
+                return None
+                
+        except Exception as e:
+            print(f"Gemini API调用错误: {str(e)}")
+            return None
+    
+
+    
+
+    
+    def _encode_image_to_base64(self, image_path):
+        """将图片编码为base64格式"""
+        try:
+            with open(image_path, 'rb') as image_file:
+                return base64.b64encode(image_file.read()).decode('utf-8')
+        except Exception as e:
+            print(f"图片编码错误: {str(e)}")
+            return None
+    
+
+    
+    def colorize_sketch(self, sketch_path):
+        """为手绘简笔画上色 - 使用Gemini 2.5 Flash Image模型"""
+        try:
+            print("开始智能图像上色...")
+            
+            # 检查API配置
+            if not self.client or self.api_key == 'your-api-key-here':
+                raise Exception("Gemini API未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 使用Gemini API进行上色
+            colored_image = self._colorize_with_gemini(sketch_path)
+            if not colored_image:
+                raise Exception("Gemini API上色失败")
+                
+            # 生成输出文件名
+            base_name = os.path.splitext(os.path.basename(sketch_path))[0]
+            colored_filename = f"{base_name}_colored.png"
+            output_path = os.path.join(self.upload_folder, colored_filename)
+            
+            # 保存Gemini生成的图像
+            colored_image.save(output_path)
+            print(f"Gemini上色完成: {output_path}")
+            return output_path
+                
+        except Exception as e:
+            print(f"图片上色错误: {str(e)}")
+            raise e
+    
+
+    
+    def _generate_figurine_with_gemini(self, image_path):
+        """使用Gemini生成手办风格图片"""
+        try:
+            if not self.client:
+                return None
+            
+            # 读取图像
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # 构建手办风格提示
+            prompt = """
+请将这张图像转换为手办(figurine)风格，特点如下：
+1. 塑料或树脂材质的光泽感和质感
+2. 鲜艳、饱和的颜色，如同塑料玩具
+3. 平滑的表面，减少细节纹理
+4. 增强的对比度和立体感
+5. 适合作为收藏品展示的精致外观
+6. 保持可爱、友好的外观，适合儿童
+7. 增加轻微的反光效果，模拟塑料材质
+8. 保持原始构图和主要特征不变
+
+请生成一张具有手办质感的图像。
+"""
+            
+            print("正在使用Gemini生成手办风格...")
+            response = self.client.models.generate_content(
+                model="gemini-2.5-flash-image",
+                contents=[
+                    prompt,
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type='image/png'
+                    )
+                ]
+            )
+            
+            # 提取生成的图像
+            image_parts = [
+                part.inline_data.data
+                for part in response.candidates[0].content.parts
+                if part.inline_data
+            ]
+            
+            if image_parts:
+                from io import BytesIO
+                image = Image.open(BytesIO(image_parts[0]))
+                return image
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"Gemini手办风格生成错误: {str(e)}")
+            return None
+    
+    def generate_figurine_style(self, colored_image_path):
+        """生成手办风格图片 - 使用Gemini 2.5 Flash Image模型"""
+        try:
+            print("开始生成手办风格图片...")
+            
+            # 检查API配置
+            if not self.client or self.api_key == 'your-api-key-here':
+                raise Exception("Gemini API未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 使用Gemini API生成手办风格
+            figurine_image = self._generate_figurine_with_gemini(colored_image_path)
+            if not figurine_image:
+                raise Exception("Gemini API手办风格生成失败")
+                
+            # 生成输出文件名
+            base_name = os.path.splitext(os.path.basename(colored_image_path))[0]
+            figurine_filename = f"{base_name}_figurine.png"
+            output_path = os.path.join(self.upload_folder, figurine_filename)
+            
+            # 保存图像
+            figurine_image.save(output_path)
+            print(f"Gemini手办风格生成完成: {output_path}")
+            return output_path
+                
+        except Exception as e:
+            print(f"手办风格生成错误: {str(e)}")
+            raise e
+    
+    def check_api_status(self):
+        """检查API状态"""
+        try:
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            # response = requests.get(f'{self.base_url}/status', headers=headers)
+            # return response.status_code == 200
+            
+            # 模拟API状态检查
+            return True
+            
+        except Exception as e:
+            print(f"API状态检查失败: {str(e)}")
+            return False

@@ -27,8 +27,14 @@ venv/
 ENV/
 env/
 
-# Environment variables
+# Environment variables and API keys
 .env
+.env.local
+.env.production
+.env.development
+*.key
+api_keys.txt
+secrets.json
 
 # Flask
 instance/

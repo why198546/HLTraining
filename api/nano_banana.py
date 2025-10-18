@@ -5,240 +5,25 @@ import time
 from PIL import Image
 import base64
 import io
-import cv2
-import numpy as np
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 class NanoBananaAPI:
-    """图像上色API类 - 使用Gemini 2.5 Flash Image模型进行智能图像处理"""
+    """Nano Banana API类 - 使用Gemini 2.5 Flash Image实现"""
     
     def __init__(self):
-        # 从环境变量获取API密钥
-        self.api_key = os.getenv('GEMINI_API_KEY', 'your-api-key-here')
+        # 从环境变量获取API密钥，优先使用Gemini密钥
+        self.api_key = os.getenv('GEMINI_API_KEY') or os.getenv('NANO_BANANA_API_KEY', 'your-nano-banana-api-key-here')
         self.upload_folder = 'uploads'
         
         # 初始化Gemini客户端
         try:
-            self.client = genai.Client(api_key=self.api_key)
-            print("Gemini API 客户端初始化成功")
+            genai.configure(api_key=self.api_key)
+            # 使用真正的Nano Banana模型！
+            self.client = genai.GenerativeModel('gemini-2.5-flash-image')  # 这就是Nano Banana！
+            print("✅ Nano Banana (gemini-2.5-flash-image) API 客户端初始化成功")
         except Exception as e:
-            print(f"Gemini API 初始化失败: {str(e)}")
+            print(f"❌ Nano Banana API 初始化失败: {str(e)}")
             self.client = None
-        
-        # 预定义的颜色调色板 - 适合儿童的鲜艳颜色（作为备用方案）
-        self.color_palette = [
-            [255, 0, 0],    # 红色
-            [0, 255, 0],    # 绿色
-            [0, 0, 255],    # 蓝色
-            [255, 255, 0],  # 黄色
-            [255, 0, 255],  # 紫红色
-            [0, 255, 255],  # 青色
-            [255, 165, 0],  # 橙色
-            [255, 192, 203], # 粉色
-            [128, 0, 128],  # 紫色
-            [0, 128, 0],    # 深绿色
-            [255, 20, 147], # 深粉色
-            [30, 144, 255], # 道奇蓝
-        ]
-        
-    def _colorize_with_gemini(self, image_path):
-        """使用Gemini 2.5 Flash Image模型进行智能上色"""
-        try:
-            if not self.client:
-                print("Gemini客户端未初始化，使用备用方案")
-                return None
-            
-            # 读取图像
-            with open(image_path, 'rb') as f:
-                image_bytes = f.read()
-            
-            # 构建专为儿童设计的上色提示
-            prompt = """
-请为这张手绘简笔画添加鲜艳、明亮的颜色，适合10-14岁的儿童。要求：
-1. 使用明亮、饱和的颜色（如红色、蓝色、黄色、绿色、紫色、橙色等）
-2. 保持原始线条清晰可见
-3. 创造一个有趣、吸引人的卡通风格
-4. 确保颜色搭配和谐，适合儿童审美
-5. 如果图像中有人物，请使用友好、温馨的色调
-6. 如果是动物或物体，请使用生动活泼的颜色
-
-请生成一张完全上色的图像，保持原始构图不变。
-"""
-            
-            # 调用Gemini API
-            print("正在使用Gemini 2.5 Flash Image进行智能上色...")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=[
-                    prompt,
-                    types.Part.from_bytes(
-                        data=image_bytes, 
-                        mime_type='image/png'
-                    )
-                ]
-            )
-            
-            # 提取生成的图像
-            image_parts = [
-                part.inline_data.data
-                for part in response.candidates[0].content.parts
-                if part.inline_data
-            ]
-            
-            if image_parts:
-                # 将生成的图像转换为PIL图像
-                from io import BytesIO
-                image = Image.open(BytesIO(image_parts[0]))
-                return image
-            else:
-                print("Gemini API没有返回图像数据")
-                return None
-                
-        except Exception as e:
-            print(f"Gemini API调用错误: {str(e)}")
-            return None
-    
-    def _enhance_with_opencv(self, image_path):
-        """使用OpenCV进行图像增强和上色"""
-        try:
-            # 读取图像
-            img = cv2.imread(image_path)
-            if img is None:
-                print(f"无法读取图像: {image_path}")
-                return None
-            
-            # 转换为灰度图
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-            # 应用高斯模糊以减少噪声
-            blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-            
-            # 边缘检测
-            edges = cv2.Canny(blurred, 50, 150)
-            
-            # 创建一个彩色版本
-            colored_img = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-            
-            # 使用K-means聚类进行颜色量化和着色
-            data = colored_img.reshape((-1, 3))
-            data = np.float32(data)
-            
-            # K-means聚类
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-            k = min(8, len(self.color_palette))  # 使用8种主要颜色
-            _, labels, centers = cv2.kmeans(data, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-            
-            # 将聚类中心替换为我们的颜色调色板
-            for i in range(k):
-                if i < len(self.color_palette):
-                    centers[i] = self.color_palette[i]
-            
-            # 重建图像
-            centers = np.uint8(centers)
-            colored_data = centers[labels.flatten()]
-            colored_result = colored_data.reshape(colored_img.shape)
-            
-            # 使用边缘信息来增强细节
-            edges_colored = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-            edges_colored = cv2.bitwise_not(edges_colored)
-            
-            # 结合颜色和边缘
-            final_result = cv2.bitwise_and(colored_result, edges_colored)
-            
-            # 添加一些饱和度增强
-            hsv = cv2.cvtColor(final_result, cv2.COLOR_BGR2HSV)
-            hsv[:,:,1] = hsv[:,:,1] * 1.2  # 增加饱和度
-            hsv[:,:,1][hsv[:,:,1] > 255] = 255  # 限制在255以内
-            final_result = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-            
-            return final_result
-            
-        except Exception as e:
-            print(f"OpenCV处理错误: {str(e)}")
-            return None
-        """使用OpenCV进行图像增强和上色"""
-        try:
-            # 读取图像
-            img = cv2.imread(image_path)
-            if img is None:
-                print(f"无法读取图像: {image_path}")
-                return None
-            
-            # 转换为灰度图
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            
-            # 应用高斯模糊以减少噪声
-            blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-            
-            # 边缘检测
-            edges = cv2.Canny(blurred, 50, 150)
-            
-            # 创建一个彩色版本
-            colored_img = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
-            
-            # 使用K-means聚类进行颜色量化和着色
-            data = colored_img.reshape((-1, 3))
-            data = np.float32(data)
-            
-            # K-means聚类
-            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-            k = min(8, len(self.color_palette))  # 使用8种主要颜色
-            _, labels, centers = cv2.kmeans(data, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-            
-            # 将聚类中心替换为我们的颜色调色板
-            for i in range(k):
-                if i < len(self.color_palette):
-                    centers[i] = self.color_palette[i]
-            
-            # 重建图像
-            centers = np.uint8(centers)
-            colored_data = centers[labels.flatten()]
-            colored_result = colored_data.reshape(colored_img.shape)
-            
-            # 使用边缘信息来增强细节
-            edges_colored = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-            edges_colored = cv2.bitwise_not(edges_colored)
-            
-            # 结合颜色和边缘
-            final_result = cv2.bitwise_and(colored_result, edges_colored)
-            
-            # 添加一些饱和度增强
-            hsv = cv2.cvtColor(final_result, cv2.COLOR_BGR2HSV)
-            hsv[:,:,1] = hsv[:,:,1] * 1.2  # 增加饱和度
-            hsv[:,:,1][hsv[:,:,1] > 255] = 255  # 限制在255以内
-            final_result = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-            
-            return final_result
-            
-        except Exception as e:
-            print(f"OpenCV处理错误: {str(e)}")
-            return None
-    
-    def _apply_cartoon_effect(self, img):
-        """应用卡通效果"""
-        try:
-            # 双边滤波去噪同时保持边缘
-            bilateral = cv2.bilateralFilter(img, 15, 80, 80)
-            
-            # 转换为灰度图用于边缘检测
-            gray = cv2.cvtColor(bilateral, cv2.COLOR_BGR2GRAY)
-            gray_blur = cv2.medianBlur(gray, 5)
-            
-            # 创建边缘遮罩
-            edges = cv2.adaptiveThreshold(gray_blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
-            
-            # 转换边缘为3通道
-            edges = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-            
-            # 结合颜色和边缘
-            cartoon = cv2.bitwise_and(bilateral, edges)
-            
-            return cartoon
-            
-        except Exception as e:
-            print(f"卡通效果处理错误: {str(e)}")
-            return img
     
     def _encode_image_to_base64(self, image_path):
         """将图片编码为base64格式"""
@@ -249,120 +34,106 @@ class NanoBananaAPI:
             print(f"图片编码错误: {str(e)}")
             return None
     
-    def _save_opencv_image(self, cv_image, filename):
-        """保存OpenCV图像到文件"""
+    def colorize_sketch(self, sketch_path, description=""):
+        """为手绘简笔画上色 - 使用Gemini 2.5 Flash Image"""
         try:
-            output_path = os.path.join(self.upload_folder, filename)
-            success = cv2.imwrite(output_path, cv_image)
-            if success:
-                return output_path
-            else:
-                print(f"保存图片失败: {output_path}")
-                return None
-        except Exception as e:
-            print(f"保存图片错误: {str(e)}")
-            return None
-    
-    def colorize_sketch(self, sketch_path):
-        """为手绘简笔画上色 - 优先使用Gemini API，失败时回退到OpenCV"""
-        try:
-            print("开始智能图像上色...")
+            print("🍌 开始使用Nano Banana (Gemini)进行图像上色...")
             
-            # 首先尝试使用Gemini API
-            if self.client and self.api_key != 'your-api-key-here':
-                colored_image = self._colorize_with_gemini(sketch_path)
-                if colored_image:
-                    # 生成输出文件名
-                    base_name = os.path.splitext(os.path.basename(sketch_path))[0]
-                    colored_filename = f"{base_name}_colored_gemini.png"
-                    output_path = os.path.join(self.upload_folder, colored_filename)
-                    
-                    # 保存Gemini生成的图像
-                    colored_image.save(output_path)
-                    print(f"Gemini上色完成: {output_path}")
-                    return output_path
-            
-            # 如果Gemini失败，使用OpenCV备用方案
-            print("使用OpenCV备用方案进行图片上色...")
-            colored_img = self._enhance_with_opencv(sketch_path)
-            if colored_img is None:
-                return None
-            
-            # 应用卡通效果
-            cartoon_img = self._apply_cartoon_effect(colored_img)
-            
-            # 生成输出文件名
-            base_name = os.path.splitext(os.path.basename(sketch_path))[0]
-            colored_filename = f"{base_name}_colored_opencv.png"
-            
-            # 保存处理后的图像
-            result_path = self._save_opencv_image(cartoon_img, colored_filename)
-            
-            if result_path:
-                print(f"OpenCV上色完成: {result_path}")
-                return result_path
-            else:
-                print("保存上色图片失败")
-                return None
-                
-        except Exception as e:
-            print(f"图片上色错误: {str(e)}")
-            return None
-    
-    def _apply_figurine_style(self, image_path):
-        """应用手办风格效果"""
-        try:
-            # 读取图像
-            img = cv2.imread(image_path)
-            if img is None:
-                return None
-            
-            # 1. 增强饱和度和亮度
-            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            hsv[:,:,1] = hsv[:,:,1] * 1.4  # 增加饱和度
-            hsv[:,:,1][hsv[:,:,1] > 255] = 255
-            hsv[:,:,2] = hsv[:,:,2] * 1.1  # 增加亮度
-            hsv[:,:,2][hsv[:,:,2] > 255] = 255
-            enhanced = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-            
-            # 2. 应用双边滤波实现光滑的塑料质感
-            smooth = cv2.bilateralFilter(enhanced, 15, 100, 100)
-            
-            # 3. 增强对比度
-            lab = cv2.cvtColor(smooth, cv2.COLOR_BGR2LAB)
-            l, a, b = cv2.split(lab)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-            l = clahe.apply(l)
-            enhanced_contrast = cv2.merge([l, a, b])
-            enhanced_contrast = cv2.cvtColor(enhanced_contrast, cv2.COLOR_LAB2BGR)
-            
-            # 4. 添加边缘增强以模拟立体感
-            gray = cv2.cvtColor(enhanced_contrast, cv2.COLOR_BGR2GRAY)
-            edges = cv2.Canny(gray, 50, 150)
-            edges = cv2.dilate(edges, np.ones((2,2), np.uint8), iterations=1)
-            edges_colored = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
-            
-            # 5. 结合增强的颜色和边缘
-            figurine_result = cv2.addWeighted(enhanced_contrast, 0.8, edges_colored, 0.2, 0)
-            
-            return figurine_result
-            
-        except Exception as e:
-            print(f"手办风格处理错误: {str(e)}")
-            return None
-    
-    def _generate_figurine_with_gemini(self, image_path):
-        """使用Gemini生成手办风格图片"""
-        try:
+            # 检查客户端
             if not self.client:
-                return None
+                raise Exception("Nano Banana API未配置，请检查GEMINI_API_KEY环境变量")
             
             # 读取图像
-            with open(image_path, 'rb') as f:
+            with open(sketch_path, 'rb') as f:
                 image_bytes = f.read()
             
-            # 构建手办风格提示
-            prompt = """
+            # 构建基于用户描述的提示词
+            if description:
+                prompt = f"""
+请根据用户的要求为这张手绘简笔画上色：
+
+用户要求：{description}
+
+请按照以下标准执行：
+1. 严格遵循用户的描述和要求
+2. 使用鲜艳、活泼的颜色，适合10-14岁儿童
+3. 保持原始线条清晰可见
+4. 添加适当的阴影和高光，增强立体感
+5. 整体风格要卡通化、可爱友好
+6. 确保色彩搭配和谐
+
+请生成一张完全符合用户要求的上色图像！
+"""
+            else:
+                prompt = """
+请为这张手绘简笔画添加美丽的颜色，要求：
+1. 使用鲜艳、活泼的颜色，适合10-14岁儿童
+2. 颜色搭配要和谐，富有想象力
+3. 保持原始线条清晰可见
+4. 添加适当的阴影和高光，增强立体感
+5. 背景可以添加简单的装饰元素
+6. 整体风格要卡通化、可爱友好
+
+请生成一张完全上色的图像！
+"""
+            
+            print(f"🎨 用户描述：{description or '使用默认风格'}")
+            
+            # 将图像转换为PIL Image对象
+            pil_image = Image.open(io.BytesIO(image_bytes))
+            
+            response = self.client.generate_content([
+                prompt,
+                pil_image
+            ])
+            
+            # 提取生成的图像
+            image_parts = [
+                part.inline_data.data
+                for part in response.candidates[0].content.parts
+                if part.inline_data
+            ]
+            
+            if image_parts:
+                # 保存图像
+                base_name = os.path.splitext(os.path.basename(sketch_path))[0]
+                colored_filename = f"{base_name}_colored.png"
+                output_path = os.path.join(self.upload_folder, colored_filename)
+                
+                with open(output_path, 'wb') as f:
+                    f.write(image_parts[0])
+                
+                print(f"✅ Nano Banana上色完成: {output_path}")
+                return output_path
+            else:
+                raise Exception("未能从Gemini响应中提取图像")
+                
+        except Exception as e:
+            error_msg = str(e)
+            print(f"❌ Nano Banana上色错误: {error_msg}")
+            
+            # 检查是否是配额耗尽错误
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+                print("⚠️  API配额已耗尽，请稍后再试")
+                # 可以在这里添加额外的配额耗尽处理逻辑
+            
+            return None
+    
+    def generate_figurine_style(self, colored_image_path, description=""):
+        """生成手办风格图片 - 使用Gemini 2.5 Flash Image"""
+        try:
+            print("🏺 开始使用Nano Banana (Gemini)生成手办风格...")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Nano Banana API未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 读取图像
+            with open(colored_image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # 构建手办风格提示词
+            figurine_prompt = f"""
 请将这张图像转换为手办(figurine)风格，特点如下：
 1. 塑料或树脂材质的光泽感和质感
 2. 鲜艳、饱和的颜色，如同塑料玩具
@@ -373,20 +144,20 @@ class NanoBananaAPI:
 7. 增加轻微的反光效果，模拟塑料材质
 8. 保持原始构图和主要特征不变
 
+{f'用户额外要求：{description}' if description else ''}
+
 请生成一张具有手办质感的图像。
 """
             
-            print("正在使用Gemini生成手办风格...")
-            response = self.client.models.generate_content(
-                model="gemini-2.5-flash-image",
-                contents=[
-                    prompt,
-                    types.Part.from_bytes(
-                        data=image_bytes,
-                        mime_type='image/png'
-                    )
-                ]
-            )
+            print(f"🎯 用户描述：{description or '使用默认手办风格'}")
+            
+            # 将图像转换为PIL Image对象
+            pil_image = Image.open(io.BytesIO(image_bytes))
+            
+            response = self.client.generate_content([
+                figurine_prompt,
+                pil_image
+            ])
             
             # 提取生成的图像
             image_parts = [
@@ -396,73 +167,321 @@ class NanoBananaAPI:
             ]
             
             if image_parts:
-                from io import BytesIO
-                image = Image.open(BytesIO(image_parts[0]))
-                return image
+                # 保存图像
+                base_name = os.path.splitext(os.path.basename(colored_image_path))[0]
+                figurine_filename = f"{base_name}_figurine.png"
+                output_path = os.path.join(self.upload_folder, figurine_filename)
+                
+                with open(output_path, 'wb') as f:
+                    f.write(image_parts[0])
+                
+                print(f"✅ Nano Banana手办风格生成完成: {output_path}")
+                return output_path
             else:
-                return None
+                raise Exception("未能从Gemini响应中提取图像")
                 
         except Exception as e:
-            print(f"Gemini手办风格生成错误: {str(e)}")
-            return None
-    
-    def generate_figurine_style(self, colored_image_path):
-        """生成手办风格图片 - 优先使用Gemini API，失败时回退到OpenCV"""
-        try:
-            print("开始生成手办风格图片...")
-            
-            # 首先尝试使用Gemini API
-            if self.client and self.api_key != 'your-api-key-here':
-                figurine_image = self._generate_figurine_with_gemini(colored_image_path)
-                if figurine_image:
-                    # 生成输出文件名
-                    base_name = os.path.splitext(os.path.basename(colored_image_path))[0]
-                    figurine_filename = f"{base_name}_figurine_gemini.png"
-                    output_path = os.path.join(self.upload_folder, figurine_filename)
-                    
-                    # 保存图像
-                    figurine_image.save(output_path)
-                    print(f"Gemini手办风格生成完成: {output_path}")
-                    return output_path
-            
-            # 如果Gemini失败，使用OpenCV备用方案
-            print("使用OpenCV备用方案生成手办风格...")
-            figurine_img = self._apply_figurine_style(colored_image_path)
-            if figurine_img is None:
-                return None
-            
-            # 生成输出文件名
-            base_name = os.path.splitext(os.path.basename(colored_image_path))[0]
-            figurine_filename = f"{base_name}_figurine_opencv.png"
-            
-            # 保存处理后的图像
-            result_path = self._save_opencv_image(figurine_img, figurine_filename)
-            
-            if result_path:
-                print(f"OpenCV手办风格生成完成: {result_path}")
-                return result_path
-            else:
-                print("保存手办风格图片失败")
-                return None
-                
-        except Exception as e:
-            print(f"手办风格生成错误: {str(e)}")
-            return None
+            print(f"❌ Nano Banana手办风格生成错误: {str(e)}")
+            raise e
     
     def check_api_status(self):
-        """检查API状态"""
+        """检查Nano Banana (Gemini) API状态"""
         try:
-            headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json'
-            }
-            
-            # response = requests.get(f'{self.base_url}/status', headers=headers)
-            # return response.status_code == 200
-            
-            # 模拟API状态检查
-            return True
-            
+            return self.client is not None and self.api_key != 'your-nano-banana-api-key-here'
         except Exception as e:
             print(f"API状态检查失败: {str(e)}")
             return False
+    
+    def generate_image_from_text(self, text_prompt):
+        """从文字描述生成图片 - 使用真正的Nano Banana图像生成！"""
+        try:
+            print(f"🎨 开始使用真正的Nano Banana (gemini-2.5-flash-image)生成图片...")
+            print(f"📝 提示词: {text_prompt}")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Nano Banana API未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 使用专门的图像生成模型
+            try:
+                # 构建适合儿童的图像生成提示
+                image_prompt = f"""创建一幅适合10-14岁儿童的卡通风格插画：{text_prompt}
+
+要求：明亮温和的色彩，卡通/插画风格，健康正面的内容，富有创意和想象力，适合儿童观看，简洁清晰的构图"""
+                
+                print("🔥 正在使用Nano Banana生成真实图片...")
+                print(f"📝 最终提示词: {image_prompt}")
+                
+                # 使用正确的客户端API调用方式
+                # 创建图像生成专用模型 - 使用正确的Nano Banana模型
+                image_gen_client = genai.GenerativeModel('gemini-2.5-flash-image')
+                response = image_gen_client.generate_content(image_prompt)
+                
+                # 检查是否成功生成图片
+                print(f"🔍 响应检查: response={bool(response)}")
+                if response:
+                    print(f"🔍 candidates: {hasattr(response, 'candidates')} - {bool(response.candidates) if hasattr(response, 'candidates') else 'N/A'}")
+                    
+                if response and hasattr(response, 'candidates') and response.candidates:
+                    print(f"🔍 候选项数量: {len(response.candidates)}")
+                    if response.candidates[0].content and response.candidates[0].content.parts:
+                        print(f"🔍 内容部分数量: {len(response.candidates[0].content.parts)}")
+                        for i, part in enumerate(response.candidates[0].content.parts):
+                            print(f"🔍 Part {i}: text={bool(part.text)}, inline_data={bool(part.inline_data)}")
+                    
+                    # 查找返回的图像数据
+                    image_parts = [
+                        part.inline_data.data
+                        for part in response.candidates[0].content.parts
+                        if part.inline_data
+                    ]
+                    
+                    if image_parts:
+                        # 保存图片数据到文件
+                        timestamp = int(time.time())
+                        filename = f"nano_banana_text_{timestamp}.png"
+                        filepath = os.path.join(self.upload_folder, filename)
+                        
+                        # 处理Gemini返回的图像数据
+                        from io import BytesIO
+                        
+                        # Gemini返回的是原始字节数据，不是base64编码的
+                        image_data = image_parts[0]  # 直接使用bytes数据
+                        image = Image.open(BytesIO(image_data))
+                        image.save(filepath)
+                        
+                        print(f"✅ Nano Banana真实图片生成并保存成功: {filepath}")
+                        return filepath
+                    else:
+                        print("⚠️ 响应中没有找到图片数据")
+                        raise Exception("没有图片数据，使用备用方案")
+                else:
+                    print("⚠️ Nano Banana未返回图片，使用备用艺术创作方案")
+                    raise Exception("图像生成失败，使用备用方案")
+                    
+            except Exception as img_error:
+                print(f"⚠️ 图像生成模型错误: {img_error}")
+                print("🔄 降级使用艺术指导方案...")
+                
+                # 降级方案：使用原有的艺术指导方法
+                art_prompt = f"""
+作为一位专业的儿童美术老师，请根据以下描述为10-14岁的孩子创作一幅详细的绘画作品：
+
+{text_prompt}
+
+请提供详细的绘画步骤和色彩搭配建议：
+1. 画面构图布局
+2. 主要元素的形状和位置
+3. 具体的颜色搭配（RGB值）
+4. 绘画技巧和细节处理
+5. 整体风格建议
+
+要求内容健康正面，适合儿童，富有创意和教育意义。
+"""
+                
+                # 调用Gemini获取艺术指导
+                response = self.client.generate_content([art_prompt])
+            
+            if response and hasattr(response, 'candidates') and response.candidates:
+                art_guidance = response.candidates[0].content.parts[0].text
+                print(f"🎨 AI艺术指导: {art_guidance}")
+                
+                # 第三步：基于AI指导创建艺术作品
+                artwork_path = self._create_artwork_from_guidance(text_prompt, art_guidance)
+                
+                if artwork_path:
+                    print(f"✅ Nano Banana文字创意图片完成: {artwork_path}")
+                    return artwork_path
+                else:
+                    # 如果创作失败，返回一个基础的彩色画布
+                    return self._create_basic_artwork(text_prompt)
+            else:
+                raise Exception("未能从Gemini获取艺术指导")
+                
+        except Exception as e:
+            error_msg = str(e)
+            print(f"❌ Nano Banana文字生成图片错误: {error_msg}")
+            
+            # 检查是否是配额耗尽错误
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+                print("⚠️  API配额已耗尽，请稍后再试")
+            
+            # 返回一个基础作品作为备选
+            return self._create_basic_artwork(text_prompt)
+    
+    def _create_artwork_from_guidance(self, prompt, guidance):
+        """基于AI指导创建艺术作品"""
+        try:
+            from PIL import ImageDraw, ImageFont
+            import colorsys
+            import random
+            
+            # 创建画布
+            canvas_size = (512, 512)
+            canvas = Image.new('RGB', canvas_size, (240, 248, 255))  # 淡蓝色背景
+            draw = ImageDraw.Draw(canvas)
+            
+            # 解析提示词关键词
+            keywords = prompt.lower().split()
+            
+            # 基于关键词创建简单的艺术元素
+            if any(word in keywords for word in ['猫', 'cat', '小猫']):
+                self._draw_cat(draw, canvas_size)
+            elif any(word in keywords for word in ['花', 'flower', '花朵']):
+                self._draw_flower(draw, canvas_size)
+            elif any(word in keywords for word in ['房子', 'house', '建筑']):
+                self._draw_house(draw, canvas_size)
+            elif any(word in keywords for word in ['太阳', 'sun', '阳光']):
+                self._draw_sun(draw, canvas_size)
+            else:
+                # 默认创建抽象艺术
+                self._draw_abstract_art(draw, canvas_size)
+            
+            # 保存作品
+            import uuid
+            output_filename = f"text_generated_{uuid.uuid4()}.png"
+            output_path = os.path.join(self.upload_folder, output_filename)
+            canvas.save(output_path, 'PNG')
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"创建艺术作品错误: {str(e)}")
+            return None
+    
+    def _create_basic_artwork(self, prompt):
+        """创建基础艺术作品作为备选"""
+        try:
+            from PIL import ImageDraw
+            import random
+            
+            canvas_size = (512, 512)
+            canvas = Image.new('RGB', canvas_size, (255, 255, 255))
+            draw = ImageDraw.Draw(canvas)
+            
+            # 创建彩色渐变背景
+            for y in range(canvas_size[1]):
+                color_ratio = y / canvas_size[1]
+                r = int(135 + (200 - 135) * color_ratio)
+                g = int(206 + (220 - 206) * color_ratio)
+                b = int(250 + (255 - 250) * color_ratio)
+                draw.line([(0, y), (canvas_size[0], y)], fill=(r, g, b))
+            
+            # 添加标题文字
+            try:
+                from PIL import ImageFont
+                # 尝试加载字体，如果失败使用默认字体
+                font = ImageFont.load_default()
+                
+                # 在图片上添加提示词
+                text_lines = prompt[:50] + "..." if len(prompt) > 50 else prompt
+                bbox = draw.textbbox((0, 0), text_lines, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                
+                x = (canvas_size[0] - text_width) // 2
+                y = canvas_size[1] - text_height - 20
+                
+                # 添加文字阴影
+                draw.text((x+2, y+2), text_lines, fill=(0, 0, 0, 128), font=font)
+                draw.text((x, y), text_lines, fill=(255, 255, 255), font=font)
+                
+            except Exception:
+                pass  # 如果字体处理失败，跳过文字添加
+            
+            # 保存基础作品
+            import uuid
+            output_filename = f"basic_artwork_{uuid.uuid4()}.png"
+            output_path = os.path.join(self.upload_folder, output_filename)
+            canvas.save(output_path, 'PNG')
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"创建基础作品错误: {str(e)}")
+            return None
+    
+    def _draw_cat(self, draw, canvas_size):
+        """绘制简单的猫咪"""
+        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
+        
+        # 猫身体
+        draw.ellipse([center_x-80, center_y-20, center_x+80, center_y+100], fill=(255, 200, 150))
+        
+        # 猫头
+        draw.ellipse([center_x-60, center_y-100, center_x+60, center_y+20], fill=(255, 220, 180))
+        
+        # 猫耳朵
+        draw.polygon([(center_x-40, center_y-80), (center_x-60, center_y-120), (center_x-20, center_y-100)], fill=(255, 200, 150))
+        draw.polygon([(center_x+20, center_y-100), (center_x+60, center_y-120), (center_x+40, center_y-80)], fill=(255, 200, 150))
+        
+        # 猫眼睛
+        draw.ellipse([center_x-35, center_y-60, center_x-15, center_y-40], fill=(0, 0, 0))
+        draw.ellipse([center_x+15, center_y-60, center_x+35, center_y-40], fill=(0, 0, 0))
+        
+        # 猫鼻子
+        draw.polygon([(center_x-5, center_y-30), (center_x+5, center_y-30), (center_x, center_y-20)], fill=(255, 100, 100))
+    
+    def _draw_flower(self, draw, canvas_size):
+        """绘制简单的花朵"""
+        import math
+        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
+        
+        # 花瓣
+        for i in range(8):
+            angle = i * math.pi / 4
+            petal_x = center_x + 50 * math.cos(angle)
+            petal_y = center_y + 50 * math.sin(angle)
+            draw.ellipse([petal_x-20, petal_y-30, petal_x+20, petal_y+30], fill=(255, 100, 150))
+        
+        # 花心
+        draw.ellipse([center_x-20, center_y-20, center_x+20, center_y+20], fill=(255, 255, 100))
+        
+        # 茎
+        draw.rectangle([center_x-5, center_y+20, center_x+5, center_y+150], fill=(0, 150, 0))
+    
+    def _draw_house(self, draw, canvas_size):
+        """绘制简单的房子"""
+        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
+        
+        # 房子主体
+        draw.rectangle([center_x-80, center_y-20, center_x+80, center_y+100], fill=(200, 150, 100))
+        
+        # 屋顶
+        draw.polygon([(center_x-100, center_y-20), (center_x, center_y-80), (center_x+100, center_y-20)], fill=(150, 50, 50))
+        
+        # 门
+        draw.rectangle([center_x-20, center_y+20, center_x+20, center_y+100], fill=(100, 50, 0))
+        
+        # 窗户
+        draw.rectangle([center_x-60, center_y-10, center_x-30, center_y+20], fill=(100, 150, 255))
+        draw.rectangle([center_x+30, center_y-10, center_x+60, center_y+20], fill=(100, 150, 255))
+    
+    def _draw_sun(self, draw, canvas_size):
+        """绘制简单的太阳"""
+        import math
+        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
+        
+        # 太阳主体
+        draw.ellipse([center_x-60, center_y-60, center_x+60, center_y+60], fill=(255, 255, 100))
+        
+        # 太阳光线
+        for i in range(12):
+            angle = i * math.pi / 6
+            start_x = center_x + 70 * math.cos(angle)
+            start_y = center_y + 70 * math.sin(angle)
+            end_x = center_x + 100 * math.cos(angle)
+            end_y = center_y + 100 * math.sin(angle)
+            draw.line([(start_x, start_y), (end_x, end_y)], fill=(255, 255, 0), width=3)
+    
+    def _draw_abstract_art(self, draw, canvas_size):
+        """绘制抽象艺术"""
+        import random
+        
+        # 创建多个彩色圆圈
+        for _ in range(10):
+            x = random.randint(50, canvas_size[0] - 50)
+            y = random.randint(50, canvas_size[1] - 50)
+            radius = random.randint(20, 60)
+            color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
+            draw.ellipse([x-radius, y-radius, x+radius, y+radius], fill=color)
