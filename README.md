@@ -51,8 +51,6 @@
 - ✅ **完整测试** - 包含全面的功能测试套件
 
 详细文档请参阅: [NANO_BANANA_IMPLEMENTATION.md](NANO_BANANA_IMPLEMENTATION.md)
-- **OpenCV** - 本地图像处理（备用方案）
-- **Hunyuan3D API** - 基于轮廓的3D模型生成
 
 ## 📁 项目结构
 
