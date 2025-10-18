@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用教程 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-magic"></i>
+                <span>AI创意工坊</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">首页</a></li>
+                <li><a href="/#upload" class="nav-link">上传作品</a></li>
+                <li><a href="/gallery" class="nav-link">作品展示</a></li>
+                <li><a href="/tutorial" class="nav-link active">使用教程</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="tutorial-hero">
+            <div class="container">
+                <h1 class="tutorial-title">AI创意工坊使用教程</h1>
+                <p class="tutorial-subtitle">跟着我们的步骤，轻松创作出属于你的AI艺术作品！</p>
+            </div>
+        </section>
+
+        <section class="tutorial-content">
+            <div class="container">
+                <!-- 快速开始 -->
+                <div class="tutorial-section">
+                    <h2 class="tutorial-section-title">
+                        <i class="fas fa-rocket"></i>
+                        快速开始
+                    </h2>
+                    <div class="quick-steps">
+                        <div class="quick-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <h3>准备你的简笔画</h3>
+                                <p>在纸上画一个简单的图案，然后用手机或相机拍照</p>
+                            </div>
+                        </div>
+                        <div class="quick-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <h3>上传到网站</h3>
+                                <p>点击"开始创作"按钮，选择你拍摄的图片文件</p>
+                            </div>
+                        </div>
+                        <div class="quick-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <h3>等待AI处理</h3>
+                                <p>AI会自动为你的画作上色，并生成3D模型</p>
+                            </div>
+                        </div>
+                        <div class="quick-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <h3>下载和分享</h3>
+                                <p>保存你的作品，并与朋友们分享你的创意！</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 详细教程 -->
+                <div class="tutorial-section">
+                    <h2 class="tutorial-section-title">
+                        <i class="fas fa-book"></i>
+                        详细教程
+                    </h2>
+                    
+                    <div class="tutorial-tabs">
+                        <button class="tab-button active" data-tab="drawing">绘制技巧</button>
+                        <button class="tab-button" data-tab="upload">上传指南</button>
+                        <button class="tab-button" data-tab="ai">AI处理</button>
+                        <button class="tab-button" data-tab="3d">3D模型</button>
+                    </div>
+
+                    <div class="tab-content active" id="drawing">
+                        <h3>绘制简笔画的技巧</h3>
+                        <div class="tutorial-grid">
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </div>
+                                <h4>线条要清晰</h4>
+                                <p>使用黑色的笔或铅笔，确保线条足够粗和清晰，这样AI就能更好地识别你的画作。</p>
+                                <div class="tip-box">
+                                    <strong>小贴士：</strong>避免使用太细的线条或模糊的笔迹
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-shapes"></i>
+                                </div>
+                                <h4>简单几何形状</h4>
+                                <p>从圆形、方形、三角形开始，然后组合成有趣的图案。简单的形状更容易被AI理解。</p>
+                                <div class="tip-box">
+                                    <strong>举例：</strong>圆形+三角形=小房子，圆形+线条=小人
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <h4>突出主要特征</h4>
+                                <p>如果画动物，要突出眼睛、耳朵等特征；如果画物品，要突出主要的形状特征。</p>
+                                <div class="tip-box">
+                                    <strong>技巧：</strong>夸张一些特征会让AI更容易识别
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="upload">
+                        <h3>上传图片的注意事项</h3>
+                        <div class="tutorial-grid">
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <h4>拍照技巧</h4>
+                                <p>确保光线充足，避免阴影。将画作平放，相机垂直向下拍摄，避免倾斜。</p>
+                                <div class="do-dont">
+                                    <div class="do">
+                                        <i class="fas fa-check"></i>
+                                        光线明亮均匀
+                                    </div>
+                                    <div class="dont">
+                                        <i class="fas fa-times"></i>
+                                        避免强烈阴影
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-crop"></i>
+                                </div>
+                                <h4>图片要求</h4>
+                                <p>支持PNG、JPG、JPEG、GIF、BMP格式，文件大小不超过16MB。建议图片清晰度在1080p以上。</p>
+                                <div class="format-list">
+                                    <span>✓ PNG</span>
+                                    <span>✓ JPG</span>
+                                    <span>✓ JPEG</span>
+                                    <span>✓ GIF</span>
+                                    <span>✓ BMP</span>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-upload"></i>
+                                </div>
+                                <h4>上传方法</h4>
+                                <p>可以点击选择文件，也可以直接将图片拖拽到上传区域。上传后系统会自动进行预处理。</p>
+                                <div class="upload-methods">
+                                    <div class="method">
+                                        <i class="fas fa-mouse-pointer"></i>
+                                        点击选择
+                                    </div>
+                                    <div class="method">
+                                        <i class="fas fa-hand-paper"></i>
+                                        拖拽上传
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="ai">
+                        <h3>AI处理过程详解</h3>
+                        <div class="process-flow">
+                            <div class="process-step">
+                                <div class="process-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h4>图像识别</h4>
+                                <p>AI首先分析你的简笔画，识别出主要的形状、轮廓和特征，理解你想要表达的内容。</p>
+                            </div>
+                            <div class="process-arrow">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="process-step">
+                                <div class="process-icon">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <h4>智能上色</h4>
+                                <p>根据识别出的内容，AI会选择合适的颜色方案，为你的画作添加丰富的色彩和细节。</p>
+                            </div>
+                            <div class="process-arrow">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                            <div class="process-step">
+                                <div class="process-icon">
+                                    <i class="fas fa-magic"></i>
+                                </div>
+                                <h4>风格转换</h4>
+                                <p>AI会将上色后的图像转换成手办风格，增加立体感和质感，让作品更加生动。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="3d">
+                        <h3>3D模型生成与查看</h3>
+                        <div class="tutorial-grid">
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-cube"></i>
+                                </div>
+                                <h4>3D模型生成</h4>
+                                <p>系统使用Hunyuan3D技术，将你的2D图像转换为3D模型，这个过程通常需要1-2分钟。</p>
+                                <div class="feature-list">
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        自动建模
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        纹理映射
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        Web优化
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-mouse"></i>
+                                </div>
+                                <h4>3D查看器操作</h4>
+                                <p>在3D查看器中，你可以旋转、缩放模型，从不同角度观看你的作品。</p>
+                                <div class="controls-guide">
+                                    <div class="control">
+                                        <strong>旋转：</strong>鼠标左键拖拽
+                                    </div>
+                                    <div class="control">
+                                        <strong>缩放：</strong>鼠标滚轮
+                                    </div>
+                                    <div class="control">
+                                        <strong>平移：</strong>鼠标右键拖拽
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-download"></i>
+                                </div>
+                                <h4>下载和分享</h4>
+                                <p>你可以下载生成的图片和3D模型文件，也可以分享链接给朋友们欣赏你的作品。</p>
+                                <div class="download-formats">
+                                    <span>图片：PNG格式</span>
+                                    <span>3D模型：GLTF格式</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 常见问题 -->
+                <div class="tutorial-section">
+                    <h2 class="tutorial-section-title">
+                        <i class="fas fa-question-circle"></i>
+                        常见问题
+                    </h2>
+                    <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>为什么我的图片上传失败了？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>可能的原因包括：</p>
+                                <ul>
+                                    <li>文件格式不支持（请使用PNG、JPG、JPEG、GIF、BMP格式）</li>
+                                    <li>文件太大（请确保文件小于16MB）</li>
+                                    <li>网络连接不稳定（请检查网络连接）</li>
+                                    <li>图片损坏（请尝试重新拍照或选择其他图片）</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>AI上色的效果不满意怎么办？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>AI上色效果取决于原始简笔画的质量。建议：</p>
+                                <ul>
+                                    <li>确保线条清晰、粗细适中</li>
+                                    <li>突出主要特征，避免过于复杂的细节</li>
+                                    <li>使用对比度高的黑白图片</li>
+                                    <li>可以尝试重新绘制或调整拍照角度</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>3D模型生成失败了怎么办？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>3D模型生成可能需要一些时间，如果失败：</p>
+                                <ul>
+                                    <li>请耐心等待，复杂的图像需要更长时间</li>
+                                    <li>确保网络连接稳定</li>
+                                    <li>尝试刷新页面重新生成</li>
+                                    <li>如果问题持续，请联系技术支持</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>我可以使用什么设备访问这个网站？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>AI创意工坊支持多种设备：</p>
+                                <ul>
+                                    <li>台式电脑和笔记本电脑（推荐Chrome、Firefox、Safari浏览器）</li>
+                                    <li>平板电脑（iPad、Android平板）</li>
+                                    <li>智能手机（iPhone、Android手机）</li>
+                                    <li>建议使用较新版本的浏览器以获得最佳体验</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习AI知识 -->
+                <div class="tutorial-section">
+                    <h2 class="tutorial-section-title">
+                        <i class="fas fa-graduation-cap"></i>
+                        了解AI技术
+                    </h2>
+                    <div class="ai-knowledge">
+                        <div class="knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <h3>什么是人工智能？</h3>
+                            <p>人工智能（AI）是让计算机能够像人类一样思考和学习的技术。在我们的网站中，AI帮助理解你的画作并为其添加颜色。</p>
+                        </div>
+                        <div class="knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <h3>计算机视觉</h3>
+                            <p>这是AI的一个分支，让计算机能够"看见"和理解图像。我们使用这项技术来识别你画的是什么。</p>
+                        </div>
+                        <div class="knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-network-wired"></i>
+                            </div>
+                            <h3>神经网络</h3>
+                            <p>这是模仿人类大脑工作方式的计算机程序。我们的AI使用神经网络来学习如何为图片上色。</p>
+                        </div>
+                        <div class="knowledge-card">
+                            <div class="knowledge-icon">
+                                <i class="fas fa-cube"></i>
+                            </div>
+                            <h3>3D建模</h3>
+                            <p>这是创建三维数字模型的技术。AI可以从你的2D画作生成3D模型，让平面图像变立体。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>关于我们</h4>
+                    <p>AI创意工坊致力于让儿童通过有趣的方式学习和体验AI技术。</p>
+                </div>
+                <div class="footer-section">
+                    <h4>功能特色</h4>
+                    <ul>
+                        <li>简笔画智能上色</li>
+                        <li>3D模型自动生成</li>
+                        <li>手办风格转换</li>
+                        <li>AI技术学习</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>联系我们</h4>
+                    <p>如有问题或建议，请联系我们的技术支持团队。</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 AI创意工坊. 专为10-14岁儿童设计.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
+</body>
+</html>

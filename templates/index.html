@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI创意工坊 - 儿童版</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-magic"></i>
+                <span>AI创意工坊</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">首页</a></li>
+                <li><a href="#upload" class="nav-link">上传作品</a></li>
+                <li><a href="/gallery" class="nav-link">作品展示</a></li>
+                <li><a href="/tutorial" class="nav-link">使用教程</a></li>
+            </ul>
+            <div class="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- 首页介绍 -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">欢迎来到AI创意工坊！</h1>
+                <p class="hero-subtitle">画出你的想象，让AI为你的简笔画添加色彩，并创造出酷炫的3D模型！</p>
+                <div class="hero-features">
+                    <div class="feature">
+                        <i class="fas fa-palette"></i>
+                        <h3>AI智能上色</h3>
+                        <p>上传你的简笔画，AI会自动为它添加美丽的颜色</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-cube"></i>
+                        <h3>3D模型生成</h3>
+                        <p>将你的作品转换成立体的3D模型</p>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-robot"></i>
+                        <h3>AI学习助手</h3>
+                        <p>在创作过程中学习AI技术的奇妙之处</p>
+                    </div>
+                </div>
+                <button class="cta-button" onclick="scrollToUpload()">
+                    <i class="fas fa-upload"></i>
+                    开始创作
+                </button>
+            </div>
+        </section>
+
+        <!-- 上传区域 -->
+        <section id="upload" class="upload-section">
+            <div class="container">
+                <h2 class="section-title">上传你的简笔画</h2>
+                <p class="section-subtitle">支持PNG、JPG、JPEG、GIF、BMP格式，文件大小不超过16MB</p>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h3>拖拽文件到这里，或点击选择文件</h3>
+                        <p>建议上传清晰的简笔画，线条分明效果更好哦！</p>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            选择文件
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 进度条 -->
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">正在上传...</div>
+                </div>
+
+                <!-- 处理步骤 -->
+                <div class="processing-steps" id="processingSteps" style="display: none;">
+                    <div class="step" id="step1">
+                        <i class="fas fa-upload"></i>
+                        <span>文件上传</span>
+                        <div class="step-status"></div>
+                    </div>
+                    <div class="step" id="step2">
+                        <i class="fas fa-palette"></i>
+                        <span>AI上色</span>
+                        <div class="step-status"></div>
+                    </div>
+                    <div class="step" id="step3">
+                        <i class="fas fa-cube"></i>
+                        <span>3D生成</span>
+                        <div class="step-status"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 结果展示 -->
+        <section id="results" class="results-section" style="display: none;">
+            <div class="container">
+                <h2 class="section-title">你的作品完成了！</h2>
+                
+                <div class="results-grid">
+                    <!-- 原始图片 -->
+                    <div class="result-item">
+                        <h3>原始简笔画</h3>
+                        <div class="image-container">
+                            <img id="originalImage" src="" alt="原始图片">
+                        </div>
+                    </div>
+                    
+                    <!-- 上色后图片 -->
+                    <div class="result-item">
+                        <h3>AI上色效果</h3>
+                        <div class="image-container">
+                            <img id="coloredImage" src="" alt="上色图片">
+                        </div>
+                        <button class="download-btn" id="downloadColored">
+                            <i class="fas fa-download"></i>
+                            下载上色图片
+                        </button>
+                    </div>
+                    
+                    <!-- 手办风格 -->
+                    <div class="result-item">
+                        <h3>手办风格</h3>
+                        <div class="image-container">
+                            <img id="figurineImage" src="" alt="手办图片">
+                        </div>
+                        <button class="download-btn" id="downloadFigurine">
+                            <i class="fas fa-download"></i>
+                            下载手办图片
+                        </button>
+                    </div>
+                    
+                    <!-- 3D模型展示 -->
+                    <div class="result-item result-3d">
+                        <h3>3D模型预览</h3>
+                        <div class="model-container" id="modelContainer">
+                            <!-- Three.js 3D模型将在这里渲染 -->
+                        </div>
+                        <div class="model-controls">
+                            <button class="control-btn" id="rotateModel">
+                                <i class="fas fa-sync-alt"></i>
+                                自动旋转
+                            </button>
+                            <button class="download-btn" id="download3D">
+                                <i class="fas fa-download"></i>
+                                下载3D模型
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="secondary-btn" onclick="resetUpload()">
+                        <i class="fas fa-redo"></i>
+                        重新开始
+                    </button>
+                    <button class="primary-btn" onclick="shareResults()">
+                        <i class="fas fa-share"></i>
+                        分享作品
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>关于我们</h4>
+                    <p>AI创意工坊致力于让儿童通过有趣的方式学习和体验AI技术。</p>
+                </div>
+                <div class="footer-section">
+                    <h4>功能特色</h4>
+                    <ul>
+                        <li>简笔画智能上色</li>
+                        <li>3D模型自动生成</li>
+                        <li>手办风格转换</li>
+                        <li>AI技术学习</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>联系我们</h4>
+                    <p>如有问题或建议，请联系我们的技术支持团队。</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 AI创意工坊. 专为10-14岁儿童设计.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 加载Three.js用于3D模型展示 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- 主要JavaScript文件 -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
