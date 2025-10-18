@@ -5,7 +5,7 @@
 ## 🎨 项目特色
 
 - **简笔画上传** - 支持多种图片格式，拖拽式上传体验
-- **AI智能上色** - 使用Nano Banana API为简笔画自动上色
+- **AI智能上色** - 使用Google Gemini 2.5 Flash Image为简笔画智能上色
 - **手办风格转换** - 生成精美的手办风格图片
 - **3D模型生成** - 通过Hunyuan3D API将2D图像转换为3D模型
 - **交互式3D预览** - 使用Three.js技术实现360度模型查看
@@ -27,8 +27,9 @@
 - **Three.js** - 3D图形渲染
 
 ### AI服务
-- **Nano Banana API** - 图像上色和风格转换
-- **Hunyuan3D API** - 3D模型生成
+- **Google Gemini 2.5 Flash Image** - 智能图像上色和风格转换（主要）
+- **OpenCV** - 本地图像处理（备用方案）
+- **Hunyuan3D API** - 基于轮廓的3D模型生成
 
 ## 📁 项目结构
 
@@ -110,15 +111,27 @@ python app.py
 
 ## 🔧 API集成
 
-### Nano Banana API
-负责图像上色和风格转换功能。主要方法：
-- `colorize_sketch()` - 为简笔画上色
-- `generate_figurine_style()` - 生成手办风格图片
+### Google Gemini 2.5 Flash Image API
+使用最先进的Gemini模型进行智能图像处理：
+- `colorize_sketch()` - 智能为简笔画上色，理解图像内容
+- `generate_figurine_style()` - 生成逼真的手办风格图片
+- **配置要求**：需要Google AI API密钥
+- **备用方案**：如果Gemini不可用，自动切换到OpenCV本地处理
+
+#### 设置Gemini API密钥
+```bash
+# 方法1: 环境变量（推荐）
+export GEMINI_API_KEY='your-api-key-here'
+
+# 方法2: 运行配置脚本
+python setup_gemini_api.py
+```
 
 ### Hunyuan3D API  
-负责3D模型生成功能。主要方法：
-- `generate_3d_model()` - 从2D图像生成3D模型
+基于图像轮廓生成3D模型：
+- `generate_3d_model()` - 从2D图像轮廓生成GLTF 3D模型
 - `optimize_for_web()` - 优化模型以适合Web显示
+- 支持Three.js实时预览
 
 ## 🎨 设计理念
 
@@ -144,7 +157,7 @@ python app.py
 
 1. **文件上传** - 用户上传简笔画图片
 2. **图像预处理** - 转换为灰度图并二值化
-3. **AI上色** - 调用Nano Banana API进行智能上色
+3. **AI上色** - 优先使用Gemini API进行智能上色，失败时使用OpenCV
 4. **风格转换** - 生成手办风格效果
 5. **3D建模** - 使用Hunyuan3D API生成3D模型
 6. **结果展示** - 在Web界面展示所有处理结果
