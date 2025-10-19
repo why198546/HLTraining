@@ -6,8 +6,12 @@ from PIL import Image
 import cv2
 import numpy as np
 from api.nano_banana import NanoBananaAPI
-from api.hunyuan3d import Simple3DGenerator
+from api.hunyuan3d import Hunyuan3DGenerator
 import json
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -50,25 +54,16 @@ def preprocess_sketch(image_path):
 
 def generate_3d_model_from_image(image_path):
     """从图片生成3D模型的辅助函数"""
-    try:
-        print(f"🧊 开始3D模型生成: {image_path}")
-        
-        # 初始化3D生成器
-        generator_3d = Simple3DGenerator()
-        
-        # 生成3D模型
-        model_path = generator_3d.generate_3d_model(image_path)
-        
-        if model_path:
-            print(f"✅ 3D模型生成成功: {model_path}")
-            return model_path.replace('uploads/', '/uploads/')
-        else:
-            print("❌ 3D模型生成失败")
-            return None
-            
-    except Exception as e:
-        print(f"❌ 3D模型生成错误: {str(e)}")
-        return None
+    print(f"🧊 开始3D模型生成: {image_path}")
+    
+    # 初始化3D生成器
+    generator_3d = Hunyuan3DGenerator()
+    
+    # 生成3D模型（如果失败会抛出异常）
+    model_path = generator_3d.generate_3d_model(image_path)
+    
+    print(f"✅ 3D模型生成成功: {model_path}")
+    return model_path.replace('uploads/', '/uploads/')
 
 @app.route('/')
 def index():
@@ -94,6 +89,11 @@ def test():
 def uploaded_file(filename):
     """提供上传的文件访问"""
     return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+@app.route('/models/<filename>')
+def model_file(filename):
+    """提供3D模型文件访问"""
+    return send_file(os.path.join('models', filename))
 
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
@@ -133,19 +133,16 @@ def generate_image():
             # 纯文字模式
             generated_image_path = nano_banana.generate_image_from_text(prompt)
         
-        if generated_image_path:
-            print(f"✅ 图片生成完成: {generated_image_path}")
-            
-            # 返回相对路径用于前端显示
-            relative_path = generated_image_path.replace('uploads/', '/uploads/')
-            
-            return jsonify({
-                'success': True,
-                'image_url': relative_path,
-                'message': '图片生成成功！'
-            })
-        else:
-            return jsonify({'error': '图片生成失败，请稍后重试'}), 500
+        print(f"✅ 图片生成完成: {generated_image_path}")
+        
+        # 返回相对路径用于前端显示
+        relative_path = generated_image_path.replace('uploads/', '/uploads/')
+        
+        return jsonify({
+            'success': True,
+            'image_url': relative_path,
+            'message': '图片生成成功！'
+        })
             
     except Exception as e:
         print(f"❌ 图片生成错误: {str(e)}")
@@ -173,19 +170,16 @@ def adjust_image():
         # 使用调整提示词重新生成图片
         adjusted_image_path = nano_banana.adjust_image(current_image, adjust_prompt)
         
-        if adjusted_image_path:
-            print(f"✅ 图片调整完成: {adjusted_image_path}")
-            
-            # 返回相对路径用于前端显示
-            relative_path = adjusted_image_path.replace('uploads/', '/uploads/')
-            
-            return jsonify({
-                'success': True,
-                'image_url': relative_path,
-                'message': '图片调整成功！'
-            })
-        else:
-            return jsonify({'error': '图片调整失败，请稍后重试'}), 500
+        print(f"✅ 图片调整完成: {adjusted_image_path}")
+        
+        # 返回相对路径用于前端显示
+        relative_path = adjusted_image_path.replace('uploads/', '/uploads/')
+        
+        return jsonify({
+            'success': True,
+            'image_url': relative_path,
+            'message': '图片调整成功！'
+        })
             
     except Exception as e:
         print(f"❌ 图片调整错误: {str(e)}")
@@ -209,16 +203,13 @@ def generate_3d_model_endpoint():
         # 生成3D模型
         model_result = generate_3d_model_from_image(image_path)
         
-        if model_result:
-            print(f"✅ 3D模型生成完成: {model_result}")
-            
-            return jsonify({
-                'success': True,
-                'model_url': model_result,
-                'message': '3D模型生成成功！'
-            })
-        else:
-            return jsonify({'error': '3D模型生成失败，请稍后重试'}), 500
+        print(f"✅ 3D模型生成完成: {model_result}")
+        
+        return jsonify({
+            'success': True,
+            'model_url': model_result,
+            'message': '3D模型生成成功！'
+        })
             
     except Exception as e:
         print(f"❌ 3D模型生成错误: {str(e)}")
@@ -241,7 +232,7 @@ if __name__ == '__main__':
     print("   - 统一创作界面：文字+图片混合输入")
     print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
     print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
-    print("   - 3D模型生成：使用本地算法")
+    print("   - 3D模型生成：使用腾讯云AI3D (混元3D)")
     print("   - 适合儿童：10-14岁友好界面设计")
     print("\n🌐 访问地址: http://127.0.0.1:8080")
     print("🔗 创作页面: http://127.0.0.1:8080/create")

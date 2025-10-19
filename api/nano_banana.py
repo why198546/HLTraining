@@ -59,8 +59,9 @@ class NanoBananaAPI:
 2. 使用鲜艳、活泼的颜色，适合10-14岁儿童
 3. 保持原始线条清晰可见
 4. 添加适当的阴影和高光，增强立体感
-5. 整体风格要卡通化、可爱友好
-6. 确保色彩搭配和谐
+5. 背景保持简洁干净，避免杂乱元素
+6. 整体风格要卡通化、可爱友好
+7. 确保色彩搭配和谐，主体突出
 
 请生成一张完全符合用户要求的上色图像！
 """
@@ -71,8 +72,9 @@ class NanoBananaAPI:
 2. 颜色搭配要和谐，富有想象力
 3. 保持原始线条清晰可见
 4. 添加适当的阴影和高光，增强立体感
-5. 背景可以添加简单的装饰元素
-6. 整体风格要卡通化、可爱友好
+5. 背景保持简洁干净，纯色或简单渐变
+6. 主体突出，避免背景喧宾夺主
+7. 整体风格要卡通化、可爱友好
 
 请生成一张完全上色的图像！
 """
@@ -207,7 +209,13 @@ class NanoBananaAPI:
                 # 构建适合儿童的图像生成提示
                 image_prompt = f"""创建一幅适合10-14岁儿童的卡通风格插画：{text_prompt}
 
-要求：明亮温和的色彩，卡通/插画风格，健康正面的内容，富有创意和想象力，适合儿童观看，简洁清晰的构图"""
+要求：
+- 明亮温和的色彩，卡通/插画风格
+- 健康正面的内容，富有创意和想象力
+- 适合儿童观看，简洁清晰的构图
+- 背景简洁干净，避免杂乱元素
+- 主体突出，背景纯色或简单渐变
+- 整体风格统一，色彩和谐"""
                 
                 print("🔥 正在使用Nano Banana生成真实图片...")
                 print(f"📝 最终提示词: {image_prompt}")
@@ -306,185 +314,10 @@ class NanoBananaAPI:
             if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
                 print("⚠️  API配额已耗尽，请稍后再试")
             
-            # 返回一个基础作品作为备选
-            return self._create_basic_artwork(text_prompt)
+            # AI服务不可用时直接返回错误
+            raise e
     
-    def _create_artwork_from_guidance(self, prompt, guidance):
-        """基于AI指导创建艺术作品"""
-        try:
-            from PIL import ImageDraw, ImageFont
-            import colorsys
-            import random
-            
-            # 创建画布
-            canvas_size = (512, 512)
-            canvas = Image.new('RGB', canvas_size, (240, 248, 255))  # 淡蓝色背景
-            draw = ImageDraw.Draw(canvas)
-            
-            # 解析提示词关键词
-            keywords = prompt.lower().split()
-            
-            # 基于关键词创建简单的艺术元素
-            if any(word in keywords for word in ['猫', 'cat', '小猫']):
-                self._draw_cat(draw, canvas_size)
-            elif any(word in keywords for word in ['花', 'flower', '花朵']):
-                self._draw_flower(draw, canvas_size)
-            elif any(word in keywords for word in ['房子', 'house', '建筑']):
-                self._draw_house(draw, canvas_size)
-            elif any(word in keywords for word in ['太阳', 'sun', '阳光']):
-                self._draw_sun(draw, canvas_size)
-            else:
-                # 默认创建抽象艺术
-                self._draw_abstract_art(draw, canvas_size)
-            
-            # 保存作品
-            import uuid
-            output_filename = f"text_generated_{uuid.uuid4()}.png"
-            output_path = os.path.join(self.upload_folder, output_filename)
-            canvas.save(output_path, 'PNG')
-            
-            return output_path
-            
-        except Exception as e:
-            print(f"创建艺术作品错误: {str(e)}")
-            return None
-    
-    def _create_basic_artwork(self, prompt):
-        """创建基础艺术作品作为备选"""
-        try:
-            from PIL import ImageDraw
-            import random
-            
-            canvas_size = (512, 512)
-            canvas = Image.new('RGB', canvas_size, (255, 255, 255))
-            draw = ImageDraw.Draw(canvas)
-            
-            # 创建彩色渐变背景
-            for y in range(canvas_size[1]):
-                color_ratio = y / canvas_size[1]
-                r = int(135 + (200 - 135) * color_ratio)
-                g = int(206 + (220 - 206) * color_ratio)
-                b = int(250 + (255 - 250) * color_ratio)
-                draw.line([(0, y), (canvas_size[0], y)], fill=(r, g, b))
-            
-            # 添加标题文字
-            try:
-                from PIL import ImageFont
-                # 尝试加载字体，如果失败使用默认字体
-                font = ImageFont.load_default()
-                
-                # 在图片上添加提示词
-                text_lines = prompt[:50] + "..." if len(prompt) > 50 else prompt
-                bbox = draw.textbbox((0, 0), text_lines, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                
-                x = (canvas_size[0] - text_width) // 2
-                y = canvas_size[1] - text_height - 20
-                
-                # 添加文字阴影
-                draw.text((x+2, y+2), text_lines, fill=(0, 0, 0, 128), font=font)
-                draw.text((x, y), text_lines, fill=(255, 255, 255), font=font)
-                
-            except Exception:
-                pass  # 如果字体处理失败，跳过文字添加
-            
-            # 保存基础作品
-            import uuid
-            output_filename = f"basic_artwork_{uuid.uuid4()}.png"
-            output_path = os.path.join(self.upload_folder, output_filename)
-            canvas.save(output_path, 'PNG')
-            
-            return output_path
-            
-        except Exception as e:
-            print(f"创建基础作品错误: {str(e)}")
-            return None
-    
-    def _draw_cat(self, draw, canvas_size):
-        """绘制简单的猫咪"""
-        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
-        
-        # 猫身体
-        draw.ellipse([center_x-80, center_y-20, center_x+80, center_y+100], fill=(255, 200, 150))
-        
-        # 猫头
-        draw.ellipse([center_x-60, center_y-100, center_x+60, center_y+20], fill=(255, 220, 180))
-        
-        # 猫耳朵
-        draw.polygon([(center_x-40, center_y-80), (center_x-60, center_y-120), (center_x-20, center_y-100)], fill=(255, 200, 150))
-        draw.polygon([(center_x+20, center_y-100), (center_x+60, center_y-120), (center_x+40, center_y-80)], fill=(255, 200, 150))
-        
-        # 猫眼睛
-        draw.ellipse([center_x-35, center_y-60, center_x-15, center_y-40], fill=(0, 0, 0))
-        draw.ellipse([center_x+15, center_y-60, center_x+35, center_y-40], fill=(0, 0, 0))
-        
-        # 猫鼻子
-        draw.polygon([(center_x-5, center_y-30), (center_x+5, center_y-30), (center_x, center_y-20)], fill=(255, 100, 100))
-    
-    def _draw_flower(self, draw, canvas_size):
-        """绘制简单的花朵"""
-        import math
-        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
-        
-        # 花瓣
-        for i in range(8):
-            angle = i * math.pi / 4
-            petal_x = center_x + 50 * math.cos(angle)
-            petal_y = center_y + 50 * math.sin(angle)
-            draw.ellipse([petal_x-20, petal_y-30, petal_x+20, petal_y+30], fill=(255, 100, 150))
-        
-        # 花心
-        draw.ellipse([center_x-20, center_y-20, center_x+20, center_y+20], fill=(255, 255, 100))
-        
-        # 茎
-        draw.rectangle([center_x-5, center_y+20, center_x+5, center_y+150], fill=(0, 150, 0))
-    
-    def _draw_house(self, draw, canvas_size):
-        """绘制简单的房子"""
-        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
-        
-        # 房子主体
-        draw.rectangle([center_x-80, center_y-20, center_x+80, center_y+100], fill=(200, 150, 100))
-        
-        # 屋顶
-        draw.polygon([(center_x-100, center_y-20), (center_x, center_y-80), (center_x+100, center_y-20)], fill=(150, 50, 50))
-        
-        # 门
-        draw.rectangle([center_x-20, center_y+20, center_x+20, center_y+100], fill=(100, 50, 0))
-        
-        # 窗户
-        draw.rectangle([center_x-60, center_y-10, center_x-30, center_y+20], fill=(100, 150, 255))
-        draw.rectangle([center_x+30, center_y-10, center_x+60, center_y+20], fill=(100, 150, 255))
-    
-    def _draw_sun(self, draw, canvas_size):
-        """绘制简单的太阳"""
-        import math
-        center_x, center_y = canvas_size[0] // 2, canvas_size[1] // 2
-        
-        # 太阳主体
-        draw.ellipse([center_x-60, center_y-60, center_x+60, center_y+60], fill=(255, 255, 100))
-        
-        # 太阳光线
-        for i in range(12):
-            angle = i * math.pi / 6
-            start_x = center_x + 70 * math.cos(angle)
-            start_y = center_y + 70 * math.sin(angle)
-            end_x = center_x + 100 * math.cos(angle)
-            end_y = center_y + 100 * math.sin(angle)
-            draw.line([(start_x, start_y), (end_x, end_y)], fill=(255, 255, 0), width=3)
-    
-    def _draw_abstract_art(self, draw, canvas_size):
-        """绘制抽象艺术"""
-        import random
-        
-        # 创建多个彩色圆圈
-        for _ in range(10):
-            x = random.randint(50, canvas_size[0] - 50)
-            y = random.randint(50, canvas_size[1] - 50)
-            radius = random.randint(20, 60)
-            color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
-            draw.ellipse([x-radius, y-radius, x+radius, y+radius], fill=color)
+
 
     # 新的统一工作流程方法
     def generate_image_from_sketch(self, sketch_path):

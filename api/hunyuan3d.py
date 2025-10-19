@@ -1,291 +1,234 @@
 """
-简化的3D模型生成器
-专为儿童AI培训网站设计，使用本地算法从2D图片生成基础3D模型
+混元3D模型生成器 - 使用腾讯云AI3D服务
+专为儿童AI培训网站设计，支持图片转3D模型功能
 """
 
 import os
-import cv2
-import numpy as np
 import base64
 import json
 import uuid
+import time
+import requests
 from PIL import Image
+from tencentcloud.common import credential
+from tencentcloud.common.profile.client_profile import ClientProfile
+from tencentcloud.common.profile.http_profile import HttpProfile
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 
-class Simple3DGenerator:
+class Hunyuan3DGenerator:
     def __init__(self):
         # 确保models文件夹存在
         self.models_folder = "models"
         if not os.path.exists(self.models_folder):
             os.makedirs(self.models_folder)
             print(f"✅ 创建模型目录: {self.models_folder}")
+        
+        # 初始化腾讯云客户端
+        self._init_tencent_client()
+    
+    def _init_tencent_client(self):
+        """初始化腾讯云AI3D客户端"""
+        try:
+            # 尝试导入AI3D模块
+            try:
+                from tencentcloud.ai3d.v20250513 import ai3d_client, models
+                self.ai3d_client = ai3d_client
+                self.models = models
+            except ImportError:
+                print("⚠️ 腾讯云AI3D SDK未安装，请运行: pip install tencentcloud-sdk-python-ai3d")
+                self.client = None
+                return
+            
+            # 使用环境变量凭据（推荐方式）
+            try:
+                cred = credential.EnvironmentVariableCredential().get_credential()
+            except Exception:
+                # 如果环境变量凭据不可用，尝试直接从环境变量读取
+                secret_id = os.getenv("TENCENTCLOUD_SECRET_ID")
+                secret_key = os.getenv("TENCENTCLOUD_SECRET_KEY")
+                
+                if not secret_id or not secret_key:
+                    print("⚠️ 未找到腾讯云密钥，请设置TENCENTCLOUD_SECRET_ID和TENCENTCLOUD_SECRET_KEY环境变量")
+                    self.client = None
+                    return
+                
+                cred = credential.Credential(secret_id, secret_key)
+            
+            # 实例化HTTP选项
+            httpProfile = HttpProfile()
+            httpProfile.endpoint = "ai3d.tencentcloudapi.com"
+            
+            # 实例化client选项
+            clientProfile = ClientProfile()
+            clientProfile.httpProfile = httpProfile
+            
+            # 实例化AI3D客户端
+            self.client = self.ai3d_client.Ai3dClient(cred, "ap-guangzhou", clientProfile)
+            
+            print("✅ 腾讯云AI3D客户端初始化成功")
+            
+        except Exception as e:
+            print(f"❌ 腾讯云客户端初始化失败: {str(e)}")
+            self.client = None
     
     def generate_3d_model(self, image_path):
-        """从2D图片生成3D模型 - 使用本地算法"""
+        """从2D图片生成3D模型"""
         try:
             print("🎯 开始生成3D模型...")
             
-            # 分析图像获取轮廓信息
-            contour, image_data = self._analyze_image_for_3d(image_path)
+            # 检查AI3D API是否可用
+            if not self.client:
+                raise Exception("❌ 腾讯云AI3D服务不可用，请检查API密钥配置")
             
-            # 生成输出文件名
-            base_name = os.path.splitext(os.path.basename(image_path))[0]
-            model_id = str(uuid.uuid4())[:8]
-            model_filename = f"{base_name}_3d_{model_id}.gltf"
-            model_path = os.path.join(self.models_folder, model_filename)
+            # 使用腾讯云AI3D API生成3D模型
+            model_path = self._generate_with_ai3d_api(image_path)
+            if model_path:
+                return model_path
             
-            # 基于轮廓创建GLTF模型
-            gltf_content = self._create_enhanced_gltf(contour, image_data, base_name)
-            
-            # 保存GLTF文件
-            with open(model_path, 'w', encoding='utf-8') as f:
-                f.write(gltf_content)
-            
-            print(f"🎨 3D模型生成完成: {model_path}")
-            return model_path
+            # API调用失败，抛出错误
+            raise Exception("❌ 腾讯云AI3D服务调用失败，请稍后重试")
             
         except Exception as e:
             print(f"❌ 3D模型生成错误: {str(e)}")
+            raise e
+    
+    def _generate_with_ai3d_api(self, image_path):
+        """使用腾讯云AI3D API生成3D模型"""
+        try:
+            print("🚀 调用腾讯云AI3D API...")
+            
+            # 检查客户端和模型是否可用
+            if not self.client or not hasattr(self, 'models'):
+                raise Exception("AI3D客户端未初始化")
+            
+            # 读取并编码图片
+            image_base64 = self._encode_image_to_base64(image_path)
+            if not image_base64:
+                return None
+            
+            # 创建请求对象
+            req = self.models.SubmitHunyuanTo3DJobRequest()
+            params = {
+                "ImageBase64": image_base64,
+                "ResultFormat": "GLB"  # 生成模型的格式：OBJ，GLB，STL，USDZ，FBX，MP4
+            }
+            req.from_json_string(json.dumps(params))
+            
+            # 提交3D生成任务
+            resp = self.client.SubmitHunyuanTo3DJob(req)
+            result = json.loads(resp.to_json_string())
+            
+            if 'JobId' in result:
+                job_id = result['JobId']
+                print(f"✅ 3D生成任务已提交，JobId: {job_id}")
+                
+                # 轮询任务状态
+                model_url = self._poll_job_status(job_id)
+                if model_url:
+                    # 下载模型文件
+                    return self._download_3d_model(model_url, image_path)
+            
+            return None
+            
+        except TencentCloudSDKException as e:
+            print(f"❌ 腾讯云SDK错误: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ AI3D API调用错误: {str(e)}")
             return None
     
-    def _analyze_image_for_3d(self, image_path):
-        """分析图像以获取3D生成所需的信息"""
+    def _poll_job_status(self, job_id, max_attempts=30):
+        """轮询任务状态"""
         try:
-            # 读取图像
-            image = cv2.imread(image_path)
-            if image is None:
-                raise ValueError("无法读取图像文件")
+            # 检查客户端和模型是否可用
+            if not self.client or not hasattr(self, 'models'):
+                raise Exception("AI3D客户端未初始化")
             
-            # 转换为灰度图
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            for attempt in range(max_attempts):
+                print(f"⏳ 检查任务状态... ({attempt + 1}/{max_attempts})")
+                
+                # 查询任务状态
+                req = self.models.QueryHunyuanTo3DJobRequest()
+                params = {"JobId": job_id}
+                req.from_json_string(json.dumps(params))
+                
+                resp = self.client.QueryHunyuanTo3DJob(req)
+                result = json.loads(resp.to_json_string())
+                
+                if 'Status' in result:
+                    status = result['Status']
+                    print(f"📊 任务状态: {status}")
+                    
+                    if status in ['SUCCESS', 'DONE']:  # 修复：添加DONE状态
+                        # 检查是否有模型文件
+                        result_files = result.get('ResultFile3Ds', [])
+                        if result_files:
+                            model_url = result_files[0].get('Url', '')
+                            print(f"🎉 3D模型生成完成: {model_url}")
+                            return model_url
+                        else:
+                            # 尝试旧的字段名
+                            model_url = result.get('ModelUrl', '')
+                            if model_url:
+                                print(f"🎉 3D模型生成完成: {model_url}")
+                                return model_url
+                            else:
+                                print("❌ 3D模型生成完成但未找到下载链接")
+                                return None
+                    elif status in ['FAILED', 'ERROR']:
+                        error_msg = result.get('ErrorMessage', '生成失败')
+                        print(f"❌ 3D模型生成失败: {error_msg}")
+                        return None
+                    elif status in ['PROCESSING', 'PENDING', 'RUN', 'RUNNING']:
+                        time.sleep(10)  # 等待10秒后重试
+                        continue
+                
+                time.sleep(5)  # 短暂等待
             
-            # 应用高斯模糊
-            blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            print("⏰ 任务查询超时")
+            return None
             
-            # 自适应阈值处理
-            thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+        except Exception as e:
+            print(f"❌ 任务状态查询错误: {str(e)}")
+            return None
+    
+    def _download_3d_model(self, model_url, image_path):
+        """下载GLB格式的3D模型文件"""
+        try:
+            print(f"📥 下载GLB格式3D模型...")
             
-            # 查找轮廓
-            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            # 选择最大的轮廓
-            if contours:
-                main_contour = max(contours, key=cv2.contourArea)
-                # 简化轮廓
-                epsilon = 0.02 * cv2.arcLength(main_contour, True)
-                simplified_contour = cv2.approxPolyDP(main_contour, epsilon, True)
+            response = requests.get(model_url, timeout=60)
+            if response.status_code == 200:
+                # 生成文件名
+                base_name = os.path.splitext(os.path.basename(image_path))[0]
+                unique_id = str(uuid.uuid4())[:8]
+                
+                # 直接保存为GLB文件
+                glb_filename = f"{base_name}_ai3d_{unique_id}.glb"
+                glb_path = os.path.join(self.models_folder, glb_filename)
+                
+                with open(glb_path, 'wb') as f:
+                    f.write(response.content)
+                
+                print(f"✅ GLB模型下载完成: {glb_path}")
+                return glb_path
+                
             else:
-                # 如果没找到轮廓，创建一个默认的矩形轮廓
-                h, w = gray.shape
-                simplified_contour = np.array([[[w//4, h//4]], [[3*w//4, h//4]], [[3*w//4, 3*h//4]], [[w//4, 3*h//4]]])
-            
-            # 获取图像信息
-            image_data = {
-                'width': image.shape[1],
-                'height': image.shape[0],
-                'channels': image.shape[2] if len(image.shape) == 3 else 1
-            }
-            
-            return simplified_contour, image_data
-            
+                print(f"❌ 模型下载失败: {response.status_code}")
+                return None
+                
         except Exception as e:
-            print(f"图像分析错误: {str(e)}")
-            # 返回默认数据
-            default_contour = np.array([[[100, 100]], [[300, 100]], [[300, 300]], [[100, 300]]])
-            default_data = {'width': 400, 'height': 400, 'channels': 3}
-            return default_contour, default_data
-    
-    def _create_enhanced_gltf(self, contour, image_data, model_name):
-        """创建增强的GLTF 3D模型"""
+            print(f"❌ 模型下载错误: {str(e)}")
+            return None
+    def _encode_image_to_base64(self, image_path):
+        """将图片编码为base64格式"""
         try:
-            # 归一化轮廓坐标
-            width = image_data['width']
-            height = image_data['height']
-            
-            # 将轮廓点转换为3D坐标
-            vertices = []
-            indices = []
-            
-            # 底部顶点
-            for i, point in enumerate(contour):
-                x = (point[0][0] / width - 0.5) * 2  # 归一化到[-1, 1]
-                z = -(point[0][1] / height - 0.5) * 2  # Z轴，翻转Y坐标
-                vertices.extend([x, 0.0, z])  # 底部 Y=0
-            
-            # 顶部顶点
-            extrude_height = 0.3  # 挤出高度
-            for i, point in enumerate(contour):
-                x = (point[0][0] / width - 0.5) * 2
-                z = -(point[0][1] / height - 0.5) * 2
-                vertices.extend([x, extrude_height, z])  # 顶部
-            
-            # 生成索引
-            n = len(contour)
-            
-            # 底面三角形
-            for i in range(1, n - 1):
-                indices.extend([0, i, i + 1])
-            
-            # 顶面三角形
-            for i in range(1, n - 1):
-                indices.extend([n, n + i + 1, n + i])
-            
-            # 侧面
-            for i in range(n):
-                next_i = (i + 1) % n
-                # 每个侧面两个三角形
-                indices.extend([i, i + n, next_i])
-                indices.extend([next_i, i + n, next_i + n])
-            
-            # 构建GLTF结构
-            gltf = {
-                "asset": {
-                    "version": "2.0",
-                    "generator": "AI创意工坊 3D生成器"
-                },
-                "scene": 0,
-                "scenes": [
-                    {
-                        "nodes": [0]
-                    }
-                ],
-                "nodes": [
-                    {
-                        "mesh": 0,
-                        "name": model_name
-                    }
-                ],
-                "meshes": [
-                    {
-                        "primitives": [
-                            {
-                                "attributes": {
-                                    "POSITION": 0
-                                },
-                                "indices": 1,
-                                "material": 0
-                            }
-                        ]
-                    }
-                ],
-                "accessors": [
-                    {
-                        "bufferView": 0,
-                        "componentType": 5126,  # FLOAT
-                        "count": len(vertices) // 3,
-                        "type": "VEC3",
-                        "max": [max(vertices[::3]), max(vertices[1::3]), max(vertices[2::3])],
-                        "min": [min(vertices[::3]), min(vertices[1::3]), min(vertices[2::3])]
-                    },
-                    {
-                        "bufferView": 1,
-                        "componentType": 5123,  # UNSIGNED_SHORT
-                        "count": len(indices),
-                        "type": "SCALAR"
-                    }
-                ],
-                "bufferViews": [
-                    {
-                        "buffer": 0,
-                        "byteOffset": 0,
-                        "byteLength": len(vertices) * 4,  # 4 bytes per float
-                        "target": 34962  # ARRAY_BUFFER
-                    },
-                    {
-                        "buffer": 0,
-                        "byteOffset": len(vertices) * 4,
-                        "byteLength": len(indices) * 2,  # 2 bytes per short
-                        "target": 34963  # ELEMENT_ARRAY_BUFFER
-                    }
-                ],
-                "buffers": [
-                    {
-                        "byteLength": len(vertices) * 4 + len(indices) * 2,
-                        "uri": f"data:application/octet-stream;base64,{self._create_buffer_data(vertices, indices)}"
-                    }
-                ],
-                "materials": [
-                    {
-                        "name": "DefaultMaterial",
-                        "pbrMetallicRoughness": {
-                            "baseColorFactor": [0.8, 0.6, 0.9, 1.0],  # 淡紫色
-                            "metallicFactor": 0.1,
-                            "roughnessFactor": 0.8
-                        }
-                    }
-                ]
-            }
-            
-            return json.dumps(gltf, indent=2)
-            
+            with open(image_path, 'rb') as image_file:
+                return base64.b64encode(image_file.read()).decode('utf-8')
         except Exception as e:
-            print(f"GLTF生成错误: {str(e)}")
-            return self._create_simple_cube_gltf(model_name)
-    
-    def _create_buffer_data(self, vertices, indices):
-        """创建缓冲区数据"""
-        import struct
-        
-        # 将顶点数据转换为字节
-        vertex_bytes = struct.pack(f'{len(vertices)}f', *vertices)
-        
-        # 将索引数据转换为字节
-        index_bytes = struct.pack(f'{len(indices)}H', *indices)
-        
-        # 合并数据
-        buffer_data = vertex_bytes + index_bytes
-        
-        # 转换为base64
-        return base64.b64encode(buffer_data).decode('utf-8')
-    
-    def _create_simple_cube_gltf(self, model_name):
-        """创建简单的立方体GLTF模型作为备选"""
-        gltf = {
-            "asset": {
-                "version": "2.0",
-                "generator": "AI创意工坊 简单3D生成器"
-            },
-            "scene": 0,
-            "scenes": [{"nodes": [0]}],
-            "nodes": [{"mesh": 0, "name": model_name}],
-            "meshes": [{
-                "primitives": [{
-                    "attributes": {"POSITION": 0},
-                    "indices": 1,
-                    "material": 0
-                }]
-            }],
-            "accessors": [
-                {
-                    "bufferView": 0,
-                    "componentType": 5126,
-                    "count": 8,
-                    "type": "VEC3",
-                    "max": [0.5, 0.5, 0.5],
-                    "min": [-0.5, -0.5, -0.5]
-                },
-                {
-                    "bufferView": 1,
-                    "componentType": 5123,
-                    "count": 36,
-                    "type": "SCALAR"
-                }
-            ],
-            "bufferViews": [
-                {"buffer": 0, "byteOffset": 0, "byteLength": 96, "target": 34962},
-                {"buffer": 0, "byteOffset": 96, "byteLength": 72, "target": 34963}
-            ],
-            "buffers": [{
-                "byteLength": 168,
-                "uri": "data:application/octet-stream;base64,AAC/vwAAvr8AAL6/AAC+vwAAvr8AAL+/AAC/vwAAvr8AAL+/AAC/vwAAvr8AAL6/AAC/vwAAvb8AAL6/AAC/vwAAvb8AAL+/AAC/vwAAvb8AAL+/AAC/vwAAvb8AAL6/AAABAAIAAgADAAAABABFAAUABgAGAEcABAAIAAkACQAKAAgACwAMAAwADQALAA4ADwAPABAADgA="
-            }],
-            "materials": [{
-                "name": "DefaultMaterial",
-                "pbrMetallicRoughness": {
-                    "baseColorFactor": [0.7, 0.8, 0.9, 1.0],
-                    "metallicFactor": 0.0,
-                    "roughnessFactor": 0.9
-                }
-            }]
-        }
-        
-        return json.dumps(gltf, indent=2)
+            print(f"❌ 图片编码错误: {str(e)}")
+            return None
+
+
+# 向后兼容的别名
+Simple3DGenerator = Hunyuan3DGenerator

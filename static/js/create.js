@@ -272,35 +272,98 @@ function load3DModel(modelUrl) {
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
-    // 加载模型
-    const loader = new THREE.GLTFLoader();
-    loader.load(modelUrl, function(gltf) {
-        scene.add(gltf.scene);
+    // 添加控制器
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    
+    // 渲染循环
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // 根据文件扩展名选择合适的加载器
+    const fileExtension = modelUrl.split('.').pop().toLowerCase();
+    
+    if (fileExtension === 'obj') {
+        // 构建MTL文件路径（假设与OBJ文件同名）
+        const mtlUrl = modelUrl.replace('.obj', '.mtl');
         
-        // 调整相机位置
-        camera.position.z = 5;
-        
-        // 添加控制器
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        
-        // 渲染循环
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-        animate();
-        
-        // 移除加载占位符
-        const placeholder = container.querySelector('.model-placeholder');
-        if (placeholder) {
-            placeholder.remove();
-        }
-    }, undefined, function(error) {
-        console.error('3D模型加载失败:', error);
-        showMessage('3D模型加载失败', 'error');
-    });
+        // 先尝试加载MTL材质文件
+        const mtlLoader = new THREE.MTLLoader();
+        mtlLoader.load(mtlUrl, function(materials) {
+            materials.preload();
+            
+            // 使用材质加载OBJ文件
+            const objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.load(modelUrl, function(object) {
+                scene.add(object);
+                
+                // 调整相机位置
+                camera.position.z = 5;
+                
+                // 移除加载占位符
+                const placeholder = container.querySelector('.model-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+            }, undefined, function(error) {
+                console.error('OBJ模型加载失败:', error);
+                showMessage('3D模型加载失败', 'error');
+            });
+        }, undefined, function(error) {
+            console.warn('MTL材质文件加载失败，使用默认材质:', error);
+            
+            // MTL加载失败，使用默认材质加载OBJ
+            const objLoader = new THREE.OBJLoader();
+            objLoader.load(modelUrl, function(object) {
+                // 为OBJ模型添加基础材质
+                object.traverse(function(child) {
+                    if (child.isMesh) {
+                        child.material = new THREE.MeshLambertMaterial({ 
+                            color: 0x888888,
+                            map: null // 清除可能的贴图引用
+                        });
+                    }
+                });
+                
+                scene.add(object);
+                
+                // 调整相机位置
+                camera.position.z = 5;
+                
+                // 移除加载占位符
+                const placeholder = container.querySelector('.model-placeholder');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+            }, undefined, function(error) {
+                console.error('OBJ模型加载失败:', error);
+                showMessage('3D模型加载失败', 'error');
+            });
+        });
+    } else {
+        // 默认使用GLTF加载器
+        const loader = new THREE.GLTFLoader();
+        loader.load(modelUrl, function(gltf) {
+            scene.add(gltf.scene);
+            
+            // 调整相机位置
+            camera.position.z = 5;
+            
+            // 移除加载占位符
+            const placeholder = container.querySelector('.model-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+        }, undefined, function(error) {
+            console.error('GLTF模型加载失败:', error);
+            showMessage('3D模型加载失败', 'error');
+        });
+    }
 }
 
 // 下载图片
