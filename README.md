@@ -4,6 +4,7 @@
 
 ## 🎨 项目特色
 
+- **🍌 Nano Banana 图像生成** - 使用 Google Gemini 2.5 Flash Image (Nano Banana) 进行AI图像生成
 - **简笔画上传** - 支持多种图片格式，拖拽式上传体验
 - **AI智能上色** - 使用Google Gemini 2.5 Flash Image为简笔画智能上色
 - **手办风格转换** - 生成精美的手办风格图片
@@ -12,13 +13,21 @@
 - **作品展示** - 精美的作品画廊和社区分享功能
 - **教育内容** - 寓教于乐的AI知识学习模块
 
+## 📚 文档
+
+- [Nano Banana 实现文档](NANO_BANANA_IMPLEMENTATION.md) - 详细的功能实现和使用指南
+- [API 设置指南](GEMINI_API_SETUP.md) - Gemini API 配置说明
+- [项目完成报告](PROJECT_COMPLETION_REPORT.md) - 项目成就和升级总结
+
 ## 🚀 技术栈
 
 ### 后端
 - **Python Flask** - Web应用框架
+- **Google Generative AI** - Gemini 2.5 Flash Image (Nano Banana) API 集成
 - **Pillow** - 图像处理库
 - **OpenCV** - 计算机视觉库
 - **Requests** - HTTP请求库
+- **Python Dotenv** - 环境变量管理
 
 ### 前端
 - **HTML5** - 语义化结构
@@ -27,9 +36,21 @@
 - **Three.js** - 3D图形渲染
 
 ### AI服务
-- **Google Gemini 2.5 Flash Image** - 智能图像上色和风格转换（主要）
+- **Google Gemini 2.5 Flash Image (Nano Banana)** - 智能图像生成、上色和风格转换
 - **OpenCV** - 本地图像处理（备用方案）
 - **Hunyuan3D API** - 基于轮廓的3D模型生成
+
+## ✅ Nano Banana 功能状态
+
+本项目已成功实现 Nano Banana (Gemini 2.5 Flash Image) 图像生成功能：
+
+- ✅ **文字生成图片** - 根据文字描述自动生成儿童友好的图片
+- ✅ **智能上色** - 为手绘简笔画进行AI智能上色
+- ✅ **手办风格** - 生成逼真的手办风格效果
+- ✅ **自动降级** - API不可用时自动使用备用方案
+- ✅ **完整测试** - 包含全面的功能测试套件
+
+详细文档请参阅: [NANO_BANANA_IMPLEMENTATION.md](NANO_BANANA_IMPLEMENTATION.md)
 
 ## 📁 项目结构
 
@@ -61,13 +82,35 @@ HLTraining/
 
 ## 🛠️ 安装和运行
 
+### 快速开始
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/why198546/HLTraining.git
+cd HLTraining
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 配置 API 密钥（可选，但推荐）
+export GEMINI_API_KEY='your-gemini-api-key-here'
+
+# 4. 运行应用
+python app.py
+
+# 5. 访问应用
+# 打开浏览器访问: http://localhost:5001
+```
+
+### 详细步骤
+
 ### 1. 克隆项目
 ```bash
-git clone <repository-url>
+git clone https://github.com/why198546/HLTraining.git
 cd HLTraining
 ```
 
-### 2. 创建虚拟环境
+### 2. 创建虚拟环境（推荐）
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
@@ -83,16 +126,31 @@ pip install -r requirements.txt
 ### 4. 配置API密钥
 设置环境变量：
 ```bash
-export NANO_BANANA_API_KEY="your-nano-banana-api-key"
-export HUNYUAN3D_API_KEY="your-hunyuan3d-api-key"
+# 获取 Gemini API 密钥: https://aistudio.google.com/app/apikey
+export GEMINI_API_KEY="your-gemini-api-key-here"
+
+# 或者创建 .env 文件
+cp .env.example .env
+# 编辑 .env 文件，填入你的 API 密钥
 ```
+
+**注意:** 没有 API 密钥时，系统会自动使用备用方案（基于 OpenCV 的本地处理）。
 
 ### 5. 运行应用
 ```bash
 python app.py
 ```
 
-应用将在 `http://localhost:5000` 启动。
+应用将在 `http://localhost:5001` 启动。
+
+### 6. 运行测试（可选）
+```bash
+# 测试 Nano Banana 功能
+python test_nano_banana_functionality.py
+
+# 测试 API 端点
+python test_api_endpoints.py
+```
 
 ## 🎯 使用指南
 
