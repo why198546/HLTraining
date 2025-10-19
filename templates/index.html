@@ -33,44 +33,39 @@
         <section id="home" class="hero">
             <div class="hero-content">
                 <h1 class="hero-title">欢迎来到AI创意工坊！</h1>
-                <p class="hero-subtitle">两种创作模式，释放你的想象力！</p>
-                <div class="creation-modes">
-                    <div class="mode-card" data-mode="text-to-image">
-                        <div class="mode-icon">
-                            <i class="fas fa-pen-fancy"></i>
+                <p class="hero-subtitle">用文字描述或上传线稿，AI帮你创造精美作品！</p>
+                <div class="creation-flow">
+                    <div class="flow-steps">
+                        <div class="flow-step">
+                            <div class="step-icon">📝</div>
+                            <div class="step-text">输入描述 + 上传图片</div>
                         </div>
-                        <h3>文字创作模式</h3>
-                        <p>用文字描述你的想象，AI直接为你生成图片和3D模型</p>
-                        <div class="mode-steps">
-                            <span class="step">📝 输入描述</span>
-                            <span class="arrow">→</span>
-                            <span class="step">🎨 AI生成图片</span>
-                            <span class="arrow">→</span>
-                            <span class="step">🧊 生成3D模型</span>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="step-icon">🎨</div>
+                            <div class="step-text">AI生成图片</div>
                         </div>
-                        <button class="mode-btn" onclick="selectMode('text-to-image')">开始文字创作</button>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="step-icon">✏️</div>
+                            <div class="step-text">调整完善</div>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-step">
+                            <div class="step-icon">🧊</div>
+                            <div class="step-text">生成3D模型</div>
+                        </div>
                     </div>
-                    <div class="mode-card" data-mode="sketch-to-model">
-                        <div class="mode-icon">
-                            <i class="fas fa-paint-brush"></i>
-                        </div>
-                        <h3>手绘创作模式</h3>
-                        <p>上传你的简笔画，AI根据你的要求为它上色并生成3D模型</p>
-                        <div class="mode-steps">
-                            <span class="step">✏️ 上传线稿</span>
-                            <span class="arrow">→</span>
-                            <span class="step">🎨 AI智能上色</span>
-                            <span class="arrow">→</span>
-                            <span class="step">🧊 生成3D模型</span>
-                        </div>
-                        <button class="mode-btn" onclick="selectMode('sketch-to-model')">开始手绘创作</button>
-                    </div>
+                    <button class="start-creation-btn" onclick="startCreation()">
+                        <i class="fas fa-magic"></i>
+                        开始创作
+                    </button>
                 </div>
             </div>
         </section>
 
-        <!-- 文字创作区域 -->
-        <section id="text-creation" class="creation-section" style="display: none;">
+        <!-- 统一创作界面 -->
+        <section id="creation-workspace" class="creation-section" style="display: none;">
             <div class="container">
                 <div class="back-to-home">
                     <button onclick="backToHome()" class="back-btn">
@@ -79,26 +74,44 @@
                     </button>
                 </div>
                 <h2 class="section-title">
-                    <i class="fas fa-pen-fancy"></i>
-                    文字创作模式
+                    <i class="fas fa-magic"></i>
+                    AI创意工坊
                 </h2>
-                <p class="section-subtitle">描述你想要的图片，AI会为你创造出来！</p>
+                <p class="section-subtitle">文字描述 + 图片上传，让AI理解你的创意！</p>
                 
-                <div class="text-creation-area">
-                    <div class="input-group">
-                        <label for="text-prompt">
+                <!-- 创作输入区域 -->
+                <div class="creation-input-area">
+                    <div class="prompt-input-container">
+                        <label for="creation-prompt">
                             <i class="fas fa-lightbulb"></i>
                             描述你的创意
                         </label>
-                        <textarea 
-                            id="text-prompt" 
-                            class="text-input" 
-                            placeholder="例如：一只可爱的小猫咪，戴着红色的帽子，坐在彩虹上...&#10;&#10;发挥你的想象力，描述得越详细，AI生成的图片越精美！"
-                            rows="6"
-                        ></textarea>
-                        <div class="input-hint">
-                            💡 <strong>创作小贴士：</strong>可以描述颜色、形状、表情、背景等细节
+                        <div class="input-wrapper">
+                            <textarea 
+                                id="creation-prompt" 
+                                class="creation-input" 
+                                placeholder="例如：一只可爱的小猫咪，戴着红色的帽子，坐在彩虹上...&#10;&#10;你可以只用文字描述，也可以上传图片作为参考！"
+                                rows="4"
+                            ></textarea>
+                            <button class="add-image-btn" onclick="triggerImageUpload()" title="上传参考图片">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <input type="file" id="reference-image" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
                         </div>
+                        <div class="input-hint">
+                            💡 <strong>创作小贴士：</strong>可以描述颜色、形状、表情、背景等细节，或上传线稿图片
+                        </div>
+                    </div>
+
+                    <!-- 上传的图片预览 -->
+                    <div id="uploaded-image-preview" class="image-preview" style="display: none;">
+                        <div class="preview-header">
+                            <span><i class="fas fa-image"></i> 参考图片</span>
+                            <button class="remove-image-btn" onclick="removeUploadedImage()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <img id="uploaded-image" src="" alt="上传的参考图片">
                     </div>
                     
                     <div class="generation-options">
@@ -122,148 +135,112 @@
                         </div>
                     </div>
                     
-                    <button id="generate-from-text" class="generate-btn">
+                    <button id="generate-image" class="generate-btn">
                         <i class="fas fa-wand-magic-sparkles"></i>
-                        开始创作
+                        生成图片
                     </button>
                 </div>
-            </div>
-        </section>
 
-        <!-- 手绘创作区域 -->
-        <section id="sketch-creation" class="creation-section" style="display: none;">
-            <div class="container">
-                <div class="back-to-home">
-                    <button onclick="backToHome()" class="back-btn">
-                        <i class="fas fa-arrow-left"></i>
-                        返回首页
-                    </button>
-                </div>
-                <h2 class="section-title">
-                    <i class="fas fa-paint-brush"></i>
-                    手绘创作模式
-                </h2>
-                <p class="section-subtitle">上传你的简笔画，AI会根据你的要求为它上色并生成3D模型</p>
-                
-                <!-- 描述输入区域 -->
-                <div class="description-area">
-                    <h3><i class="fas fa-comments"></i> 告诉AI你想要什么样的效果</h3>
-                    <textarea 
-                        id="sketch-description" 
-                        class="description-input" 
-                        placeholder="例如：给这只小猫涂上橙色，背景加上蓝天白云；或者：把这个机器人涂成银色，加上发光效果...&#10;&#10;你也可以指定风格：卡通风格、写实风格、动漫风格等"
-                        rows="4"
-                    ></textarea>
-                    <p class="description-hint">💡 描述越详细，AI生成的效果越好！你可以指定颜色、风格、背景、材质等</p>
-                </div>
+                <!-- 生成结果区域 -->
+                <div id="generation-result" class="result-area" style="display: none;">
+                    <h3 class="result-title">
+                        <i class="fas fa-image"></i>
+                        AI生成结果
+                    </h3>
+                    
+                    <div class="generated-image-container">
+                        <img id="generated-image" src="" alt="AI生成的图片">
+                        <div class="image-actions">
+                            <button class="action-btn regenerate-btn" onclick="regenerateImage()">
+                                <i class="fas fa-redo"></i>
+                                重新生成
+                            </button>
+                            <button class="action-btn adjust-btn" onclick="showAdjustPanel()">
+                                <i class="fas fa-sliders-h"></i>
+                                调整图片
+                            </button>
+                            <button class="action-btn confirm-btn" onclick="confirmAndGenerate3D()">
+                                <i class="fas fa-cube"></i>
+                                确认并生成3D
+                            </button>
+                        </div>
+                    </div>
 
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-content">
-                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                        <h3>拖拽你的简笔画到这里，或点击选择文件</h3>
-                        <p>支持PNG、JPG、JPEG、GIF、BMP格式，建议线条清晰的简笔画</p>
-                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
-                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
-                            选择简笔画文件
-                        </button>
+                    <!-- 调整面板 -->
+                    <div id="adjust-panel" class="adjust-panel" style="display: none;">
+                        <h4><i class="fas fa-edit"></i> 调整提示</h4>
+                        <textarea 
+                            id="adjustment-prompt" 
+                            class="adjustment-input" 
+                            placeholder="例如：让颜色更鲜艳一些，改变背景为森林..."
+                            rows="3"
+                        ></textarea>
+                        <div class="adjust-actions">
+                            <button class="apply-adjust-btn" onclick="applyAdjustment()">
+                                <i class="fas fa-check"></i>
+                                应用调整
+                            </button>
+                            <button class="cancel-adjust-btn" onclick="hideAdjustPanel()">
+                                <i class="fas fa-times"></i>
+                                取消
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 进度条 -->
-                <div class="progress-container" id="progressContainer" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">正在处理...</div>
-                </div>
-
-                <!-- 处理步骤 -->
-                <div class="processing-steps" id="processingSteps" style="display: none;">
-                    <div class="step" id="step1">
-                        <i class="fas fa-upload"></i>
-                        <span>上传线稿</span>
-                        <div class="step-status"></div>
-                    </div>
-                    <div class="step" id="step2">
-                        <i class="fas fa-palette"></i>
-                        <span>AI智能上色</span>
-                        <div class="step-status"></div>
-                    </div>
-                    <div class="step" id="step3">
+                <!-- 3D生成结果区域 -->
+                <div id="model-generation-result" class="model-result-area" style="display: none;">
+                    <h3 class="result-title">
                         <i class="fas fa-cube"></i>
-                        <span>生成3D模型</span>
-                        <div class="step-status"></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 结果展示 -->
-        <section id="results" class="results-section" style="display: none;">
-            <div class="container">
-                <h2 class="section-title">你的作品完成了！</h2>
-                
-                <div class="results-grid">
-                    <!-- 原始图片 -->
-                    <div class="result-item">
-                        <h3>原始简笔画</h3>
-                        <div class="image-container">
-                            <img id="originalImage" src="" alt="原始图片">
-                        </div>
-                    </div>
+                        3D模型生成完成！
+                    </h3>
                     
-                    <!-- 上色后图片 -->
-                    <div class="result-item">
-                        <h3>AI上色效果</h3>
-                        <div class="image-container">
-                            <img id="coloredImage" src="" alt="上色图片">
-                        </div>
-                        <button class="download-btn" id="downloadColored">
-                            <i class="fas fa-download"></i>
-                            下载上色图片
-                        </button>
-                    </div>
-                    
-                    <!-- 手办风格 -->
-                    <div class="result-item">
-                        <h3>手办风格</h3>
-                        <div class="image-container">
-                            <img id="figurineImage" src="" alt="手办图片">
-                        </div>
-                        <button class="download-btn" id="downloadFigurine">
-                            <i class="fas fa-download"></i>
-                            下载手办图片
-                        </button>
-                    </div>
-                    
-                    <!-- 3D模型展示 -->
-                    <div class="result-item result-3d">
-                        <h3>3D模型预览</h3>
-                        <div class="model-container" id="modelContainer">
-                            <!-- Three.js 3D模型将在这里渲染 -->
-                        </div>
-                        <div class="model-controls">
-                            <button class="control-btn" id="rotateModel">
-                                <i class="fas fa-sync-alt"></i>
-                                自动旋转
-                            </button>
-                            <button class="download-btn" id="download3D">
+                    <div class="final-results-grid">
+                        <!-- 最终图片 -->
+                        <div class="final-result-item">
+                            <h4>最终图片</h4>
+                            <div class="image-container">
+                                <img id="final-image" src="" alt="最终确认的图片">
+                            </div>
+                            <button class="download-btn" onclick="downloadImage()">
                                 <i class="fas fa-download"></i>
-                                下载3D模型
+                                下载图片
                             </button>
                         </div>
+                        
+                        <!-- 3D模型预览 -->
+                        <div class="final-result-item model-preview">
+                            <h4>3D模型预览</h4>
+                            <div class="model-container" id="modelContainer">
+                                <!-- Three.js 3D模型将在这里渲染 -->
+                                <div class="model-placeholder">
+                                    <i class="fas fa-cube"></i>
+                                    <p>3D模型加载中...</p>
+                                </div>
+                            </div>
+                            <div class="model-controls">
+                                <button class="control-btn" id="rotateModel">
+                                    <i class="fas fa-sync-alt"></i>
+                                    自动旋转
+                                </button>
+                                <button class="download-btn" id="download3D">
+                                    <i class="fas fa-download"></i>
+                                    下载3D模型
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="action-buttons">
-                    <button class="secondary-btn" onclick="resetUpload()">
-                        <i class="fas fa-redo"></i>
-                        重新开始
-                    </button>
-                    <button class="primary-btn" onclick="shareResults()">
-                        <i class="fas fa-share"></i>
-                        分享作品
-                    </button>
+                    
+                    <div class="final-actions">
+                        <button class="secondary-btn" onclick="startNewCreation()">
+                            <i class="fas fa-plus"></i>
+                            创建新作品
+                        </button>
+                        <button class="primary-btn" onclick="shareCreation()">
+                            <i class="fas fa-share"></i>
+                            分享我的创作
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>

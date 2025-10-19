@@ -485,3 +485,92 @@ class NanoBananaAPI:
             radius = random.randint(20, 60)
             color = (random.randint(100, 255), random.randint(100, 255), random.randint(100, 255))
             draw.ellipse([x-radius, y-radius, x+radius, y+radius], fill=color)
+
+    # 新的统一工作流程方法
+    def generate_image_from_sketch(self, sketch_path):
+        """从手绘图片生成图片（纯图片模式）"""
+        try:
+            print(f"🎨 纯图片模式：为手绘图生成AI图片 - {sketch_path}")
+            
+            # 使用已有的上色方法
+            return self.colorize_sketch(sketch_path, "")
+            
+        except Exception as e:
+            print(f"❌ 纯图片模式生成失败: {str(e)}")
+            return None
+
+    def generate_image_from_sketch_and_text(self, sketch_path, text_prompt):
+        """从手绘图片和文字描述生成图片（图片+文字模式）"""
+        try:
+            print(f"🎨 图片+文字模式：{sketch_path} + {text_prompt}")
+            
+            # 使用上色方法，传入文字描述
+            return self.colorize_sketch(sketch_path, text_prompt)
+            
+        except Exception as e:
+            print(f"❌ 图片+文字模式生成失败: {str(e)}")
+            return None
+
+    def adjust_image(self, current_image_path, adjust_prompt):
+        """调整现有图片"""
+        try:
+            print(f"🔧 图片调整模式：{current_image_path} - 调整说明: {adjust_prompt}")
+            
+            if not self.client:
+                raise Exception("Nano Banana API未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 读取当前图片
+            with open(current_image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # 构建调整提示词
+            prompt = f"""
+请根据用户的调整要求修改这张图片：
+
+用户调整要求：{adjust_prompt}
+
+请按照以下标准执行：
+1. 严格按照用户的调整要求进行修改
+2. 保持图片的整体风格和质量
+3. 确保修改后的图片适合10-14岁儿童
+4. 保持色彩鲜艳和谐
+5. 如果是颜色调整，要确保搭配合理
+6. 如果是内容调整，要保持原有的基本构图
+
+请生成调整后的图片！
+"""
+            
+            # 将图像转换为PIL Image对象
+            pil_image = Image.open(io.BytesIO(image_bytes))
+            
+            response = self.client.generate_content([
+                prompt,
+                pil_image
+            ])
+            
+            # 提取生成的图像
+            image_parts = [
+                part.inline_data.data
+                for part in response.candidates[0].content.parts
+                if part.inline_data
+            ]
+            
+            if image_parts:
+                # 保存调整后的图像
+                timestamp = int(time.time())
+                base_name = os.path.splitext(os.path.basename(current_image_path))[0]
+                adjusted_filename = f"{base_name}_adjusted_{timestamp}.png"
+                adjusted_path = os.path.join(self.upload_folder, adjusted_filename)
+                
+                # 保存图像
+                with open(adjusted_path, 'wb') as f:
+                    f.write(image_parts[0])
+                
+                print(f"✅ 图片调整完成: {adjusted_path}")
+                return adjusted_path
+            else:
+                raise Exception("未能生成调整后的图片")
+                
+        except Exception as e:
+            print(f"❌ 图片调整失败: {str(e)}")
+            return None

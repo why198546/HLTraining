@@ -48,257 +48,162 @@ def preprocess_sketch(image_path):
         print(f"图片预处理错误: {str(e)}")
         return None
 
+def generate_3d_model_from_image(image_path):
+    """从图片生成3D模型的辅助函数"""
+    try:
+        print(f"🧊 开始3D模型生成: {image_path}")
+        
+        # 初始化Hunyuan3D API
+        hunyuan_api = Hunyuan3DAPI()
+        
+        # 生成3D模型
+        model_path = hunyuan_api.generate_3d_model(image_path)
+        
+        if model_path:
+            print(f"✅ 3D模型生成成功: {model_path}")
+            return model_path.replace('uploads/', '/uploads/')
+        else:
+            print("❌ 3D模型生成失败")
+            return None
+            
+    except Exception as e:
+        print(f"❌ 3D模型生成错误: {str(e)}")
+        return None
+
 @app.route('/')
 def index():
     """主页"""
     return render_template('index.html')
 
-@app.route('/generate-from-text', methods=['POST'])
-def generate_from_text():
-    """从文字描述生成图片"""
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    """提供上传的文件访问"""
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+@app.route('/generate-image', methods=['POST'])
+def generate_image():
+    """统一的图片生成接口 - 支持文字和图片混合输入"""
     try:
-        data = request.get_json()
-        prompt = data.get('prompt')
-        workflow = data.get('workflow', 'text-to-image')
+        prompt = request.form.get('prompt', '').strip()
+        uploaded_file = request.files.get('sketch')
         
-        if not prompt:
-            return jsonify({'error': '缺少文字描述'}), 400
+        if not prompt and not uploaded_file:
+            return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
         
-        print(f"🎨 开始文字生成图片: {prompt}")
+        # 处理上传的图片
+        sketch_path = None
+        if uploaded_file and allowed_file(uploaded_file.filename):
+            filename = str(uuid.uuid4()) + '_' + secure_filename(uploaded_file.filename)
+            sketch_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            uploaded_file.save(sketch_path)
+            
+            # 预处理手绘图片
+            processed_sketch = preprocess_sketch(sketch_path)
+            if processed_sketch:
+                sketch_path = processed_sketch
         
-        # 使用Gemini生成图片
-        generated_image_path = nano_banana.generate_image_from_text(prompt)
+        print(f"🎨 开始生成图片 - 文字: {prompt}, 图片: {sketch_path}")
+        
+        # 根据输入类型生成图片
+        if sketch_path and prompt:
+            # 图片+文字模式
+            generated_image_path = nano_banana.generate_image_from_sketch_and_text(sketch_path, prompt)
+        elif sketch_path:
+            # 纯图片模式
+            generated_image_path = nano_banana.generate_image_from_sketch(sketch_path)
+        else:
+            # 纯文字模式
+            generated_image_path = nano_banana.generate_image_from_text(prompt)
         
         if generated_image_path:
-            print(f"✅ 文字生成图片完成: {generated_image_path}")
+            print(f"✅ 图片生成完成: {generated_image_path}")
             
-            result = {
+            # 返回相对路径用于前端显示
+            relative_path = generated_image_path.replace('uploads/', '/uploads/')
+            
+            return jsonify({
                 'success': True,
-                'image_path': generated_image_path.replace('uploads/', ''),
+                'image_path': relative_path,
                 'message': '图片生成成功！'
-            }
-            
-            # 如果是完整工作流程，继续生成3D模型
-            if workflow == 'text-to-image-to-model':
-                print("🧊 继续生成3D模型...")
-                model_result = generate_3d_model_from_image(generated_image_path)
-                if model_result:
-                    result['model_path'] = model_result
-                    result['message'] = '图片和3D模型生成完成！'
-            
-            return jsonify(result)
+            })
         else:
             return jsonify({'error': '图片生成失败，请稍后重试'}), 500
             
     except Exception as e:
-        print(f"❌ 文字生成图片错误: {str(e)}")
+        print(f"❌ 图片生成错误: {str(e)}")
         return jsonify({'error': f'生成失败: {str(e)}'}), 500
 
-def generate_3d_model_from_image(image_path):
-    """从图片生成3D模型"""
+@app.route('/adjust-image', methods=['POST'])
+def adjust_image():
+    """调整现有图片"""
     try:
-        # 这里可以集成Hunyuan3D或其他3D生成服务
-        # 目前返回模拟结果
-        print(f"🧊 正在为图片生成3D模型: {image_path}")
+        current_image = request.form.get('current_image')
+        adjust_prompt = request.form.get('adjust_prompt', '').strip()
         
-        # 模拟3D模型生成过程
-        import time
-        time.sleep(2)  # 模拟处理时间
+        if not current_image or not adjust_prompt:
+            return jsonify({'error': '缺少图片路径或调整说明'}), 400
         
-        # 返回模拟的模型文件路径
-        model_filename = os.path.basename(image_path).replace('.png', '_model.obj')
-        return model_filename
-    except Exception as e:
-        print(f"❌ 3D模型生成错误: {str(e)}")
-        return None
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    """处理文件上传"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': '没有选择文件'}), 400
+        # 将相对路径转换为绝对路径
+        if current_image.startswith('/uploads/'):
+            current_image = current_image.replace('/uploads/', 'uploads/')
         
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': '没有选择文件'}), 400
+        # 初始化Nano Banana API
+        nano_banana = NanoBananaAPI()
         
-        if file and allowed_file(file.filename):
-            # 生成唯一文件名
-            filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        print(f"🔧 开始调整图片: {current_image} - 调整说明: {adjust_prompt}")
+        
+        # 使用调整提示词重新生成图片
+        adjusted_image_path = nano_banana.adjust_image(current_image, adjust_prompt)
+        
+        if adjusted_image_path:
+            print(f"✅ 图片调整完成: {adjusted_image_path}")
             
-            # 保存文件
-            file.save(filepath)
-            
-            # 预处理图片
-            processed_path = preprocess_sketch(filepath)
-            if processed_path is None:
-                return jsonify({'error': '图片预处理失败'}), 500
+            # 返回相对路径用于前端显示
+            relative_path = adjusted_image_path.replace('uploads/', '/uploads/')
             
             return jsonify({
                 'success': True,
-                'filename': filename,
-                'message': '文件上传成功！',
-                'processed': True
+                'image_path': relative_path,
+                'message': '图片调整成功！'
             })
         else:
-            return jsonify({'error': '不支持的文件格式'}), 400
+            return jsonify({'error': '图片调整失败，请稍后重试'}), 500
             
     except Exception as e:
-        return jsonify({'error': f'上传失败: {str(e)}'}), 500
-
-@app.route('/colorize', methods=['POST'])
-def colorize_image():
-    """使用AI模型为图片上色"""
-    try:
-        data = request.get_json()
-        filename = data.get('filename')
-        
-        if not filename:
-            return jsonify({'error': '缺少文件名'}), 400
-        
-        # 获取文件路径
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        if not os.path.exists(filepath):
-            return jsonify({'error': '文件不存在'}), 404
-        
-        # 使用预处理后的文件
-        processed_path = filepath.replace('.', '_processed.')
-        
-        # 获取用户描述
-        description = request.json.get('description', '')
-        
-        # 调用Nano Banana API进行上色
-        nano_api = NanoBananaAPI()
-        colored_image_path = nano_api.colorize_sketch(processed_path, description)
-        
-        if colored_image_path:
-            # 生成手办风格图片
-            figurine_path = nano_api.generate_figurine_style(colored_image_path, description)
-            
-            return jsonify({
-                'success': True,
-                'colored_image': os.path.basename(colored_image_path),
-                'figurine_image': os.path.basename(figurine_path) if figurine_path else None,
-                'message': 'AI上色完成！'
-            })
-        else:
-            return jsonify({'error': 'AI上色失败'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': f'上色失败: {str(e)}'}), 500
-
-@app.route('/generate_3d', methods=['POST'])
-def generate_3d_model():
-    """生成3D模型"""
-    try:
-        data = request.get_json()
-        image_filename = data.get('image_filename')
-        
-        if not image_filename:
-            return jsonify({'error': '缺少图片文件名'}), 400
-        
-        # 获取图片路径
-        image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
-        if not os.path.exists(image_path):
-            return jsonify({'error': '图片文件不存在'}), 404
-        
-        # 调用Hunyuan3D API生成3D模型
-        hunyuan_api = Hunyuan3DAPI()
-        model_path = hunyuan_api.generate_3d_model(image_path)
-        
-        if model_path:
-            return jsonify({
-                'success': True,
-                'model_file': os.path.basename(model_path),
-                'message': '3D模型生成完成！'
-            })
-        else:
-            return jsonify({'error': '3D模型生成失败'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': f'3D模型生成失败: {str(e)}'}), 500
-
-@app.route('/finetune', methods=['POST'])
-def finetune_model():
-    """模型微调"""
-    try:
-        data = request.get_json()
-        model_type = data.get('model_type', 'colorization')
-        training_images = data.get('training_images', [])
-        
-        if not training_images:
-            return jsonify({'error': '缺少训练图片'}), 400
-        
-        # 这里可以实现模型微调逻辑
-        # 由于微调通常需要大量计算资源，这里提供一个简化的示例
-        
-        return jsonify({
-            'success': True,
-            'message': '模型微调已开始，请稍后查看结果',
-            'job_id': str(uuid.uuid4())
-        })
-        
-    except Exception as e:
-        return jsonify({'error': f'模型微调失败: {str(e)}'}), 500
-
-@app.route('/download/<filename>')
-def download_file(filename):
-    """下载文件"""
-    try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        if os.path.exists(filepath):
-            return send_file(filepath, as_attachment=True)
-        else:
-            return jsonify({'error': '文件不存在'}), 404
-    except Exception as e:
-        return jsonify({'error': f'下载失败: {str(e)}'}), 500
-
-@app.route('/gallery')
-def gallery():
-    """作品展示页面"""
-    return render_template('gallery.html')
-
-@app.route('/tutorial')
-def tutorial():
-    """教程页面"""
-    return render_template('tutorial.html')
-
-@app.route('/test-images')
-def test_images():
-    """图片显示测试页面"""
-    return send_file('test_images.html')
-
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    """提供上传文件的访问"""
-    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        print(f"❌ 图片调整错误: {str(e)}")
+        return jsonify({'error': f'调整失败: {str(e)}'}), 500
 
 @app.route('/generate-3d-model', methods=['POST'])
 def generate_3d_model_endpoint():
-    """生成3D模型的端点"""
+    """从图片生成3D模型"""
     try:
-        data = request.get_json()
-        image_path = data.get('image_path')
+        image_path = request.form.get('image_path')
         
         if not image_path:
             return jsonify({'error': '缺少图片路径'}), 400
         
-        # 调用3D模型生成
-        model_result = generate_3d_model_from_image(os.path.join('uploads', image_path))
+        # 将相对路径转换为绝对路径
+        if image_path.startswith('/uploads/'):
+            image_path = image_path.replace('/uploads/', 'uploads/')
+        
+        print(f"🧊 开始生成3D模型: {image_path}")
+        
+        # 生成3D模型
+        model_result = generate_3d_model_from_image(image_path)
         
         if model_result:
+            print(f"✅ 3D模型生成完成: {model_result}")
+            
             return jsonify({
                 'success': True,
                 'model_path': model_result,
                 'message': '3D模型生成成功！'
             })
         else:
-            return jsonify({'error': '3D模型生成失败'}), 500
+            return jsonify({'error': '3D模型生成失败，请稍后重试'}), 500
             
     except Exception as e:
         print(f"❌ 3D模型生成错误: {str(e)}")
@@ -306,7 +211,22 @@ def generate_3d_model_endpoint():
 
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify({'error': '文件太大，请选择小于16MB的图片'}), 413
+    """文件太大错误处理"""
+    return jsonify({'error': '上传文件太大，请选择小于16MB的文件'}), 413
+
+@app.errorhandler(500)
+def internal_error(e):
+    """内部服务器错误处理"""
+    print(f"服务器错误: {str(e)}")
+    return jsonify({'error': '服务器内部错误，请稍后重试'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001)
+    print("🚀 儿童AI培训网站启动中...")
+    print("📝 功能特色:")
+    print("   - 统一创作界面：文字+图片混合输入")
+    print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
+    print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
+    print("   - 3D模型生成：使用Hunyuan3D API")
+    print("   - 适合儿童：10-14岁友好界面设计")
+    print("\n🌐 访问地址: http://127.0.0.1:8080")
+    app.run(debug=True, host='0.0.0.0', port=8080)
