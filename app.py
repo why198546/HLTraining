@@ -6,7 +6,7 @@ from PIL import Image
 import cv2
 import numpy as np
 from api.nano_banana import NanoBananaAPI
-from api.hunyuan3d import Hunyuan3DAPI
+from api.hunyuan3d import Simple3DGenerator
 import json
 
 app = Flask(__name__)
@@ -53,11 +53,11 @@ def generate_3d_model_from_image(image_path):
     try:
         print(f"🧊 开始3D模型生成: {image_path}")
         
-        # 初始化Hunyuan3D API
-        hunyuan_api = Hunyuan3DAPI()
+        # 初始化3D生成器
+        generator_3d = Simple3DGenerator()
         
         # 生成3D模型
-        model_path = hunyuan_api.generate_3d_model(image_path)
+        model_path = generator_3d.generate_3d_model(image_path)
         
         if model_path:
             print(f"✅ 3D模型生成成功: {model_path}")
@@ -74,6 +74,21 @@ def generate_3d_model_from_image(image_path):
 def index():
     """主页"""
     return render_template('index.html')
+
+@app.route('/create')
+def create():
+    """创作页面"""
+    return render_template('create.html')
+
+@app.route('/gallery')
+def gallery():
+    """作品集页面"""
+    return render_template('gallery.html')
+
+@app.route('/test')
+def test():
+    """测试页面"""
+    return render_template('test.html')
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -126,7 +141,7 @@ def generate_image():
             
             return jsonify({
                 'success': True,
-                'image_path': relative_path,
+                'image_url': relative_path,
                 'message': '图片生成成功！'
             })
         else:
@@ -166,7 +181,7 @@ def adjust_image():
             
             return jsonify({
                 'success': True,
-                'image_path': relative_path,
+                'image_url': relative_path,
                 'message': '图片调整成功！'
             })
         else:
@@ -199,7 +214,7 @@ def generate_3d_model_endpoint():
             
             return jsonify({
                 'success': True,
-                'model_path': model_result,
+                'model_url': model_result,
                 'message': '3D模型生成成功！'
             })
         else:
@@ -226,7 +241,8 @@ if __name__ == '__main__':
     print("   - 统一创作界面：文字+图片混合输入")
     print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
     print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
-    print("   - 3D模型生成：使用Hunyuan3D API")
+    print("   - 3D模型生成：使用本地算法")
     print("   - 适合儿童：10-14岁友好界面设计")
     print("\n🌐 访问地址: http://127.0.0.1:8080")
+    print("🔗 创作页面: http://127.0.0.1:8080/create")
     app.run(debug=True, host='0.0.0.0', port=8080)

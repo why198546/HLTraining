@@ -16,7 +16,7 @@
             </div>
             <ul class="nav-menu">
                 <li><a href="#home" class="nav-link active">首页</a></li>
-                <li><a href="#upload" class="nav-link">上传作品</a></li>
+                <li><a href="/create" class="nav-link">开始创作</a></li>
                 <li><a href="/gallery" class="nav-link">作品展示</a></li>
                 <li><a href="/tutorial" class="nav-link">使用教程</a></li>
             </ul>
@@ -33,215 +33,111 @@
         <section id="home" class="hero">
             <div class="hero-content">
                 <h1 class="hero-title">欢迎来到AI创意工坊！</h1>
-                <p class="hero-subtitle">用文字描述或上传线稿，AI帮你创造精美作品！</p>
-                <div class="creation-flow">
-                    <div class="flow-steps">
-                        <div class="flow-step">
-                            <div class="step-icon">📝</div>
-                            <div class="step-text">输入描述 + 上传图片</div>
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-step">
-                            <div class="step-icon">🎨</div>
-                            <div class="step-text">AI生成图片</div>
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-step">
-                            <div class="step-icon">✏️</div>
-                            <div class="step-text">调整完善</div>
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-step">
-                            <div class="step-icon">🧊</div>
-                            <div class="step-text">生成3D模型</div>
-                        </div>
+                <p class="hero-subtitle">让AI帮你将创意变为现实，简单几步创作精美作品</p>
+                
+                <!-- 功能介绍卡片 -->
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3>AI绘图</h3>
+                        <p>用文字描述你的想法，AI帮你画出来</p>
                     </div>
-                    <button class="start-creation-btn" onclick="startCreation()">
+                    <div class="feature-card">
+                        <div class="feature-icon">�</div>
+                        <h3>线稿上色</h3>
+                        <p>上传手绘线稿，AI自动上色美化</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🧊</div>
+                        <h3>3D模型</h3>
+                        <p>从2D图片生成立体3D模型</p>
+                    </div>
+                </div>
+                
+                <!-- 开始创作按钮 -->
+                <div class="cta-section">
+                    <button class="start-creation-btn" onclick="goToCreatePage()">
                         <i class="fas fa-magic"></i>
                         开始创作
                     </button>
+                    <p class="cta-subtitle">点击开始你的AI创作之旅</p>
                 </div>
             </div>
         </section>
 
-        <!-- 统一创作界面 -->
-        <section id="creation-workspace" class="creation-section" style="display: none;">
+        <!-- 作品展示区域 -->
+        <section id="gallery-preview" class="gallery-section">
             <div class="container">
-                <div class="back-to-home">
-                    <button onclick="backToHome()" class="back-btn">
-                        <i class="fas fa-arrow-left"></i>
-                        返回首页
-                    </button>
-                </div>
                 <h2 class="section-title">
-                    <i class="fas fa-magic"></i>
-                    AI创意工坊
+                    <i class="fas fa-images"></i>
+                    精彩作品展示
                 </h2>
-                <p class="section-subtitle">文字描述 + 图片上传，让AI理解你的创意！</p>
+                <p class="section-subtitle">看看其他小朋友用AI创作的精美作品</p>
                 
-                <!-- 创作输入区域 -->
-                <div class="creation-input-area">
-                    <div class="prompt-input-container">
-                        <label for="creation-prompt">
-                            <i class="fas fa-lightbulb"></i>
-                            描述你的创意
-                        </label>
-                        <div class="input-wrapper">
-                            <textarea 
-                                id="creation-prompt" 
-                                class="creation-input" 
-                                placeholder="例如：一只可爱的小猫咪，戴着红色的帽子，坐在彩虹上...&#10;&#10;你可以只用文字描述，也可以上传图片作为参考！"
-                                rows="4"
-                            ></textarea>
-                            <button class="add-image-btn" onclick="triggerImageUpload()" title="上传参考图片">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                            <input type="file" id="reference-image" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <div class="gallery-image">
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                                <span>示例作品1</span>
+                            </div>
                         </div>
-                        <div class="input-hint">
-                            💡 <strong>创作小贴士：</strong>可以描述颜色、形状、表情、背景等细节，或上传线稿图片
-                        </div>
-                    </div>
-
-                    <!-- 上传的图片预览 -->
-                    <div id="uploaded-image-preview" class="image-preview" style="display: none;">
-                        <div class="preview-header">
-                            <span><i class="fas fa-image"></i> 参考图片</span>
-                            <button class="remove-image-btn" onclick="removeUploadedImage()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <img id="uploaded-image" src="" alt="上传的参考图片">
-                    </div>
-                    
-                    <div class="generation-options">
-                        <div class="option-group">
-                            <label>图片风格：</label>
-                            <select id="image-style" class="style-select">
-                                <option value="cute">可爱卡通</option>
-                                <option value="realistic">写实风格</option>
-                                <option value="anime">动漫风格</option>
-                                <option value="fantasy">奇幻风格</option>
-                            </select>
-                        </div>
-                        <div class="option-group">
-                            <label>色彩偏好：</label>
-                            <select id="color-preference" class="style-select">
-                                <option value="colorful">色彩丰富</option>
-                                <option value="pastel">柔和色调</option>
-                                <option value="bright">明亮鲜艳</option>
-                                <option value="natural">自然色彩</option>
-                            </select>
+                        <div class="gallery-info">
+                            <h4>可爱的彩虹猫咪</h4>
+                            <p>小明，8岁</p>
                         </div>
                     </div>
                     
-                    <button id="generate-image" class="generate-btn">
-                        <i class="fas fa-wand-magic-sparkles"></i>
-                        生成图片
-                    </button>
-                </div>
-
-                <!-- 生成结果区域 -->
-                <div id="generation-result" class="result-area" style="display: none;">
-                    <h3 class="result-title">
-                        <i class="fas fa-image"></i>
-                        AI生成结果
-                    </h3>
-                    
-                    <div class="generated-image-container">
-                        <img id="generated-image" src="" alt="AI生成的图片">
-                        <div class="image-actions">
-                            <button class="action-btn regenerate-btn" onclick="regenerateImage()">
-                                <i class="fas fa-redo"></i>
-                                重新生成
-                            </button>
-                            <button class="action-btn adjust-btn" onclick="showAdjustPanel()">
-                                <i class="fas fa-sliders-h"></i>
-                                调整图片
-                            </button>
-                            <button class="action-btn confirm-btn" onclick="confirmAndGenerate3D()">
-                                <i class="fas fa-cube"></i>
-                                确认并生成3D
-                            </button>
+                    <div class="gallery-item">
+                        <div class="gallery-image">
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                                <span>示例作品2</span>
+                            </div>
+                        </div>
+                        <div class="gallery-info">
+                            <h4>梦幻城堡</h4>
+                            <p>小红，10岁</p>
                         </div>
                     </div>
-
-                    <!-- 调整面板 -->
-                    <div id="adjust-panel" class="adjust-panel" style="display: none;">
-                        <h4><i class="fas fa-edit"></i> 调整提示</h4>
-                        <textarea 
-                            id="adjustment-prompt" 
-                            class="adjustment-input" 
-                            placeholder="例如：让颜色更鲜艳一些，改变背景为森林..."
-                            rows="3"
-                        ></textarea>
-                        <div class="adjust-actions">
-                            <button class="apply-adjust-btn" onclick="applyAdjustment()">
-                                <i class="fas fa-check"></i>
-                                应用调整
-                            </button>
-                            <button class="cancel-adjust-btn" onclick="hideAdjustPanel()">
-                                <i class="fas fa-times"></i>
-                                取消
-                            </button>
+                    
+                    <div class="gallery-item">
+                        <div class="gallery-image">
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                                <span>示例作品3</span>
+                            </div>
+                        </div>
+                        <div class="gallery-info">
+                            <h4>太空飞船</h4>
+                            <p>小刚，12岁</p>
+                        </div>
+                    </div>
+                    
+                    <div class="gallery-item">
+                        <div class="gallery-image">
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                                <span>示例作品4</span>
+                            </div>
+                        </div>
+                        <div class="gallery-info">
+                            <h4>神奇森林</h4>
+                            <p>小花，9岁</p>
                         </div>
                     </div>
                 </div>
-
-                <!-- 3D生成结果区域 -->
-                <div id="model-generation-result" class="model-result-area" style="display: none;">
-                    <h3 class="result-title">
-                        <i class="fas fa-cube"></i>
-                        3D模型生成完成！
-                    </h3>
-                    
-                    <div class="final-results-grid">
-                        <!-- 最终图片 -->
-                        <div class="final-result-item">
-                            <h4>最终图片</h4>
-                            <div class="image-container">
-                                <img id="final-image" src="" alt="最终确认的图片">
-                            </div>
-                            <button class="download-btn" onclick="downloadImage()">
-                                <i class="fas fa-download"></i>
-                                下载图片
-                            </button>
-                        </div>
-                        
-                        <!-- 3D模型预览 -->
-                        <div class="final-result-item model-preview">
-                            <h4>3D模型预览</h4>
-                            <div class="model-container" id="modelContainer">
-                                <!-- Three.js 3D模型将在这里渲染 -->
-                                <div class="model-placeholder">
-                                    <i class="fas fa-cube"></i>
-                                    <p>3D模型加载中...</p>
-                                </div>
-                            </div>
-                            <div class="model-controls">
-                                <button class="control-btn" id="rotateModel">
-                                    <i class="fas fa-sync-alt"></i>
-                                    自动旋转
-                                </button>
-                                <button class="download-btn" id="download3D">
-                                    <i class="fas fa-download"></i>
-                                    下载3D模型
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="final-actions">
-                        <button class="secondary-btn" onclick="startNewCreation()">
-                            <i class="fas fa-plus"></i>
-                            创建新作品
-                        </button>
-                        <button class="primary-btn" onclick="shareCreation()">
-                            <i class="fas fa-share"></i>
-                            分享我的创作
-                        </button>
-                    </div>
+                
+                <div class="gallery-more">
+                    <a href="/gallery" class="view-more-btn">
+                        <i class="fas fa-arrow-right"></i>
+                        查看更多作品
+                    </a>
                 </div>
+            </div>
+        </section>
+                
+
             </div>
         </section>
     </main>
