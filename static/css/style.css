@@ -2525,8 +2525,954 @@ main {
     }
 }
 
+/* Gallery页面样式 */
+.gallery-hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 4rem 0 2rem;
+    text-align: center;
+    color: white;
+}
+
+.gallery-title {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.gallery-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.gallery-content {
+    padding: 3rem 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.gallery-filters {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid transparent;
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    color: #667eea;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.gallery-item {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.gallery-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.gallery-item.user-artwork {
+    border: 3px solid #4ade80;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(34, 197, 94, 0.1) 100%);
+    position: relative;
+}
+
+.gallery-item.user-artwork::before {
+    content: "我的作品";
+    position: absolute;
+    top: -10px;
+    right: 15px;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    color: white;
+    padding: 0.3rem 1rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+    z-index: 10;
+}
+
+/* 卡片预览图样式 */
+.artwork-preview-image {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.artwork-preview-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.gallery-item:hover .artwork-preview-image img {
+    transform: scale(1.05);
+}
+
+.model-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 50%;
+    font-size: 1rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+}
+
+/* 保留artwork-showcase样式用于模态框详情展示 */
+.artwork-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.artwork-step {
+    text-align: center;
+}
+
+.artwork-step h4 {
+    color: #667eea;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.artwork-step img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.no-image {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 0.8rem;
+    border: 2px dashed #d1d5db;
+}
+
+.model-preview-thumb {
+    width: 100%;
+    height: 120px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.model-preview-thumb i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.model-preview-thumb span {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.artwork-info {
+    text-align: left;
+}
+
+.artwork-info h3 {
+    color: #1f2937;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.artist-info,
+.creation-date {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.artist-info i,
+.creation-date i {
+    color: #667eea;
+}
+
+.artwork-description {
+    color: #374151;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.artwork-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.likes {
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.likes:hover {
+    color: #dc2626;
+    transform: scale(1.1);
+}
+
+.views {
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* 作品详情模态框样式 */
+.artwork-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.artwork-modal-content {
+    background: white;
+    border-radius: 25px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: scale(0.9);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.artwork-modal-header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+}
+
+.artwork-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.artwork-modal-close:hover {
+    color: #ef4444;
+}
+
+.artwork-modal-body {
+    padding: 1rem 2rem 2rem;
+}
+
+.artwork-detail-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.artwork-detail-step {
+    text-align: center;
+}
+
+.artwork-detail-step h4 {
+    color: #667eea;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.artwork-detail-step img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.artwork-detail-step img[onclick] {
+    cursor: pointer;
+}
+
+.artwork-detail-step img[onclick]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+}
+
+.modal-artwork-info {
+    margin-top: 1.5rem;
+}
+
+.modal-artist-info,
+.modal-creation-date {
+    color: #6b7280;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-artist-info strong {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.modal-artist-info i,
+.modal-creation-date i {
+    color: #667eea;
+    width: 20px;
+}
+
+.modal-artwork-description {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.modal-artwork-description h4 {
+    color: #667eea;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.modal-artwork-description p {
+    color: #374151;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.modal-artwork-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(248, 250, 252, 0.8);
+    border-radius: 15px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.modal-likes {
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.modal-likes:hover {
+    color: #dc2626;
+    transform: scale(1.1);
+}
+
+.modal-views {
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* 图片叠加层样式 */
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.image-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.image-overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.image-overlay-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.image-overlay-content.scrollable {
+    overflow: auto;
+    align-items: center;
+    justify-content: center;
+}
+
+.enlarged-image-header {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.enlarged-image-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.image-mode-indicator {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.image-mode-indicator:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.back-to-details {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.3s ease;
+}
+
+.back-to-details:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-3px);
+}
+
+.back-to-details i {
+    font-size: 0.75rem;
+}
+
+.enlarged-image-body {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    height: 70vh;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    overflow: hidden;
+}
+
+.enlarged-image-body.scrollable {
+    overflow: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 2rem;
+}
+
+.enlarged-image {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: none;
+}
+
+/* 叠加层图片样式 */
+.overlay-image {
+    cursor: pointer;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+    background: white;
+    max-width: 90%;
+    max-height: 90%;
+}
+
+.overlay-image:hover {
+    transform: scale(1.02);
+}
+
+/* 缩略图模式 */
+.overlay-image.thumbnail-mode {
+    max-width: 50%;
+    max-height: 50%;
+    object-fit: contain;
+}
+
+/* 适应窗口模式 */
+.overlay-image.fit-mode {
+    max-width: 85%;
+    max-height: 85%;
+    object-fit: contain;
+}
+
+/* 原始尺寸模式 */
+.overlay-image.original-mode {
+    max-width: none;
+    max-height: none;
+    object-fit: none;
+}
+
+/* 3D模型预览样式 */
+.model-preview-container {
+    margin-top: 1rem;
+}
+
+.model-preview-thumb {
+    cursor: pointer;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.model-preview-thumb:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(103, 126, 234, 0.3);
+}
+
+.model-thumbnail {
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.model-thumbnail i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.model-thumbnail span {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* 3D模型叠加层样式 */
+.model-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1001;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.model-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.model-overlay-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.model-overlay-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.model-viewer-container {
+    width: 85%;
+    height: 85%;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.model-placeholder {
+    text-align: center;
+    color: white;
+    padding: 2rem;
+}
+
+.model-placeholder i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    color: #3498db;
+    animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.model-placeholder h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #ecf0f1;
+}
+
+.model-placeholder p {
+    color: #bdc3c7;
+    margin-bottom: 2rem;
+}
+
+.model-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.model-btn {
+    background: rgba(52, 152, 219, 0.8);
+    color: white;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.model-btn:hover {
+    background: rgba(52, 152, 219, 1);
+    transform: translateY(-2px);
+}
+
+.model-btn.wireframe-active {
+    background: rgba(231, 76, 60, 0.8);
+}
+
+.model-btn.wireframe-active:hover {
+    background: rgba(231, 76, 60, 1);
+}
+
+.model-info {
+    color: #95a5a6;
+    font-size: 0.75rem;
+}
+
+/* 保持原有的 enlarged-image 样式用于其他地方 */
+.enlarged-image.thumbnail-mode {
+    max-width: 60%;
+    max-height: 60%;
+    object-fit: contain;
+    width: auto;
+    height: auto;
+}
+
+.enlarged-image.fit-mode {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    width: auto;
+    height: auto;
+}
+
+.enlarged-image.original-mode {
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    object-fit: none;
+}
+
+/* 滚动条样式 */
+.enlarged-image-body.scrollable::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.enlarged-image-body.scrollable::-webkit-scrollbar-track {
+    background: #2a2a2a;
+}
+
+.enlarged-image-body.scrollable::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 6px;
+}
+
+.enlarged-image-body.scrollable::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* 文字创作信息样式 */
+.text-creation-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px dashed #cbd5e1;
+    border-radius: 15px;
+    padding: 1.5rem;
+    text-align: center;
+}
+
+.text-creation-info i {
+    font-size: 3rem;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.text-creation-info p {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0.5rem 0;
+}
+
+.text-creation-info small {
+    color: #6b7280;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
 /* 响应式样式 */
 @media (max-width: 768px) {
+    .gallery-title {
+        font-size: 2rem;
+    }
+    
+    .gallery-subtitle {
+        font-size: 1rem;
+        padding: 0 1rem;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding: 0.5rem;
+    }
+    
+    .gallery-filters {
+        padding: 0 1rem;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .artwork-preview-image {
+        height: 180px;
+    }
+    
+    .artwork-showcase {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .artwork-step img,
+    .no-image,
+    .model-preview-thumb {
+        height: 150px;
+    }
+    
+    .artwork-modal {
+        padding: 1rem;
+    }
+    
+    .artwork-modal-content {
+        max-height: 95vh;
+    }
+    
+    .artwork-modal-header,
+    .artwork-modal-body {
+        padding: 1.5rem;
+    }
+    
+    .artwork-detail-showcase {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .artwork-detail-step img {
+        height: 180px;
+    }
+    
+    .enlarged-image-header {
+        padding: 0.8rem 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.8rem;
+    }
+    
+    .enlarged-image-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .image-mode-indicator {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.6rem;
+    }
+    
+    .enlarged-image-body {
+        min-height: 50vh;
+        max-height: 60vh;
+    }
+
     .artwork-preview {
         grid-template-columns: 1fr;
         gap: 1rem;

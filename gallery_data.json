@@ -1,0 +1,16 @@
+[
+  {
+    "id": "447fb038-fbda-4bc9-9663-2ab0555accca",
+    "title": "骑自行车的小男孩",
+    "artist_name": "王洪宇",
+    "artist_age": 10,
+    "category": "characters",
+    "description": "骑自行车玩耍的小男孩",
+    "created_at": "2025-10-20T17:14:35.100601",
+    "original_image": null,
+    "generated_image": "gallery/447fb038-fbda-4bc9-9663-2ab0555accca/generated_447fb038-fbda-4bc9-9663-2ab0555accca.png",
+    "model_file": "gallery/447fb038-fbda-4bc9-9663-2ab0555accca/model_447fb038-fbda-4bc9-9663-2ab0555accca.glb",
+    "likes": 0,
+    "views": 0
+  }
+]

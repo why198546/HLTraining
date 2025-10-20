@@ -738,3 +738,386 @@ async function likeArtwork(artworkId) {
         showMessage('点赞失败，请稍后重试', 'error');
     }
 }
+
+// 作品详情模态框功能
+function showArtworkModal(element) {
+    // 阻止事件冒泡，防止意外触发
+    event.stopPropagation();
+    
+    const artworkData = {
+        id: element.dataset.artworkId,
+        title: element.dataset.artworkTitle,
+        artist: element.dataset.artworkArtist,
+        age: element.dataset.artworkAge,
+        date: element.dataset.artworkDate,
+        description: element.dataset.artworkDescription,
+        originalImage: element.dataset.artworkOriginal,
+        generatedImage: element.dataset.artworkGenerated,
+        modelFile: element.dataset.artworkModel,
+        likes: element.dataset.artworkLikes,
+        views: element.dataset.artworkViews
+    };
+    
+    // 设置模态框标题
+    document.getElementById('modalArtworkTitle').textContent = artworkData.title;
+    
+    // 构建作品展示区域
+    const showcase = document.getElementById('modalArtworkShowcase');
+    showcase.innerHTML = '';
+    
+    // 原始简笔画
+    if (artworkData.originalImage && artworkData.originalImage.trim() !== '' && artworkData.originalImage !== 'null') {
+        const originalStep = document.createElement('div');
+        originalStep.className = 'artwork-detail-step';
+        originalStep.innerHTML = `
+            <h4>原始简笔画</h4>
+            <img src="/static/${artworkData.originalImage}" alt="原始简笔画" 
+                 onclick="showImageModal(this.src, '原始简笔画')" 
+                 style="cursor: pointer;" 
+                 title="点击查看大图"
+                 onerror="this.parentElement.style.display='none'">
+        `;
+        showcase.appendChild(originalStep);
+    } else {
+        // 显示文字提示创作的说明
+        const originalStep = document.createElement('div');
+        originalStep.className = 'artwork-detail-step';
+        originalStep.innerHTML = `
+            <h4>创作方式</h4>
+            <div class="text-creation-info">
+                <i class="fas fa-keyboard"></i>
+                <p>通过文字描述生成</p>
+                <small>作者使用文字提示词直接创作，没有上传简笔画</small>
+            </div>
+        `;
+        showcase.appendChild(originalStep);
+    }
+    
+    // AI生成图片
+    if (artworkData.generatedImage) {
+        const generatedStep = document.createElement('div');
+        generatedStep.className = 'artwork-detail-step';
+        generatedStep.innerHTML = `
+            <h4>AI生成效果</h4>
+            <img src="/static/${artworkData.generatedImage}" alt="AI生成效果" 
+                 onclick="showImageModal(this.src, 'AI生成效果')" 
+                 style="cursor: pointer;" 
+                 title="点击查看大图"
+                 onerror="this.parentElement.style.display='none'">
+        `;
+        showcase.appendChild(generatedStep);
+    }
+    
+    // 3D模型
+    if (artworkData.modelFile) {
+        const modelStep = document.createElement('div');
+        modelStep.className = 'artwork-detail-step';
+        modelStep.innerHTML = `
+            <h4>3D模型</h4>
+            <div class="model-preview-container">
+                <div class="model-preview-thumb" onclick="showModelModal('${artworkData.modelFile}', '3D模型')">
+                    <div class="model-thumbnail">
+                        <i class="fas fa-cube"></i>
+                        <span>点击查看3D模型</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        showcase.appendChild(modelStep);
+    }
+    
+    // 设置作品信息
+    const info = document.getElementById('modalArtworkInfo');
+    info.innerHTML = `
+        <div class="modal-artwork-info">
+            <p class="modal-artist-info">
+                <i class="fas fa-user-circle"></i>
+                <strong>${artworkData.artist}</strong>，${artworkData.age}岁
+            </p>
+            <p class="modal-creation-date">
+                <i class="fas fa-calendar"></i>
+                创作时间：${artworkData.date}
+            </p>
+            ${artworkData.description ? `
+                <div class="modal-artwork-description">
+                    <h4><i class="fas fa-comment"></i> 作品说明</h4>
+                    <p>${artworkData.description}</p>
+                </div>
+            ` : ''}
+            <div class="modal-artwork-stats">
+                <span class="modal-likes" onclick="likeArtwork('${artworkData.id}')">
+                    <i class="fas fa-heart"></i>
+                    <span id="modal-likes-${artworkData.id}">${artworkData.likes}</span>个赞
+                </span>
+                <span class="modal-views">
+                    <i class="fas fa-eye"></i>
+                    ${artworkData.views}次浏览
+                </span>
+            </div>
+        </div>
+    `;
+    
+    // 显示模态框
+    const modal = document.getElementById('artworkModal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // 防止背景滚动
+    
+    // 添加动画效果
+    setTimeout(() => {
+        modal.querySelector('.artwork-modal-content').style.transform = 'scale(1)';
+        modal.querySelector('.artwork-modal-content').style.opacity = '1';
+    }, 10);
+}
+
+function closeArtworkModal() {
+    const modal = document.getElementById('artworkModal');
+    const content = modal.querySelector('.artwork-modal-content');
+    
+    // 添加关闭动画
+    content.style.transform = 'scale(0.9)';
+    content.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // 恢复背景滚动
+        
+        // 重置模态框状态
+        content.classList.remove('enlarged-mode');
+        if (content.dataset.originalContent) {
+            delete content.dataset.originalContent;
+        }
+        
+        // 重置动画状态
+        content.style.transform = 'scale(0.9)';
+        content.style.opacity = '0';
+    }, 300);
+}
+
+// 在当前模态框上方叠加图片
+function showImageModal(imageSrc, title) {
+    event.stopPropagation();
+    
+    // 创建图片叠加层
+    const imageOverlay = document.createElement('div');
+    imageOverlay.id = 'imageOverlay';
+    imageOverlay.className = 'image-overlay';
+    
+    imageOverlay.innerHTML = `
+        <div class="image-overlay-backdrop"></div>
+        <div class="image-overlay-content">
+            <img src="${imageSrc}" alt="${title}" class="overlay-image thumbnail-mode" 
+                 ondblclick="toggleImageMode(this)" 
+                 onclick="handleImageClick(this)"
+                 data-mode="thumbnail">
+        </div>
+    `;
+    
+    // 添加到当前模态窗口内
+    const artworkModal = document.getElementById('artworkModal');
+    artworkModal.appendChild(imageOverlay);
+    
+    // 点击背景关闭叠加层
+    imageOverlay.addEventListener('click', function(e) {
+        // 如果点击的不是图片本身，就关闭叠加层
+        if (e.target === imageOverlay || 
+            e.target.classList.contains('image-overlay-backdrop') ||
+            e.target.classList.contains('image-overlay-content')) {
+            closeImageOverlay();
+        }
+    });
+    
+    // 显示动画
+    setTimeout(() => {
+        imageOverlay.classList.add('visible');
+    }, 10);
+}
+
+// 处理图片点击事件
+function handleImageClick(img) {
+    event.stopPropagation();
+    
+    const currentMode = img.dataset.mode;
+    
+    // 单击逻辑：缩略图 → 窗口，窗口 → 缩略图，原始 → 缩略图
+    if (currentMode === 'thumbnail') {
+        setImageMode(img, 'fit');
+    } else {
+        setImageMode(img, 'thumbnail');
+    }
+}
+
+// 关闭图片叠加层
+function closeImageOverlay() {
+    const imageOverlay = document.getElementById('imageOverlay');
+    if (imageOverlay) {
+        imageOverlay.classList.remove('visible');
+        setTimeout(() => {
+            imageOverlay.remove();
+        }, 300);
+    }
+}
+
+// 显示3D模型模态框
+function showModelModal(modelSrc, title) {
+    event.stopPropagation();
+    
+    const modelOverlay = document.getElementById('modelOverlay');
+    const modelTitle = document.getElementById('modelTitle');
+    const modelPlaceholder = modelOverlay.querySelector('.model-placeholder');
+    
+    if (modelOverlay && modelTitle) {
+        modelTitle.textContent = title;
+        
+        // 更新模型信息
+        const modelDescription = modelPlaceholder.querySelector('p');
+        const modelInfo = modelPlaceholder.querySelector('.model-info');
+        
+        if (modelDescription) {
+            modelDescription.textContent = `正在加载模型: ${modelSrc.split('/').pop()}`;
+        }
+        
+        if (modelInfo) {
+            modelInfo.textContent = `模型文件: ${modelSrc}`;
+        }
+        
+        // 添加旋转动画
+        const modelIcon = modelPlaceholder.querySelector('i');
+        if (modelIcon) {
+            modelIcon.style.animation = 'rotate 2s linear infinite';
+        }
+        
+        modelOverlay.classList.add('visible');
+        
+        // 模拟加载过程
+        setTimeout(() => {
+            if (modelDescription) {
+                modelDescription.textContent = `模型已加载: ${modelSrc.split('/').pop()}`;
+            }
+            if (modelIcon) {
+                modelIcon.style.animation = 'none';
+            }
+        }, 2000);
+        
+        console.log('加载3D模型:', modelSrc);
+    }
+}
+
+// 关闭3D模型叠加层
+function closeModelOverlay() {
+    const modelOverlay = document.getElementById('modelOverlay');
+    if (modelOverlay) {
+        modelOverlay.classList.remove('visible');
+    }
+}
+
+// 3D模型控制函数
+function rotateModel() {
+    const modelIcon = document.querySelector('#modelOverlay .fas.fa-cube');
+    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
+    
+    if (modelIcon) {
+        modelIcon.style.animation = 'rotate 1s linear 1';
+        setTimeout(() => {
+            modelIcon.style.animation = 'none';
+        }, 1000);
+    }
+    
+    if (modelDescription) {
+        modelDescription.textContent = '模型正在旋转...';
+        setTimeout(() => {
+            modelDescription.textContent = '旋转完成';
+        }, 1000);
+    }
+    
+    console.log('旋转模型');
+}
+
+function resetView() {
+    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
+    
+    if (modelDescription) {
+        modelDescription.textContent = '视角已重置到默认位置';
+        setTimeout(() => {
+            modelDescription.textContent = '模型已加载完成';
+        }, 2000);
+    }
+    
+    console.log('重置视角');
+}
+
+function toggleWireframe() {
+    const wireframeBtn = document.querySelector('#modelOverlay .model-btn:nth-child(3)');
+    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
+    
+    if (wireframeBtn) {
+        const isWireframe = wireframeBtn.classList.contains('wireframe-active');
+        
+        if (isWireframe) {
+            wireframeBtn.classList.remove('wireframe-active');
+            wireframeBtn.innerHTML = '<i class="fas fa-border-none"></i> 线框';
+            if (modelDescription) {
+                modelDescription.textContent = '已切换到实体模式';
+            }
+        } else {
+            wireframeBtn.classList.add('wireframe-active');
+            wireframeBtn.innerHTML = '<i class="fas fa-border-all"></i> 实体';
+            if (modelDescription) {
+                modelDescription.textContent = '已切换到线框模式';
+            }
+        }
+        
+        setTimeout(() => {
+            if (modelDescription) {
+                modelDescription.textContent = '模型已加载完成';
+            }
+        }, 2000);
+    }
+    
+    console.log('切换线框模式');
+}
+
+// 双击切换图片显示模式
+function toggleImageMode(img) {
+    event.stopPropagation();
+    
+    // 双击始终切换到1:1原始大小
+    setImageMode(img, 'original');
+}
+
+// 设置图片显示模式
+function setImageMode(img, mode) {
+    const container = img.closest('.image-overlay-content');
+    
+    img.dataset.mode = mode;
+    
+    // 清除所有模式类
+    img.classList.remove('thumbnail-mode', 'fit-mode', 'original-mode');
+    
+    if (mode === 'thumbnail') {
+        // 缩略图模式
+        img.classList.add('thumbnail-mode');
+        if (container) container.classList.remove('scrollable');
+    } else if (mode === 'fit') {
+        // 适应窗口模式
+        img.classList.add('fit-mode');
+        if (container) container.classList.remove('scrollable');
+    } else if (mode === 'original') {
+        // 1:1 原始尺寸模式
+        img.classList.add('original-mode');
+        if (container) container.classList.add('scrollable');
+    }
+}
+
+// 已移除 backToArtworkDetails 函数，现在使用 closeImageOverlay
+
+// 点击模态框背景关闭
+document.addEventListener('DOMContentLoaded', function() {
+    const artworkModal = document.getElementById('artworkModal');
+    if (artworkModal) {
+        artworkModal.addEventListener('click', function(event) {
+            if (event.target === artworkModal) {
+                closeArtworkModal();
+            }
+        });
+    }
+});

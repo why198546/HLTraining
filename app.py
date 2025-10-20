@@ -81,14 +81,15 @@ def create():
 
 @app.route('/gallery')
 def gallery():
-    """作品集页面"""
-    # 获取查询参数
-    category = request.args.get('category', 'all')
-    
-    # 获取用户保存的作品
-    user_artworks = gallery_manager.get_all_artworks(category=category if category != 'all' else None)
-    
-    return render_template('gallery.html', user_artworks=user_artworks, current_category=category)
+    """显示作品画廊"""
+    gallery_manager = GalleryManager()
+    artworks = gallery_manager.get_all_artworks()
+    return render_template('gallery.html', artworks=artworks)
+
+@app.route('/test-model')
+def test_model():
+    """测试3D模型展示"""
+    return render_template('test_model.html')
 
 @app.route('/test')
 def test():

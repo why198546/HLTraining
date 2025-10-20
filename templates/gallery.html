@@ -43,29 +43,28 @@
 
                 <div class="gallery-grid" id="galleryGrid">
                     <!-- 用户保存的作品 -->
-                    {% if user_artworks %}
-                        {% for artwork in user_artworks %}
-                        <div class="gallery-item user-artwork" data-category="{{ artwork.category }}">
-                            <div class="artwork-showcase">
-                                <div class="artwork-step">
-                                    <h4>原始简笔画</h4>
-                                    {% if artwork.original_image %}
-                                        <img src="{{ url_for('static', filename=artwork.original_image) }}" alt="{{ artwork.title }} - 原始图" onerror="this.src='/static/images/placeholder.png'">
-                                    {% else %}
-                                        <div class="no-image">暂无原图</div>
-                                    {% endif %}
-                                </div>
-                                <div class="artwork-step">
-                                    <h4>AI生成效果</h4>
-                                    <img src="{{ url_for('static', filename=artwork.generated_image) }}" alt="{{ artwork.title }} - 生成图" onerror="this.src='/static/images/placeholder.png'">
-                                </div>
+                    {% if artworks %}
+                        {% for artwork in artworks %}
+                        <div class="gallery-item user-artwork" data-category="{{ artwork.category }}" 
+                             data-artwork-id="{{ artwork.id }}"
+                             data-artwork-title="{{ artwork.title }}"
+                             data-artwork-artist="{{ artwork.artist_name }}"
+                             data-artwork-age="{{ artwork.artist_age }}"
+                             data-artwork-date="{{ artwork.created_at[:10] }}"
+                             data-artwork-description="{{ artwork.description or '' }}"
+                             data-artwork-original="{{ artwork.original_image or '' }}"
+                             data-artwork-generated="{{ artwork.generated_image }}"
+                             data-artwork-model="{{ artwork.model_file or '' }}"
+                             data-artwork-likes="{{ artwork.likes }}"
+                             data-artwork-views="{{ artwork.views }}"
+                             onclick="showArtworkModal(this)">
+                            
+                            <!-- 卡片预览图 -->
+                            <div class="artwork-preview-image">
+                                <img src="{{ url_for('static', filename=artwork.generated_image) }}" alt="{{ artwork.title }}" onerror="this.src='/static/images/placeholder.png'">
                                 {% if artwork.model_file %}
-                                <div class="artwork-step">
-                                    <h4>3D模型</h4>
-                                    <div class="model-preview-thumb">
-                                        <i class="fas fa-cube"></i>
-                                        <span>3D模型</span>
-                                    </div>
+                                <div class="model-badge">
+                                    <i class="fas fa-cube"></i>
                                 </div>
                                 {% endif %}
                             </div>
@@ -83,7 +82,7 @@
                                 <p class="artwork-description">{{ artwork.description }}</p>
                                 {% endif %}
                                 <div class="artwork-stats">
-                                    <span class="likes" onclick="likeArtwork('{{ artwork.id }}')">
+                                    <span class="likes" onclick="event.stopPropagation(); likeArtwork('{{ artwork.id }}')">
                                         <i class="fas fa-heart"></i>
                                         <span id="likes-{{ artwork.id }}">{{ artwork.likes }}</span>个赞
                                     </span>
@@ -98,20 +97,23 @@
                     {% endif %}
                     
                     <!-- 示例作品 -->
-                    <div class="gallery-item" data-category="animals">
-                        <div class="artwork-showcase">
-                            <div class="artwork-step">
-                                <h4>原始简笔画</h4>
-                                <img src="{{ url_for('static', filename='images/sample/cat_sketch.png') }}" alt="小猫简笔画" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>AI上色效果</h4>
-                                <img src="{{ url_for('static', filename='images/sample/cat_colored.png') }}" alt="小猫上色" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>手办风格</h4>
-                                <img src="{{ url_for('static', filename='images/sample/cat_figurine.png') }}" alt="小猫手办" class="placeholder-img">
-                            </div>
+                    <div class="gallery-item" data-category="animals" 
+                         data-artwork-id="sample-cat"
+                         data-artwork-title="可爱小猫"
+                         data-artwork-artist="小明"
+                         data-artwork-age="10"
+                         data-artwork-date="2024年3月15日"
+                         data-artwork-description="我画了一只超级可爱的小猫咪，它有大大的眼睛和长长的尾巴！"
+                         data-artwork-original="images/sample/cat_sketch.png"
+                         data-artwork-generated="images/sample/cat_colored.png"
+                         data-artwork-model=""
+                         data-artwork-likes="42"
+                         data-artwork-views="128"
+                         onclick="showArtworkModal(this)">
+                        
+                        <!-- 卡片预览图 -->
+                        <div class="artwork-preview-image">
+                            <img src="{{ url_for('static', filename='images/sample/cat_colored.png') }}" alt="可爱小猫" class="placeholder-img">
                         </div>
                         <div class="artwork-info">
                             <h3>可爱小猫</h3>
@@ -136,20 +138,23 @@
                         </div>
                     </div>
 
-                    <div class="gallery-item" data-category="characters">
-                        <div class="artwork-showcase">
-                            <div class="artwork-step">
-                                <h4>原始简笔画</h4>
-                                <img src="{{ url_for('static', filename='images/sample/superhero_sketch.png') }}" alt="超级英雄简笔画" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>AI上色效果</h4>
-                                <img src="{{ url_for('static', filename='images/sample/superhero_colored.png') }}" alt="超级英雄上色" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>手办风格</h4>
-                                <img src="{{ url_for('static', filename='images/sample/superhero_figurine.png') }}" alt="超级英雄手办" class="placeholder-img">
-                            </div>
+                    <div class="gallery-item" data-category="characters"
+                         data-artwork-id="sample-superhero"
+                         data-artwork-title="超级英雄"
+                         data-artwork-artist="小红"
+                         data-artwork-age="12"
+                         data-artwork-date="2024年3月14日"
+                         data-artwork-description="我设计了一个拯救世界的超级英雄，他有神奇的力量和酷炫的斗篷！"
+                         data-artwork-original="images/sample/superhero_sketch.png"
+                         data-artwork-generated="images/sample/superhero_colored.png"
+                         data-artwork-model=""
+                         data-artwork-likes="67"
+                         data-artwork-views="203"
+                         onclick="showArtworkModal(this)">
+                        
+                        <!-- 卡片预览图 -->
+                        <div class="artwork-preview-image">
+                            <img src="{{ url_for('static', filename='images/sample/superhero_colored.png') }}" alt="超级英雄" class="placeholder-img">
                         </div>
                         <div class="artwork-info">
                             <h3>超级英雄</h3>
@@ -174,20 +179,23 @@
                         </div>
                     </div>
 
-                    <div class="gallery-item" data-category="nature">
-                        <div class="artwork-showcase">
-                            <div class="artwork-step">
-                                <h4>原始简笔画</h4>
-                                <img src="{{ url_for('static', filename='images/sample/flower_sketch.png') }}" alt="花朵简笔画" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>AI上色效果</h4>
-                                <img src="{{ url_for('static', filename='images/sample/flower_colored.png') }}" alt="花朵上色" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>手办风格</h4>
-                                <img src="{{ url_for('static', filename='images/sample/flower_figurine.png') }}" alt="花朵手办" class="placeholder-img">
-                            </div>
+                    <div class="gallery-item" data-category="nature"
+                         data-artwork-id="sample-flower"
+                         data-artwork-title="美丽花朵"
+                         data-artwork-artist="小丽"
+                         data-artwork-age="11"
+                         data-artwork-date="2024年3月13日"
+                         data-artwork-description="春天来了，我画了一朵盛开的花朵，颜色好漂亮！"
+                         data-artwork-original="images/sample/flower_sketch.png"
+                         data-artwork-generated="images/sample/flower_colored.png"
+                         data-artwork-model=""
+                         data-artwork-likes="35"
+                         data-artwork-views="96"
+                         onclick="showArtworkModal(this)">
+                        
+                        <!-- 卡片预览图 -->
+                        <div class="artwork-preview-image">
+                            <img src="{{ url_for('static', filename='images/sample/flower_colored.png') }}" alt="美丽花朵" class="placeholder-img">
                         </div>
                         <div class="artwork-info">
                             <h3>美丽花朵</h3>
@@ -212,20 +220,23 @@
                         </div>
                     </div>
 
-                    <div class="gallery-item" data-category="objects">
-                        <div class="artwork-showcase">
-                            <div class="artwork-step">
-                                <h4>原始简笔画</h4>
-                                <img src="{{ url_for('static', filename='images/sample/robot_sketch.png') }}" alt="机器人简笔画" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>AI上色效果</h4>
-                                <img src="{{ url_for('static', filename='images/sample/robot_colored.png') }}" alt="机器人上色" class="placeholder-img">
-                            </div>
-                            <div class="artwork-step">
-                                <h4>手办风格</h4>
-                                <img src="{{ url_for('static', filename='images/sample/robot_figurine.png') }}" alt="机器人手办" class="placeholder-img">
-                            </div>
+                    <div class="gallery-item" data-category="objects"
+                         data-artwork-id="sample-robot"
+                         data-artwork-title="未来机器人"
+                         data-artwork-artist="小刚"
+                         data-artwork-age="13"
+                         data-artwork-date="2024年3月12日"
+                         data-artwork-description="我画了一个来自未来的机器人，它很聪明也很友善，可以帮助人类做很多事情！"
+                         data-artwork-original="images/sample/robot_sketch.png"
+                         data-artwork-generated="images/sample/robot_colored.png"
+                         data-artwork-model="models/sample/robot.obj"
+                         data-artwork-likes="58"
+                         data-artwork-views="156"
+                         onclick="showArtworkModal(this)">
+                        
+                        <!-- 卡片预览图 -->
+                        <div class="artwork-preview-image">
+                            <img src="{{ url_for('static', filename='images/sample/robot_colored.png') }}" alt="未来机器人" class="placeholder-img">
                         </div>
                         <div class="artwork-info">
                             <h3>未来机器人</h3>
@@ -310,6 +321,53 @@
             </div>
         </div>
     </footer>
+
+    <!-- 作品详情模态框 -->
+    <div id="artworkModal" class="artwork-modal">
+        <div class="artwork-modal-content">
+            <div class="artwork-modal-header">
+                <button class="artwork-modal-close" onclick="closeArtworkModal()">&times;</button>
+                <h2 id="modalArtworkTitle">作品标题</h2>
+            </div>
+            <div class="artwork-modal-body">
+                <div class="artwork-detail-showcase" id="modalArtworkShowcase">
+                    <!-- 动态内容 -->
+                </div>
+                <div class="artwork-detail-info" id="modalArtworkInfo">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D模型叠加层 -->
+    <div id="modelOverlay" class="model-overlay">
+        <div class="model-overlay-backdrop" onclick="closeModelOverlay()"></div>
+        <div class="model-overlay-content">
+            <div class="model-viewer-container">
+                <div class="model-placeholder">
+                    <i class="fas fa-cube"></i>
+                    <h3 id="modelTitle">3D模型查看器</h3>
+                    <p>模型正在加载中...</p>
+                    <div class="model-controls">
+                        <button class="model-btn" onclick="rotateModel()">
+                            <i class="fas fa-sync-alt"></i>
+                            旋转
+                        </button>
+                        <button class="model-btn" onclick="resetView()">
+                            <i class="fas fa-home"></i>
+                            重置视角
+                        </button>
+                        <button class="model-btn" onclick="toggleWireframe()">
+                            <i class="fas fa-border-none"></i>
+                            线框
+                        </button>
+                    </div>
+                    <p class="model-info">点击其他区域关闭</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
 </body>
