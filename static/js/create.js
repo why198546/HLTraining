@@ -3,6 +3,29 @@ let currentStage = 1;
 let generatedImageUrl = '';
 let uploadedImageFile = null;
 
+// 3D模型相关全局变量
+let scene = null;
+let camera = null;
+let renderer = null;
+let controls = null;
+let model = null;
+let animationId = null;
+let isAutoRotating = false;
+
+// 进度条相关变量
+let progressInterval = null;
+let currentProgress = 0;
+let startTime = null;
+let estimatedTotalTime = 150; // 预计150秒（2.5分钟）
+
+// 3D模型控制面板相关变量
+let originalMaterials = new Map(); // 存储原始材质
+let currentRenderMode = 'solid'; // 当前渲染模式
+let currentMaterialType = 'original'; // 当前材质类型
+let backgroundVisible = true; // 背景可见性
+let directionalLight = null; // 定向光源引用
+let pointsObjects = []; // 存储创建的点云对象
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeCreatePage();
@@ -22,8 +45,58 @@ function initializeCreatePage() {
         generate3DBtn.addEventListener('click', generate3DModel);
     }
 
+    // 绑定3D模型控制按钮事件
+    const rotateBtn = document.getElementById('rotateModel');
+    if (rotateBtn) {
+        rotateBtn.addEventListener('click', toggleAutoRotation);
+    }
+
+    const resetViewBtn = document.getElementById('resetView');
+    if (resetViewBtn) {
+        resetViewBtn.addEventListener('click', resetCameraView);
+    }
+
+    const download3DBtn = document.getElementById('download3D');
+    if (download3DBtn) {
+        download3DBtn.addEventListener('click', download3DModel);
+    }
+
+    // 绑定3D模型控制面板事件
+    initModelControlsPanel();
+
     // 设置初始阶段
     showStage(1);
+}
+
+// 显示特定阶段
+function showStage(stage) {
+    currentStage = stage;
+    
+    // 隐藏所有阶段
+    const stages = document.querySelectorAll('.creation-stage');
+    stages.forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+    
+    // 显示指定阶段
+    const targetStage = document.getElementById(`stage-${stage}`);
+    if (targetStage) {
+        targetStage.classList.add('active');
+        targetStage.style.display = 'block';
+    }
+}
+
+// 切换创作步骤
+function nextStep() {
+    if (currentStage < 4) {
+        showStage(currentStage + 1);
+    }
+}
+
+// 点击上传图片按钮
+function triggerImageUpload() {
+    document.getElementById('image-upload').click();
 }
 
 // 显示指定阶段
@@ -37,9 +110,32 @@ function showStage(stageNumber) {
     allSteps.forEach(step => step.classList.remove('active', 'completed'));
 
     // 显示当前阶段
-    const currentStageElement = document.getElementById(getStageId(stageNumber));
+    const stageId = getStageId(stageNumber);
+    const currentStageElement = document.getElementById(stageId);
+    
     if (currentStageElement) {
         currentStageElement.classList.add('active');
+        
+        // 特别检查阶段4中的图片元素
+        if (stageNumber === 4) {
+            const finalImageEl = document.getElementById('final-image');
+            if (finalImageEl) {
+                // 强制设置图片URL（无论当前src是什么）
+                if (generatedImageUrl) {
+                    finalImageEl.src = generatedImageUrl;
+                    finalImageEl.style.display = 'block';
+                    finalImageEl.style.visibility = 'visible';
+                    
+                    // 强制触发重新加载
+                    finalImageEl.onload = () => {
+                        // 图片加载成功
+                    };
+                    finalImageEl.onerror = (error) => {
+                        console.error('图片加载失败:', error);
+                    };
+                }
+            }
+        }
     }
 
     // 更新进度指示器
@@ -128,12 +224,42 @@ async function generateImage() {
 
         if (result.success) {
             generatedImageUrl = result.image_url;
-            document.getElementById('generated-image').src = result.image_url;
-            document.getElementById('current-image').src = result.image_url;
-            document.getElementById('final-image').src = result.image_url;
+            // 记录原始图片路径（如果有的话）
+            if (result.original_image_url) {
+                originalImagePath = result.original_image_url;
+            }
+            
+            // 更新图片显示元素
+            const generatedImageEl = document.getElementById('generated-image');
+            const currentImageEl = document.getElementById('current-image');
+            const finalImageEl = document.getElementById('final-image');
+            
+            // 显示调试信息
+            showMessage(`图片生成成功！URL: ${result.image_url}`, 'success');
+            
+            if (generatedImageEl) {
+                generatedImageEl.src = result.image_url;
+                generatedImageEl.style.display = 'block';
+                generatedImageEl.onerror = () => console.error('generated-image 加载失败');
+            } else {
+                console.error('未找到generated-image元素');
+                showMessage('未找到generated-image元素', 'error');
+            }
+            if (currentImageEl) {
+                currentImageEl.src = result.image_url;
+                currentImageEl.style.display = 'block';
+            }
+            if (finalImageEl) {
+                finalImageEl.src = result.image_url;
+                finalImageEl.style.display = 'block';
+            }
+            
+            // 更新生成成功状态并显示保存按钮
+            updateImageGenerationSuccess(result);
             
             hideLoadingOverlay();
             showMessage('图片生成成功！', 'success');
+            // 进入生成结果展示阶段
             showStage(2);
         } else {
             hideLoadingOverlay();
@@ -158,11 +284,37 @@ function showAdjustPanel() {
 
 // 确认图片（跳过调整）
 function confirmImage() {
+    // 确保final-image显示当前生成的图片
+    const finalImageEl = document.getElementById('final-image');
+    if (finalImageEl && generatedImageUrl) {
+        finalImageEl.src = generatedImageUrl;
+        finalImageEl.style.display = 'block';
+    }
+    
+    // 显示final-actions（包含保存按钮）
+    const finalActions = document.getElementById('final-actions');
+    if (finalActions) {
+        finalActions.style.display = 'flex';
+    }
+    
     showStage(4);
 }
 
 // 跳过调整
 function skipAdjustment() {
+    // 确保final-image显示当前生成的图片
+    const finalImageEl = document.getElementById('final-image');
+    if (finalImageEl && generatedImageUrl) {
+        finalImageEl.src = generatedImageUrl;
+        finalImageEl.style.display = 'block';
+    }
+    
+    // 显示final-actions（包含保存按钮）
+    const finalActions = document.getElementById('final-actions');
+    if (finalActions) {
+        finalActions.style.display = 'flex';
+    }
+    
     showStage(4);
 }
 
@@ -191,8 +343,12 @@ async function applyAdjustment() {
 
         if (result.success) {
             generatedImageUrl = result.image_url;
-            document.getElementById('current-image').src = result.image_url;
-            document.getElementById('final-image').src = result.image_url;
+            // 更新图片显示元素
+            const currentImageEl = document.getElementById('current-image');
+            const finalImageEl = document.getElementById('final-image');
+            
+            if (currentImageEl) currentImageEl.src = result.image_url;
+            if (finalImageEl) finalImageEl.src = result.image_url;
             
             hideLoadingOverlay();
             showMessage('图片调整成功！', 'success');
@@ -214,11 +370,36 @@ async function applyAdjustment() {
 
 // 生成3D模型
 async function generate3DModel() {
-    showLoadingOverlay('正在生成3D模型，这可能需要几分钟...');
+    if (!generatedImageUrl) {
+        showMessage('请先生成图片', 'error');
+        return;
+    }
+
+    // 切换到第4阶段（3D模型生成阶段）
+    showStage(4);
+    
+    // 确保final-image在开始3D生成时就显示正确的图片
+    const finalImageEl = document.getElementById('final-image');
+    if (finalImageEl && generatedImageUrl) {
+        finalImageEl.src = generatedImageUrl;
+        finalImageEl.style.display = 'block';
+    }
+
+    showLoadingOverlay('正在生成3D模型，预计需要2-3分钟...');
+    showProgressBar();
 
     try {
         const formData = new FormData();
         formData.append('image_path', generatedImageUrl);
+        
+        // 添加可选的prompt
+        const modelPrompt = document.getElementById('model-prompt');
+        if (modelPrompt && modelPrompt.value.trim()) {
+            formData.append('prompt', modelPrompt.value.trim());
+        }
+        
+        // 启动进度模拟
+        startProgressSimulation();
         
         const response = await fetch('/generate-3d-model', {
             method: 'POST',
@@ -227,23 +408,52 @@ async function generate3DModel() {
 
         const result = await response.json();
 
+        // 停止进度模拟
+        stopProgressSimulation();
+
         if (result.success) {
-            hideLoadingOverlay();
-            showMessage('3D模型生成成功！', 'success');
+            // 完成进度条到100%
+            updateProgress(100, '生成完成！');
             
-            // 显示3D模型预览区域
-            document.getElementById('model-preview-area').style.display = 'block';
-            document.getElementById('final-actions').style.display = 'flex';
-            
-            // 加载3D模型（如果有模型文件URL）
-            if (result.model_url) {
-                load3DModel(result.model_url);
-            }
+            setTimeout(() => {
+                hideLoadingOverlay();
+                showMessage('3D模型生成成功！', 'success');
+                
+                // 确保final-image显示正确的图片
+                const finalImageEl = document.getElementById('final-image');
+                if (finalImageEl && generatedImageUrl) {
+                    finalImageEl.src = generatedImageUrl;
+                    finalImageEl.style.display = 'block';
+                }
+                
+                // 显示3D模型相关区域
+                const modelActionsEl = document.getElementById('model-actions');
+                if (modelActionsEl) {
+                    modelActionsEl.style.display = 'block';
+                }
+                
+                // 显示final-actions（包含保存按钮）
+                const finalActions = document.getElementById('final-actions');
+                if (finalActions) {
+                    finalActions.style.display = 'flex';
+                }
+                
+                // 记录3D模型文件路径
+                if (result.model_url) {
+                    modelFilePath = result.model_url;
+                }
+                
+                // 加载3D模型（如果有模型文件URL）
+                if (result.model_url) {
+                    load3DModel(result.model_url);
+                }
+            }, 500);
         } else {
             hideLoadingOverlay();
             showMessage(`3D模型生成失败: ${result.error}`, 'error');
         }
     } catch (error) {
+        stopProgressSimulation();
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
         console.error('Error:', error);
@@ -254,10 +464,21 @@ async function generate3DModel() {
 function load3DModel(modelUrl) {
     const container = document.getElementById('modelContainer');
     
+    // 保存当前模型URL用于下载
+    window.currentModelUrl = modelUrl;
+    
+    // 清理之前的场景
+    if (renderer) {
+        renderer.dispose();
+    }
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+    }
+    
     // 创建Three.js场景
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     
     renderer.setSize(container.offsetWidth, container.offsetHeight);
     renderer.setClearColor(0xf0f0f0);
@@ -268,17 +489,26 @@ function load3DModel(modelUrl) {
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
     directionalLight.position.set(1, 1, 1);
     scene.add(directionalLight);
 
     // 添加控制器
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.enableZoom = true;
+    controls.enablePan = true;
     
     // 渲染循环
     function animate() {
-        requestAnimationFrame(animate);
+        animationId = requestAnimationFrame(animate);
+        
+        // 自动旋转
+        if (isAutoRotating && model) {
+            model.rotation.y += 0.01;
+        }
+        
         controls.update();
         renderer.render(scene, camera);
     }
@@ -300,16 +530,30 @@ function load3DModel(modelUrl) {
             const objLoader = new THREE.OBJLoader();
             objLoader.setMaterials(materials);
             objLoader.load(modelUrl, function(object) {
-                scene.add(object);
+                model = object;
+                scene.add(model);
                 
-                // 调整相机位置
-                camera.position.z = 5;
+                // 根据模型大小调整相机位置
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
+                camera.position.z = cameraDistance;
                 
                 // 移除加载占位符
                 const placeholder = container.querySelector('.model-placeholder');
                 if (placeholder) {
                     placeholder.remove();
                 }
+                
+                // 显示模型控制按钮和控制面板
+                const modelActions = document.getElementById('model-actions');
+                if (modelActions) {
+                    modelActions.style.display = 'flex';
+                }
+                
+                // 显示3D模型控制面板
+                showModelControlsPanel();
             }, undefined, function(error) {
                 console.error('OBJ模型加载失败:', error);
                 showMessage('3D模型加载失败', 'error');
@@ -330,16 +574,30 @@ function load3DModel(modelUrl) {
                     }
                 });
                 
-                scene.add(object);
+                model = object;
+                scene.add(model);
                 
-                // 调整相机位置
-                camera.position.z = 5;
+                // 根据模型大小调整相机位置
+                const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
+                camera.position.z = cameraDistance;
                 
                 // 移除加载占位符
                 const placeholder = container.querySelector('.model-placeholder');
                 if (placeholder) {
                     placeholder.remove();
                 }
+                
+                // 显示模型控制按钮和控制面板
+                const modelActions = document.getElementById('model-actions');
+                if (modelActions) {
+                    modelActions.style.display = 'flex';
+                }
+                
+                // 显示3D模型控制面板
+                showModelControlsPanel();
             }, undefined, function(error) {
                 console.error('OBJ模型加载失败:', error);
                 showMessage('3D模型加载失败', 'error');
@@ -349,16 +607,30 @@ function load3DModel(modelUrl) {
         // 默认使用GLTF加载器
         const loader = new THREE.GLTFLoader();
         loader.load(modelUrl, function(gltf) {
-            scene.add(gltf.scene);
+            model = gltf.scene;
+            scene.add(model);
             
-            // 调整相机位置
-            camera.position.z = 5;
+            // 根据模型大小调整相机位置
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
+            camera.position.z = cameraDistance;
             
             // 移除加载占位符
             const placeholder = container.querySelector('.model-placeholder');
             if (placeholder) {
                 placeholder.remove();
             }
+            
+            // 显示模型控制按钮和控制面板
+            const modelActions = document.getElementById('model-actions');
+            if (modelActions) {
+                modelActions.style.display = 'flex';
+            }
+            
+            // 显示3D模型控制面板
+            showModelControlsPanel();
         }, undefined, function(error) {
             console.error('GLTF模型加载失败:', error);
             showMessage('3D模型加载失败', 'error');
@@ -387,14 +659,37 @@ function startNewCreation() {
     uploadedImageFile = null;
     
     // 清空表单
-    document.getElementById('creation-prompt').value = '';
-    document.getElementById('adjustment-prompt').value = '';
-    document.getElementById('reference-image').value = '';
+    const creationPrompt = document.getElementById('creation-prompt');
+    const adjustmentPrompt = document.getElementById('adjustment-prompt');
+    const modelPrompt = document.getElementById('model-prompt');
+    const referenceImage = document.getElementById('reference-image');
     
-    // 隐藏预览
-    document.getElementById('uploaded-image-preview').style.display = 'none';
-    document.getElementById('model-preview-area').style.display = 'none';
-    document.getElementById('final-actions').style.display = 'none';
+    if (creationPrompt) creationPrompt.value = '';
+    if (adjustmentPrompt) adjustmentPrompt.value = '';
+    if (modelPrompt) modelPrompt.value = '';
+    if (referenceImage) referenceImage.value = '';
+    
+    // 隐藏预览和控制区域
+    const uploadedImagePreview = document.getElementById('uploaded-image-preview');
+    const modelActions = document.getElementById('model-actions');
+    
+    if (uploadedImagePreview) uploadedImagePreview.style.display = 'none';
+    if (modelActions) modelActions.style.display = 'none';
+    
+    // 清空图片显示
+    const finalImage = document.getElementById('final-image');
+    if (finalImage) finalImage.src = '';
+    
+    // 重置3D模型容器
+    const modelContainer = document.getElementById('modelContainer');
+    if (modelContainer) {
+        modelContainer.innerHTML = `
+            <div class="model-placeholder">
+                <i class="fas fa-cube"></i>
+                <p>点击下方按钮生成3D模型</p>
+            </div>
+        `;
+    }
     
     // 返回第一阶段
     showStage(1);
@@ -421,6 +716,8 @@ function showLoadingOverlay(text = '加载中...') {
 // 隐藏加载覆盖层
 function hideLoadingOverlay() {
     document.getElementById('loading-overlay').style.display = 'none';
+    hideProgressBar();
+    stopProgressSimulation();
 }
 
 // 显示消息提示
@@ -432,4 +729,619 @@ function showMessage(message, type = 'info') {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// 切换自动旋转
+function toggleAutoRotation() {
+    if (!model) {
+        showMessage('请先生成3D模型', 'warning');
+        return;
+    }
+    
+    isAutoRotating = !isAutoRotating;
+    const rotateBtn = document.getElementById('rotateModel');
+    
+    if (isAutoRotating) {
+        rotateBtn.innerHTML = '<i class="fas fa-pause"></i> 停止旋转';
+        rotateBtn.classList.add('active');
+        showMessage('开始自动旋转', 'info');
+    } else {
+        rotateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 自动旋转';
+        rotateBtn.classList.remove('active');
+        showMessage('停止自动旋转', 'info');
+    }
+}
+
+// 重置相机视角
+function resetCameraView() {
+    if (!camera || !controls) {
+        showMessage('请先生成3D模型', 'warning');
+        return;
+    }
+    
+    // 计算模型的包围盒以确定合适的相机距离
+    let cameraDistance = 3; // 默认距离
+    
+    if (model) {
+        // 计算模型的包围盒
+        const box = new THREE.Box3().setFromObject(model);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        
+        // 根据模型大小计算合适的相机距离
+        const maxDim = Math.max(size.x, size.y, size.z);
+        cameraDistance = maxDim * 2; // 距离为模型最大尺寸的2倍
+        
+        // 确保距离在合理范围内
+        cameraDistance = Math.max(1.5, Math.min(cameraDistance, 8));
+    }
+    
+    // 停止自动旋转
+    if (isAutoRotating) {
+        toggleAutoRotation();
+    }
+    
+    // 重置模型旋转
+    if (model) {
+        model.rotation.set(0, 0, 0);
+    }
+    
+    // 重置相机位置到合适的距离
+    camera.position.set(0, 0, cameraDistance);
+    camera.lookAt(0, 0, 0);
+    
+    // 重置控制器目标到原点
+    controls.target.set(0, 0, 0);
+    
+    // 更新控制器（不要调用reset，因为会覆盖我们的设置）
+    controls.update();
+    
+    showMessage('视角已重置', 'success');
+}
+
+// 下载3D模型
+function download3DModel() {
+    if (!model) {
+        showMessage('请先生成3D模型', 'warning');
+        return;
+    }
+    
+    // 这里可以实现3D模型下载功能
+    // 获取当前显示的模型URL
+    const modelUrl = window.currentModelUrl; // 需要在模型加载时设置这个变量
+    
+    if (modelUrl) {
+        const link = document.createElement('a');
+        link.href = modelUrl;
+        link.download = 'my-3d-model.glb';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showMessage('3D模型下载开始', 'success');
+    } else {
+        showMessage('无法获取模型文件', 'error');
+    }
+}
+
+// 进度条相关函数
+function showProgressBar() {
+    const progressContainer = document.getElementById('progress-container');
+    if (progressContainer) {
+        progressContainer.style.display = 'block';
+    }
+}
+
+function hideProgressBar() {
+    const progressContainer = document.getElementById('progress-container');
+    if (progressContainer) {
+        progressContainer.style.display = 'none';
+    }
+}
+
+function updateProgress(percentage, timeText = null) {
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const progressTime = document.getElementById('progress-time');
+    
+    if (progressFill) {
+        progressFill.style.width = percentage + '%';
+    }
+    
+    if (progressText) {
+        progressText.textContent = Math.round(percentage) + '%';
+    }
+    
+    if (progressTime && timeText) {
+        progressTime.textContent = timeText;
+    }
+}
+
+function startProgressSimulation() {
+    currentProgress = 0;
+    startTime = Date.now();
+    
+    // 根据13-15次查询估算，每次查询约10-12秒，总共150秒
+    progressInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000; // 秒
+        
+        // 使用非线性进度计算，前80%较快，后20%较慢
+        let targetProgress;
+        if (elapsed < 60) {
+            // 前60秒达到50%
+            targetProgress = (elapsed / 60) * 50;
+        } else if (elapsed < 120) {
+            // 60-120秒达到80%
+            targetProgress = 50 + ((elapsed - 60) / 60) * 30;
+        } else {
+            // 120秒后缓慢增长到95%
+            targetProgress = 80 + Math.min(15, ((elapsed - 120) / 30) * 15);
+        }
+        
+        // 平滑过渡到目标进度
+        currentProgress = Math.min(currentProgress + 0.5, targetProgress);
+        
+        // 计算预估剩余时间
+        let remainingTime;
+        if (currentProgress < 5) {
+            remainingTime = estimatedTotalTime;
+        } else {
+            const rate = currentProgress / elapsed;
+            remainingTime = Math.max(0, (100 - currentProgress) / rate);
+        }
+        
+        const minutes = Math.floor(remainingTime / 60);
+        const seconds = Math.floor(remainingTime % 60);
+        let timeText;
+        
+        if (minutes > 0) {
+            timeText = `预估剩余: ${minutes}分${seconds}秒`;
+        } else {
+            timeText = `预估剩余: ${seconds}秒`;
+        }
+        
+        updateProgress(currentProgress, timeText);
+        
+        // 如果达到95%就停止自动增长，等待实际完成
+        if (currentProgress >= 95) {
+            updateProgress(95, '即将完成...');
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+    }, 200); // 每200ms更新一次
+}
+
+function stopProgressSimulation() {
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+// 初始化3D模型控制面板
+function initModelControlsPanel() {
+    // 渲染模式控制
+    document.getElementById('renderSolid')?.addEventListener('click', () => setRenderMode('solid'));
+    document.getElementById('renderWireframe')?.addEventListener('click', () => setRenderMode('wireframe'));
+    document.getElementById('renderPoints')?.addEventListener('click', () => setRenderMode('points'));
+    
+    // 材质控制
+    document.getElementById('materialOriginal')?.addEventListener('click', () => setMaterialType('original'));
+    document.getElementById('materialLambert')?.addEventListener('click', () => setMaterialType('lambert'));
+    document.getElementById('materialPhong')?.addEventListener('click', () => setMaterialType('phong'));
+    
+    // 环境控制
+    document.getElementById('toggleBackground')?.addEventListener('click', toggleBackground);
+    document.getElementById('lightIntensity')?.addEventListener('input', (e) => setLightIntensity(e.target.value));
+    
+    // 模型操作
+    document.getElementById('resetModel')?.addEventListener('click', resetModelTransform);
+    document.getElementById('centerModel')?.addEventListener('click', centerModel);
+}
+
+// 显示控制面板
+function showModelControlsPanel() {
+    const panel = document.getElementById('modelControlsPanel');
+    if (panel) {
+        panel.style.display = 'block';
+    }
+    
+    // 重置渲染控制状态
+    resetRenderControls();
+}
+
+// 隐藏控制面板
+function hideModelControlsPanel() {
+    const panel = document.getElementById('modelControlsPanel');
+    if (panel) {
+        panel.style.display = 'none';
+    }
+}
+
+// 设置渲染模式
+function setRenderMode(mode) {
+    if (!model) {
+        showMessage('请先加载3D模型', 'warning');
+        return;
+    }
+    
+    currentRenderMode = mode;
+    
+    // 更新按钮状态
+    document.querySelectorAll('#renderSolid, #renderWireframe, #renderPoints').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`render${mode.charAt(0).toUpperCase() + mode.slice(1)}`)?.classList.add('active');
+    
+    // 首先清理之前的点云对象
+    cleanupPointsObjects();
+    
+    // 重置所有mesh的可见性
+    model.traverse((child) => {
+        if (child.isMesh) {
+            child.visible = true;
+        }
+    });
+    
+    // 应用渲染模式
+    if (mode === 'points') {
+        // 点云模式：创建点云对象并隐藏原mesh
+        model.traverse((child) => {
+            if (child.isMesh) {
+                // 创建点材质
+                const pointsMaterial = new THREE.PointsMaterial({
+                    color: child.material.color || 0x888888,
+                    size: 0.02,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                // 创建点几何体
+                const points = new THREE.Points(child.geometry, pointsMaterial);
+                points.position.copy(child.position);
+                points.rotation.copy(child.rotation);
+                points.scale.copy(child.scale);
+                
+                // 添加到场景并记录
+                scene.add(points);
+                pointsObjects.push(points);
+                
+                // 隐藏原mesh
+                child.visible = false;
+            }
+        });
+    } else {
+        // 实体模式和线框模式：修改材质属性
+        model.traverse((child) => {
+            if (child.isMesh) {
+                switch (mode) {
+                    case 'solid':
+                        child.material.wireframe = false;
+                        child.material.transparent = false;
+                        child.material.opacity = 1;
+                        break;
+                    case 'wireframe':
+                        child.material.wireframe = true;
+                        child.material.transparent = true;
+                        child.material.opacity = 0.8;
+                        break;
+                }
+            }
+        });
+    }
+    
+    showMessage(`渲染模式已切换为: ${mode === 'solid' ? '实体' : mode === 'wireframe' ? '线框' : '点云'}`, 'success');
+}
+
+// 清理点云对象
+function cleanupPointsObjects() {
+    pointsObjects.forEach(points => {
+        if (points.parent) {
+            points.parent.remove(points);
+        }
+        // 清理几何体和材质
+        if (points.geometry) points.geometry.dispose();
+        if (points.material) points.material.dispose();
+    });
+    pointsObjects = [];
+}
+
+// 重置渲染控制状态
+function resetRenderControls() {
+    // 清理点云对象
+    cleanupPointsObjects();
+    
+    // 重置控制变量
+    currentRenderMode = 'solid';
+    currentMaterialType = 'original';
+    originalMaterials.clear();
+    
+    // 重置按钮状态
+    document.querySelectorAll('#renderSolid, #renderWireframe, #renderPoints').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('renderSolid')?.classList.add('active');
+    
+    document.querySelectorAll('#materialOriginal, #materialLambert, #materialPhong').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById('materialOriginal')?.classList.add('active');
+}
+
+// 设置材质类型
+function setMaterialType(type) {
+    if (!model) {
+        showMessage('请先加载3D模型', 'warning');
+        return;
+    }
+    
+    currentMaterialType = type;
+    
+    // 更新按钮状态
+    document.querySelectorAll('#materialOriginal, #materialLambert, #materialPhong').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.getElementById(`material${type.charAt(0).toUpperCase() + type.slice(1)}`)?.classList.add('active');
+    
+    // 应用材质
+    model.traverse((child) => {
+        if (child.isMesh) {
+            // 如果是第一次，存储原始材质
+            if (!originalMaterials.has(child.uuid)) {
+                originalMaterials.set(child.uuid, child.material.clone());
+            }
+            
+            switch (type) {
+                case 'original':
+                    child.material = originalMaterials.get(child.uuid);
+                    break;
+                case 'lambert':
+                    child.material = new THREE.MeshLambertMaterial({
+                        color: child.material.color || 0x888888,
+                        wireframe: currentRenderMode === 'wireframe'
+                    });
+                    break;
+                case 'phong':
+                    child.material = new THREE.MeshPhongMaterial({
+                        color: child.material.color || 0x888888,
+                        shininess: 50,
+                        wireframe: currentRenderMode === 'wireframe'
+                    });
+                    break;
+            }
+        }
+    });
+    
+    showMessage(`材质已切换为: ${type === 'original' ? '原始' : type === 'lambert' ? '朗伯' : '光泽'}`, 'success');
+}
+
+// 切换背景显示
+function toggleBackground() {
+    if (!scene) return;
+    
+    backgroundVisible = !backgroundVisible;
+    
+    const backgroundText = document.getElementById('backgroundText');
+    if (backgroundVisible) {
+        scene.background = new THREE.Color(0xf0f0f0);
+        if (backgroundText) backgroundText.textContent = '显示';
+    } else {
+        scene.background = null;
+        if (backgroundText) backgroundText.textContent = '隐藏';
+    }
+    
+    showMessage(`背景已${backgroundVisible ? '显示' : '隐藏'}`, 'success');
+}
+
+// 设置光照强度
+function setLightIntensity(intensity) {
+    if (directionalLight) {
+        directionalLight.intensity = parseFloat(intensity);
+    }
+}
+
+// 重置模型变换
+function resetModelTransform() {
+    if (!model) {
+        showMessage('请先加载3D模型', 'warning');
+        return;
+    }
+    
+    model.position.set(0, 0, 0);
+    model.rotation.set(0, 0, 0);
+    model.scale.set(1, 1, 1);
+    
+    showMessage('模型变换已重置', 'success');
+}
+
+// 居中显示模型
+function centerModel() {
+    if (!model || !camera) {
+        showMessage('请先加载3D模型', 'warning');
+        return;
+    }
+    
+    // 计算模型包围盒
+    const box = new THREE.Box3().setFromObject(model);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    
+    // 将模型移动到原点
+    model.position.sub(center);
+    
+    // 调整相机位置以适应模型
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const distance = maxDim * 2;
+    camera.position.set(0, 0, distance);
+    camera.lookAt(0, 0, 0);
+    
+    if (controls) {
+        controls.target.set(0, 0, 0);
+        controls.update();
+    }
+    
+    showMessage('模型已居中显示', 'success');
+}
+
+// 保存作品相关功能
+let originalImagePath = null;  // 存储原始图片路径
+let generatedImagePath = null; // 存储生成图片路径
+let modelFilePath = null;      // 存储3D模型文件路径
+
+// 显示保存作品对话框
+function showSaveArtworkDialog() {
+    // 检查是否有必要的图片（至少要有生成的图片）
+    if (!generatedImageUrl) {
+        showMessage('请先完成图片生成才能保存作品', 'error');
+        return;
+    }
+    
+    // 设置预览图片
+    if (originalImagePath) {
+        document.getElementById('preview-original').src = originalImagePath;
+    } else {
+        // 如果没有原始图片，显示占位图或隐藏
+        document.getElementById('preview-original').src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150"%3E%3Crect width="100%25" height="100%25" fill="%23f0f0f0"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3E文字生成%3C/text%3E%3C/svg%3E';
+    }
+    document.getElementById('preview-generated').src = generatedImageUrl;
+    
+    // 显示对话框
+    document.getElementById('save-artwork-modal').style.display = 'flex';
+}
+
+// 关闭保存作品对话框
+function closeSaveArtworkDialog() {
+    document.getElementById('save-artwork-modal').style.display = 'none';
+    
+    // 清空表单
+    document.getElementById('artwork-title').value = '';
+    document.getElementById('artist-name').value = '';
+    document.getElementById('artist-age').value = '10';
+    document.getElementById('artwork-category').value = 'animals';
+    document.getElementById('artwork-description').value = '';
+}
+
+// 保存作品到作品集
+async function saveArtworkToGallery() {
+    try {
+        // 获取表单数据
+        const title = document.getElementById('artwork-title').value.trim();
+        const artistName = document.getElementById('artist-name').value.trim();
+        const artistAge = document.getElementById('artist-age').value;
+        const category = document.getElementById('artwork-category').value;
+        const description = document.getElementById('artwork-description').value.trim();
+        
+        // 验证必填字段
+        if (!title) {
+            showMessage('请输入作品标题', 'error');
+            return;
+        }
+        
+        if (!artistName) {
+            showMessage('请输入创作者姓名', 'error');
+            return;
+        }
+        
+        // 显示加载状态
+        const saveBtn = document.querySelector('.modal-footer .primary-btn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+        saveBtn.disabled = true;
+        
+        // 准备保存数据，处理路径格式
+        const saveData = {
+            original_image_path: originalImagePath ? (originalImagePath.startsWith('/') ? originalImagePath.substring(1) : originalImagePath) : null,
+            generated_image_path: generatedImageUrl.startsWith('/') ? generatedImageUrl.substring(1) : generatedImageUrl,
+            model_path: modelFilePath,
+            title: title,
+            artist_name: artistName,
+            artist_age: parseInt(artistAge),
+            category: category,
+            description: description
+        };
+        
+        // 发送保存请求
+        const response = await fetch('/save-artwork', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(saveData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('🎉 作品已成功保存到作品集！', 'success');
+            closeSaveArtworkDialog();
+            
+            // 显示成功弹窗
+            showSuccessModal(result.artwork_id);
+        } else {
+            showMessage(`保存失败: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        showMessage(`保存失败: ${error.message}`, 'error');
+    } finally {
+        // 恢复按钮状态
+        const saveBtn = document.querySelector('.modal-footer .primary-btn');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    }
+}
+
+// 显示保存成功弹窗
+function showSuccessModal(artworkId) {
+    // 创建成功弹窗HTML
+    const successModal = document.createElement('div');
+    successModal.className = 'modal-overlay success-modal';
+    successModal.innerHTML = `
+        <div class="modal-content success-content">
+            <div class="success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>🎉 保存成功！</h3>
+                <p>你的作品已成功保存到作品集</p>
+            </div>
+            <div class="success-actions">
+                <button class="secondary-btn" onclick="closeSuccessModal()">继续创作</button>
+                <button class="primary-btn" onclick="goToGallery()">查看作品集</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(successModal);
+    
+    // 3秒后自动关闭
+    setTimeout(() => {
+        if (document.body.contains(successModal)) {
+            closeSuccessModal();
+        }
+    }, 5000);
+}
+
+// 关闭成功弹窗
+function closeSuccessModal() {
+    const successModal = document.querySelector('.success-modal');
+    if (successModal) {
+        successModal.remove();
+    }
+}
+
+// 前往作品集
+function goToGallery() {
+    window.location.href = '/gallery';
+}
+
+// 更新图片生成成功处理，记录图片路径和显示保存按钮
+function updateImageGenerationSuccess(result) {
+    generatedImageUrl = result.image_url;
+    generatedImagePath = result.image_url;
+    
+    // 显示final-actions（包含保存按钮）
+    const finalActions = document.getElementById('final-actions');
+    if (finalActions) {
+        finalActions.style.display = 'flex';
+    }
 }

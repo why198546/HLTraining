@@ -188,48 +188,151 @@
                         <p>基于你的图片生成3D模型</p>
                     </div>
 
-                    <div class="model-generation-area">
-                        <div class="final-image-preview">
-                            <h4>最终图片</h4>
-                            <img id="final-image" src="" alt="最终确认的图片">
+                    <!-- 3D模型提示词输入 -->
+                    <div class="model-prompt-section">
+                        <h4><i class="fas fa-magic"></i> 3D模型生成提示词（可选）</h4>
+                        <textarea 
+                            id="model-prompt" 
+                            class="model-prompt-input" 
+                            placeholder="例如：制作成Q版风格，增加金属质感，让姿态更加动感..."
+                            rows="2"
+                        ></textarea>
+                        <div class="prompt-tips">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>提示：可以描述希望的风格、材质、姿态等特征来优化3D模型效果</span>
+                        </div>
+                    </div>
+
+                    <!-- 图片和3D模型并排显示区域 -->
+                    <div class="image-model-comparison">
+                        <div class="final-image-section">
+                            <h4><i class="fas fa-image"></i> 原始图片</h4>
+                            <div class="image-preview-container">
+                                <img id="final-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3E正在加载图片...%3C/text%3E%3C/svg%3E" alt="最终确认的图片" style="display: block;">
+                            </div>
                         </div>
 
-                        <div class="model-generation-panel">
-                            <div class="generation-info">
-                                <i class="fas fa-info-circle"></i>
-                                <p>3D模型生成需要一些时间，请耐心等待...</p>
-                            </div>
-                            
-                            <button id="generate-3d" class="generate-btn">
-                                <i class="fas fa-cube"></i>
-                                生成3D模型
-                            </button>
-
-                            <!-- 3D模型预览区域 -->
-                            <div id="model-preview-area" style="display: none;">
-                                <h4>3D模型预览</h4>
+                        <div class="model-preview-section">
+                            <h4><i class="fas fa-cube"></i> 3D模型预览</h4>
+                            <div class="model-preview-wrapper">
                                 <div class="model-container" id="modelContainer">
                                     <div class="model-placeholder">
                                         <i class="fas fa-cube"></i>
-                                        <p>3D模型加载中...</p>
+                                        <p>点击下方按钮生成3D模型</p>
                                     </div>
                                 </div>
-                                <div class="model-controls">
-                                    <button class="control-btn" id="rotateModel">
-                                        <i class="fas fa-sync-alt"></i>
-                                        自动旋转
-                                    </button>
-                                    <button class="download-btn" id="download3D">
-                                        <i class="fas fa-download"></i>
-                                        下载3D模型
-                                    </button>
+                                
+                                <!-- 3D模型控制面板 -->
+                                <div class="model-controls-panel" id="modelControlsPanel" style="display: none;">
+                                    <div class="controls-header">
+                                        <h5><i class="fas fa-cog"></i> 显示控制</h5>
+                                    </div>
+                                    
+                                    <div class="control-group">
+                                        <label class="control-label">渲染模式</label>
+                                        <div class="control-buttons">
+                                            <button class="control-btn active" id="renderSolid">
+                                                <i class="fas fa-cube"></i>
+                                                实体
+                                            </button>
+                                            <button class="control-btn" id="renderWireframe">
+                                                <i class="fas fa-project-diagram"></i>
+                                                线框
+                                            </button>
+                                            <button class="control-btn" id="renderPoints">
+                                                <i class="fas fa-braille"></i>
+                                                点云
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="control-group">
+                                        <label class="control-label">材质显示</label>
+                                        <div class="control-buttons">
+                                            <button class="control-btn active" id="materialOriginal">
+                                                <i class="fas fa-palette"></i>
+                                                原始
+                                            </button>
+                                            <button class="control-btn" id="materialLambert">
+                                                <i class="fas fa-sun"></i>
+                                                朗伯
+                                            </button>
+                                            <button class="control-btn" id="materialPhong">
+                                                <i class="fas fa-gem"></i>
+                                                光泽
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="control-group">
+                                        <label class="control-label">环境设置</label>
+                                        <div class="control-item">
+                                            <span class="control-text">背景</span>
+                                            <button class="control-btn" id="toggleBackground">
+                                                <i class="fas fa-eye"></i>
+                                                <span id="backgroundText">显示</span>
+                                            </button>
+                                        </div>
+                                        <div class="control-item">
+                                            <span class="control-text">光照</span>
+                                            <input type="range" id="lightIntensity" min="0" max="2" step="0.1" value="0.8" class="control-slider">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="control-group">
+                                        <label class="control-label">模型操作</label>
+                                        <div class="control-buttons vertical">
+                                            <button class="control-btn" id="resetModel">
+                                                <i class="fas fa-undo"></i>
+                                                重置模型
+                                            </button>
+                                            <button class="control-btn" id="centerModel">
+                                                <i class="fas fa-crosshairs"></i>
+                                                居中显示
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- 生成控制按钮区域 -->
+                    <div class="model-controls-section">
+                        <button id="generate-3d" class="generate-btn">
+                            <i class="fas fa-cube"></i>
+                            生成3D模型
+                        </button>
+                        
+                        <div class="model-actions" id="model-actions" style="display: none;">
+                            <button class="control-btn" id="rotateModel">
+                                <i class="fas fa-sync-alt"></i>
+                                自动旋转
+                            </button>
+                            <button class="control-btn" id="resetView">
+                                <i class="fas fa-eye"></i>
+                                重置视角
+                            </button>
+                            <button class="download-btn" id="download3D">
+                                <i class="fas fa-download"></i>
+                                下载模型
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 生成信息提示 -->
+                    <div class="generation-info" id="generation-info" style="display: none;">
+                        <i class="fas fa-info-circle"></i>
+                        <p>3D模型生成需要一些时间，请耐心等待...</p>
+                    </div>
+                </div>
+
                     <!-- 完成操作 -->
                     <div class="final-actions" style="display: none;" id="final-actions">
+                        <button class="save-artwork-btn" onclick="showSaveArtworkDialog()">
+                            <i class="fas fa-heart"></i>
+                            保存到作品集
+                        </button>
                         <button class="download-btn" onclick="downloadImage()">
                             <i class="fas fa-download"></i>
                             下载图片
@@ -254,11 +357,100 @@
             <div class="loading-spinner"></div>
             <div class="loading-text">AI正在创作中...</div>
             <div class="loading-subtitle">请稍等片刻，好作品值得等待 ✨</div>
+            
+            <!-- 3D模型生成进度条 -->
+            <div id="progress-container" style="display: none;">
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="progress-text">0%</span>
+                        <span id="progress-time">预估剩余: 计算中...</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 消息提示 -->
     <div id="message-toast" class="message-toast"></div>
+
+    <!-- 保存作品对话框 -->
+    <div id="save-artwork-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content save-artwork-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-heart"></i> 保存作品到作品集</h3>
+                <button class="modal-close" onclick="closeSaveArtworkDialog()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="artwork-preview">
+                    <div class="preview-item">
+                        <h4>原始简笔画</h4>
+                        <img id="preview-original" src="" alt="原始图片">
+                    </div>
+                    <div class="preview-item">
+                        <h4>AI生成效果</h4>
+                        <img id="preview-generated" src="" alt="生成图片">
+                    </div>
+                </div>
+                
+                <div class="artwork-form">
+                    <div class="form-group">
+                        <label for="artwork-title">作品标题 *</label>
+                        <input type="text" id="artwork-title" placeholder="给你的作品起个好听的名字" maxlength="50" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="artist-name">创作者姓名 *</label>
+                            <input type="text" id="artist-name" placeholder="你的名字" maxlength="20" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="artist-age">年龄</label>
+                            <select id="artist-age">
+                                <option value="8">8岁</option>
+                                <option value="9">9岁</option>
+                                <option value="10" selected>10岁</option>
+                                <option value="11">11岁</option>
+                                <option value="12">12岁</option>
+                                <option value="13">13岁</option>
+                                <option value="14">14岁</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="artwork-category">作品分类</label>
+                        <select id="artwork-category">
+                            <option value="animals">动物</option>
+                            <option value="characters">人物</option>
+                            <option value="objects">物品</option>
+                            <option value="nature">自然</option>
+                            <option value="other">其他</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="artwork-description">作品介绍</label>
+                        <textarea id="artwork-description" placeholder="介绍一下你的创作想法和故事..." maxlength="200"></textarea>
+                        <small>可选，最多200字</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="closeSaveArtworkDialog()">取消</button>
+                <button class="primary-btn" onclick="saveArtworkToGallery()">
+                    <i class="fas fa-heart"></i>
+                    保存到作品集
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Three.js库用于3D模型展示 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

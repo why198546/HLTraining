@@ -204,10 +204,18 @@ class NanoBananaAPI:
             if not self.client:
                 raise Exception("Nano Banana API未配置，请检查GEMINI_API_KEY环境变量")
             
-            # 使用专门的图像生成模型
-            try:
-                # 构建适合儿童的图像生成提示
-                image_prompt = f"""创建一幅适合10-14岁儿童的卡通风格插画：{text_prompt}
+            # 使用专门的图像生成模型，支持重试机制
+            max_retries = 3
+            retry_count = 0
+            last_error = None
+            
+            while retry_count < max_retries:
+                try:
+                    retry_count += 1
+                    print(f"🔥 正在使用Nano Banana生成真实图片... (尝试 {retry_count}/{max_retries})")
+                    
+                    # 构建适合儿童的图像生成提示
+                    image_prompt = f"""创建一幅适合10-14岁儿童的卡通风格插画：{text_prompt}
 
 要求：
 - 明亮温和的色彩，卡通/插画风格
@@ -216,61 +224,82 @@ class NanoBananaAPI:
 - 背景简洁干净，避免杂乱元素
 - 主体突出，背景纯色或简单渐变
 - 整体风格统一，色彩和谐"""
-                
-                print("🔥 正在使用Nano Banana生成真实图片...")
-                print(f"📝 最终提示词: {image_prompt}")
-                
-                # 使用正确的客户端API调用方式
-                # 创建图像生成专用模型 - 使用正确的Nano Banana模型
-                image_gen_client = genai.GenerativeModel('gemini-2.5-flash-image')
-                response = image_gen_client.generate_content(image_prompt)
-                
-                # 检查是否成功生成图片
-                print(f"🔍 响应检查: response={bool(response)}")
-                if response:
-                    print(f"🔍 candidates: {hasattr(response, 'candidates')} - {bool(response.candidates) if hasattr(response, 'candidates') else 'N/A'}")
                     
-                if response and hasattr(response, 'candidates') and response.candidates:
-                    print(f"🔍 候选项数量: {len(response.candidates)}")
-                    if response.candidates[0].content and response.candidates[0].content.parts:
-                        print(f"🔍 内容部分数量: {len(response.candidates[0].content.parts)}")
-                        for i, part in enumerate(response.candidates[0].content.parts):
-                            print(f"🔍 Part {i}: text={bool(part.text)}, inline_data={bool(part.inline_data)}")
+                    print(f"📝 最终提示词: {image_prompt}")
                     
-                    # 查找返回的图像数据
-                    image_parts = [
-                        part.inline_data.data
-                        for part in response.candidates[0].content.parts
-                        if part.inline_data
-                    ]
+                    # 使用正确的客户端API调用方式
+                    # 创建图像生成专用模型 - 使用正确的Nano Banana模型
+                    image_gen_client = genai.GenerativeModel('gemini-2.5-flash-image')
+                    response = image_gen_client.generate_content(image_prompt)
                     
-                    if image_parts:
-                        # 保存图片数据到文件
-                        timestamp = int(time.time())
-                        filename = f"nano_banana_text_{timestamp}.png"
-                        filepath = os.path.join(self.upload_folder, filename)
+                    # 检查是否成功生成图片
+                    print(f"🔍 响应检查: response={bool(response)}")
+                    if response:
+                        print(f"🔍 candidates: {hasattr(response, 'candidates')} - {bool(response.candidates) if hasattr(response, 'candidates') else 'N/A'}")
                         
-                        # 处理Gemini返回的图像数据
-                        from io import BytesIO
+                    if response and hasattr(response, 'candidates') and response.candidates:
+                        print(f"🔍 候选项数量: {len(response.candidates)}")
+                        if response.candidates[0].content and response.candidates[0].content.parts:
+                            print(f"🔍 内容部分数量: {len(response.candidates[0].content.parts)}")
+                            for i, part in enumerate(response.candidates[0].content.parts):
+                                print(f"🔍 Part {i}: text={bool(part.text)}, inline_data={bool(part.inline_data)}")
                         
-                        # Gemini返回的是原始字节数据，不是base64编码的
-                        image_data = image_parts[0]  # 直接使用bytes数据
-                        image = Image.open(BytesIO(image_data))
-                        image.save(filepath)
+                        # 查找返回的图像数据
+                        image_parts = [
+                            part.inline_data.data
+                            for part in response.candidates[0].content.parts
+                            if part.inline_data
+                        ]
                         
-                        print(f"✅ Nano Banana真实图片生成并保存成功: {filepath}")
-                        return filepath
+                        if image_parts:
+                            # 保存图片数据到文件
+                            timestamp = int(time.time())
+                            filename = f"nano_banana_text_{timestamp}.png"
+                            filepath = os.path.join(self.upload_folder, filename)
+                            
+                            # 处理Gemini返回的图像数据
+                            from io import BytesIO
+                            
+                            # Gemini返回的是原始字节数据，不是base64编码的
+                            image_data = image_parts[0]  # 直接使用bytes数据
+                            image = Image.open(BytesIO(image_data))
+                            image.save(filepath)
+                            
+                            print(f"✅ Nano Banana真实图片生成并保存成功: {filepath}")
+                            return filepath
+                        else:
+                            error_msg = "响应中没有找到图片数据"
+                            print(f"⚠️ {error_msg}")
+                            if retry_count < max_retries:
+                                print(f"🔄 将进行第 {retry_count + 1} 次重试...")
+                                last_error = Exception(error_msg)
+                                continue
+                            else:
+                                raise Exception(error_msg)
                     else:
-                        print("⚠️ 响应中没有找到图片数据")
-                        raise Exception("没有图片数据，使用备用方案")
-                else:
-                    print("⚠️ Nano Banana未返回图片，使用备用艺术创作方案")
-                    raise Exception("图像生成失败，使用备用方案")
-                    
-            except Exception as img_error:
-                print(f"⚠️ 图像生成模型错误: {img_error}")
-                print("🔄 降级使用艺术指导方案...")
-                
+                        error_msg = "Nano Banana未返回有效响应"
+                        print(f"⚠️ {error_msg}")
+                        if retry_count < max_retries:
+                            print(f"🔄 将进行第 {retry_count + 1} 次重试...")
+                            last_error = Exception(error_msg)
+                            continue
+                        else:
+                            raise Exception(error_msg)
+                            
+                except Exception as img_error:
+                    last_error = img_error
+                    print(f"⚠️ 第 {retry_count} 次尝试失败: {img_error}")
+                    if retry_count < max_retries:
+                        print(f"🔄 将进行第 {retry_count + 1} 次重试...")
+                        continue
+                    else:
+                        print(f"❌ 所有 {max_retries} 次重试都失败了")
+                        break
+                        
+            # 如果所有重试都失败，降级到艺术指导方案
+            print("🔄 降级使用艺术指导方案...")
+            
+            try:
                 # 降级方案：使用原有的艺术指导方法
                 art_prompt = f"""
 作为一位专业的儿童美术老师，请根据以下描述为10-14岁的孩子创作一幅详细的绘画作品：
@@ -290,21 +319,17 @@ class NanoBananaAPI:
                 # 调用Gemini获取艺术指导
                 response = self.client.generate_content([art_prompt])
             
-            if response and hasattr(response, 'candidates') and response.candidates:
-                art_guidance = response.candidates[0].content.parts[0].text
-                print(f"🎨 AI艺术指导: {art_guidance}")
-                
-                # 第三步：基于AI指导创建艺术作品
-                artwork_path = self._create_artwork_from_guidance(text_prompt, art_guidance)
-                
-                if artwork_path:
-                    print(f"✅ Nano Banana文字创意图片完成: {artwork_path}")
-                    return artwork_path
+                if response and hasattr(response, 'candidates') and response.candidates:
+                    art_guidance = response.candidates[0].content.parts[0].text
+                    print(f"🎨 AI艺术指导: {art_guidance}")
+                    
+                    # 如果无法生成图片，直接抛出异常说明降级到艺术指导
+                    raise Exception("没有图片数据，使用备用方案")
                 else:
-                    # 如果创作失败，返回一个基础的彩色画布
-                    return self._create_basic_artwork(text_prompt)
-            else:
-                raise Exception("未能从Gemini获取艺术指导")
+                    raise Exception("未能从Gemini获取艺术指导")
+            except Exception as art_error:
+                # 如果艺术指导也失败，抛出原始图片生成错误
+                raise last_error if last_error else art_error
                 
         except Exception as e:
             error_msg = str(e)

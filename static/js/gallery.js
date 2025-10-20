@@ -695,3 +695,46 @@ function showMessage(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// 用户作品点赞功能
+async function likeArtwork(artworkId) {
+    try {
+        const response = await fetch(`/like-artwork/${artworkId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 更新点赞数显示
+            const likesElement = document.getElementById(`likes-${artworkId}`);
+            if (likesElement) {
+                likesElement.textContent = result.likes;
+                
+                // 添加点赞动画
+                const heartIcon = likesElement.parentElement.querySelector('i');
+                heartIcon.style.animation = 'heartBeat 0.6s ease';
+                setTimeout(() => {
+                    heartIcon.style.animation = '';
+                }, 600);
+                
+                // 添加点赞样式
+                likesElement.parentElement.classList.add('liked');
+                setTimeout(() => {
+                    likesElement.parentElement.classList.remove('liked');
+                }, 600);
+            }
+            
+            showMessage('点赞成功！', 'success');
+        } else {
+            showMessage('点赞失败，请稍后重试', 'error');
+        }
+        
+    } catch (error) {
+        console.error('点赞失败:', error);
+        showMessage('点赞失败，请稍后重试', 'error');
+    }
+}

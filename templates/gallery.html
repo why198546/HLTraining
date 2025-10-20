@@ -42,6 +42,61 @@
                 </div>
 
                 <div class="gallery-grid" id="galleryGrid">
+                    <!-- 用户保存的作品 -->
+                    {% if user_artworks %}
+                        {% for artwork in user_artworks %}
+                        <div class="gallery-item user-artwork" data-category="{{ artwork.category }}">
+                            <div class="artwork-showcase">
+                                <div class="artwork-step">
+                                    <h4>原始简笔画</h4>
+                                    {% if artwork.original_image %}
+                                        <img src="{{ url_for('static', filename=artwork.original_image) }}" alt="{{ artwork.title }} - 原始图" onerror="this.src='/static/images/placeholder.png'">
+                                    {% else %}
+                                        <div class="no-image">暂无原图</div>
+                                    {% endif %}
+                                </div>
+                                <div class="artwork-step">
+                                    <h4>AI生成效果</h4>
+                                    <img src="{{ url_for('static', filename=artwork.generated_image) }}" alt="{{ artwork.title }} - 生成图" onerror="this.src='/static/images/placeholder.png'">
+                                </div>
+                                {% if artwork.model_file %}
+                                <div class="artwork-step">
+                                    <h4>3D模型</h4>
+                                    <div class="model-preview-thumb">
+                                        <i class="fas fa-cube"></i>
+                                        <span>3D模型</span>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="artwork-info">
+                                <h3>{{ artwork.title }}</h3>
+                                <p class="artist-info">
+                                    <i class="fas fa-user-circle"></i>
+                                    {{ artwork.artist_name }}，{{ artwork.artist_age }}岁
+                                </p>
+                                <p class="creation-date">
+                                    <i class="fas fa-calendar"></i>
+                                    {{ artwork.created_at[:10] }}
+                                </p>
+                                {% if artwork.description %}
+                                <p class="artwork-description">{{ artwork.description }}</p>
+                                {% endif %}
+                                <div class="artwork-stats">
+                                    <span class="likes" onclick="likeArtwork('{{ artwork.id }}')">
+                                        <i class="fas fa-heart"></i>
+                                        <span id="likes-{{ artwork.id }}">{{ artwork.likes }}</span>个赞
+                                    </span>
+                                    <span class="views">
+                                        <i class="fas fa-eye"></i>
+                                        {{ artwork.views }}次浏览
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    
                     <!-- 示例作品 -->
                     <div class="gallery-item" data-category="animals">
                         <div class="artwork-showcase">
