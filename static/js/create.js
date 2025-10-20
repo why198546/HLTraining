@@ -653,19 +653,16 @@ function resetCameraView() {
 
 // 下载3D模型
 function download3DModel() {
-    if (!model) {
+    if (!createModelViewer) {
         showMessage('请先生成3D模型', 'warning');
         return;
     }
-    
-    // 这里可以实现3D模型下载功能
-    // 获取当前显示的模型URL
-    const modelUrl = window.currentModelUrl; // 需要在模型加载时设置这个变量
-    
+
+    const modelUrl = window.currentModelUrl;
     if (modelUrl) {
         const link = document.createElement('a');
         link.href = modelUrl;
-        link.download = 'my-3d-model.glb';
+        link.download = modelUrl.split('/').pop() || 'model.glb';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -811,7 +808,8 @@ function hideModelControlsPanel() {
 
 // 设置渲染模式
 function setRenderMode(mode) {
-    if (!model) {
+    const model = window.currentModel;
+    if (!model || !createModelViewer) {
         showMessage('请先加载3D模型', 'warning');
         return;
     }
@@ -826,7 +824,7 @@ function setRenderMode(mode) {
     
     // 首先清理之前的点云对象
     cleanupPointsObjects();
-    
+
     // 重置所有mesh的可见性
     model.traverse((child) => {
         if (child.isMesh) {
@@ -854,8 +852,10 @@ function setRenderMode(mode) {
                 points.scale.copy(child.scale);
                 
                 // 添加到场景并记录
-                scene.add(points);
-                pointsObjects.push(points);
+                if (createModelViewer.scene) {
+                    createModelViewer.scene.add(points);
+                    pointsObjects.push(points);
+                }
                 
                 // 隐藏原mesh
                 child.visible = false;
@@ -889,6 +889,8 @@ function cleanupPointsObjects() {
     pointsObjects.forEach(points => {
         if (points.parent) {
             points.parent.remove(points);
+        } else if (createModelViewer && createModelViewer.scene) {
+            createModelViewer.scene.remove(points);
         }
         // 清理几何体和材质
         if (points.geometry) points.geometry.dispose();
@@ -921,6 +923,7 @@ function resetRenderControls() {
 
 // 设置材质类型
 function setMaterialType(type) {
+    const model = window.currentModel;
     if (!model) {
         showMessage('请先加载3D模型', 'warning');
         return;
@@ -944,7 +947,8 @@ function setMaterialType(type) {
             
             switch (type) {
                 case 'original':
-                    child.material = originalMaterials.get(child.uuid);
+                    const orig = originalMaterials.get(child.uuid);
+                    if (orig) child.material = orig;
                     break;
                 case 'lambert':
                     child.material = new THREE.MeshLambertMaterial({
@@ -1004,30 +1008,36 @@ function resetModelTransform() {
 
 // 居中显示模型
 function centerModel() {
-    if (!model || !camera) {
+    const model = window.currentModel;
+    if (!model || !createModelViewer) {
         showMessage('请先加载3D模型', 'warning');
         return;
     }
-    
+
+    const camera = createModelViewer.camera;
+    const controls = createModelViewer.controls;
+
     // 计算模型包围盒
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    
+
     // 将模型移动到原点
     model.position.sub(center);
-    
+
     // 调整相机位置以适应模型
     const maxDim = Math.max(size.x, size.y, size.z);
     const distance = maxDim * 2;
-    camera.position.set(0, 0, distance);
-    camera.lookAt(0, 0, 0);
-    
+    if (camera) {
+        camera.position.set(0, 0, distance);
+        camera.lookAt(0, 0, 0);
+    }
+
     if (controls) {
         controls.target.set(0, 0, 0);
-        controls.update();
+        if (controls.update) controls.update();
     }
-    
+
     showMessage('模型已居中显示', 'success');
 }
 
