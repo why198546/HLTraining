@@ -4,13 +4,7 @@ let generatedImageUrl = '';
 let uploadedImageFile = null;
 
 // 3D模型相关全局变量
-let scene = null;
-let camera = null;
-let renderer = null;
-let controls = null;
-let model = null;
-let animationId = null;
-let isAutoRotating = false;
+let createModelViewer = null;
 
 // 进度条相关变量
 let progressInterval = null;
@@ -462,162 +456,32 @@ async function generate3DModel() {
 
 // 加载3D模型（Three.js）
 function load3DModel(modelUrl) {
-    const container = document.getElementById('modelContainer');
-    
     // 保存当前模型URL用于下载
     window.currentModelUrl = modelUrl;
     
-    // 清理之前的场景
-    if (renderer) {
-        renderer.dispose();
+    // 确保ModelViewer3D模块已加载
+    if (typeof ModelViewer3D === 'undefined') {
+        console.error('ModelViewer3D 模块未加载');
+        showMessage('3D查看器模块加载失败', 'error');
+        return;
     }
-    if (animationId) {
-        cancelAnimationFrame(animationId);
+    
+    // 清理之前的实例
+    if (createModelViewer) {
+        createModelViewer.dispose();
     }
     
-    // 创建Three.js场景
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    
-    renderer.setSize(container.offsetWidth, container.offsetHeight);
-    renderer.setClearColor(0xf0f0f0);
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-
-    // 添加光源
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-    scene.add(ambientLight);
-    
-    directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
-
-    // 添加控制器
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enableZoom = true;
-    controls.enablePan = true;
-    
-    // 渲染循环
-    function animate() {
-        animationId = requestAnimationFrame(animate);
-        
-        // 自动旋转
-        if (isAutoRotating && model) {
-            model.rotation.y += 0.01;
-        }
-        
-        controls.update();
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    // 根据文件扩展名选择合适的加载器
-    const fileExtension = modelUrl.split('.').pop().toLowerCase();
-    
-    if (fileExtension === 'obj') {
-        // 构建MTL文件路径（假设与OBJ文件同名）
-        const mtlUrl = modelUrl.replace('.obj', '.mtl');
-        
-        // 先尝试加载MTL材质文件
-        const mtlLoader = new THREE.MTLLoader();
-        mtlLoader.load(mtlUrl, function(materials) {
-            materials.preload();
-            
-            // 使用材质加载OBJ文件
-            const objLoader = new THREE.OBJLoader();
-            objLoader.setMaterials(materials);
-            objLoader.load(modelUrl, function(object) {
-                model = object;
-                scene.add(model);
-                
-                // 根据模型大小调整相机位置
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
-                camera.position.z = cameraDistance;
-                
-                // 移除加载占位符
-                const placeholder = container.querySelector('.model-placeholder');
-                if (placeholder) {
-                    placeholder.remove();
-                }
-                
-                // 显示模型控制按钮和控制面板
-                const modelActions = document.getElementById('model-actions');
-                if (modelActions) {
-                    modelActions.style.display = 'flex';
-                }
-                
-                // 显示3D模型控制面板
-                showModelControlsPanel();
-            }, undefined, function(error) {
-                console.error('OBJ模型加载失败:', error);
-                showMessage('3D模型加载失败', 'error');
-            });
-        }, undefined, function(error) {
-            console.warn('MTL材质文件加载失败，使用默认材质:', error);
-            
-            // MTL加载失败，使用默认材质加载OBJ
-            const objLoader = new THREE.OBJLoader();
-            objLoader.load(modelUrl, function(object) {
-                // 为OBJ模型添加基础材质
-                object.traverse(function(child) {
-                    if (child.isMesh) {
-                        child.material = new THREE.MeshLambertMaterial({ 
-                            color: 0x888888,
-                            map: null // 清除可能的贴图引用
-                        });
-                    }
-                });
-                
-                model = object;
-                scene.add(model);
-                
-                // 根据模型大小调整相机位置
-                const box = new THREE.Box3().setFromObject(model);
-                const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z);
-                const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
-                camera.position.z = cameraDistance;
-                
-                // 移除加载占位符
-                const placeholder = container.querySelector('.model-placeholder');
-                if (placeholder) {
-                    placeholder.remove();
-                }
-                
-                // 显示模型控制按钮和控制面板
-                const modelActions = document.getElementById('model-actions');
-                if (modelActions) {
-                    modelActions.style.display = 'flex';
-                }
-                
-                // 显示3D模型控制面板
-                showModelControlsPanel();
-            }, undefined, function(error) {
-                console.error('OBJ模型加载失败:', error);
-                showMessage('3D模型加载失败', 'error');
-            });
-        });
-    } else {
-        // 默认使用GLTF加载器
-        const loader = new THREE.GLTFLoader();
-        loader.load(modelUrl, function(gltf) {
-            model = gltf.scene;
-            scene.add(model);
-            
-            // 根据模型大小调整相机位置
-            const box = new THREE.Box3().setFromObject(model);
-            const size = box.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const cameraDistance = Math.max(1.5, Math.min(maxDim * 2, 8));
-            camera.position.z = cameraDistance;
+    // 创建新的3D查看器实例
+    createModelViewer = new ModelViewer3D('modelContainer', {
+        backgroundColor: 0xf0f0f0,
+        enableControls: true,
+        enableAutoRotate: false,
+        enableAnimation: true,
+        onModelLoaded: (loadedModel) => {
+            console.log('3D模型加载完成:', loadedModel);
             
             // 移除加载占位符
+            const container = document.getElementById('modelContainer');
             const placeholder = container.querySelector('.model-placeholder');
             if (placeholder) {
                 placeholder.remove();
@@ -631,11 +495,25 @@ function load3DModel(modelUrl) {
             
             // 显示3D模型控制面板
             showModelControlsPanel();
-        }, undefined, function(error) {
-            console.error('GLTF模型加载失败:', error);
+            
+            // 保存模型引用用于其他控制函数
+            window.currentModel = loadedModel;
+        },
+        onLoadError: (error) => {
+            console.error('3D模型加载失败:', error);
             showMessage('3D模型加载失败', 'error');
-        });
-    }
+        },
+        onLoadProgress: (progress) => {
+            // 可以在这里显示加载进度
+            if (progress.loaded && progress.total) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                console.log(`模型加载进度: ${percent}%`);
+            }
+        }
+    });
+    
+    // 加载模型
+    createModelViewer.loadModel(modelUrl);
 }
 
 // 下载图片
@@ -733,15 +611,15 @@ function showMessage(message, type = 'info') {
 
 // 切换自动旋转
 function toggleAutoRotation() {
-    if (!model) {
+    if (!createModelViewer || !window.currentModel) {
         showMessage('请先生成3D模型', 'warning');
         return;
     }
     
-    isAutoRotating = !isAutoRotating;
+    const isRotating = createModelViewer.toggleAutoRotate();
     const rotateBtn = document.getElementById('rotateModel');
     
-    if (isAutoRotating) {
+    if (isRotating) {
         rotateBtn.innerHTML = '<i class="fas fa-pause"></i> 停止旋转';
         rotateBtn.classList.add('active');
         showMessage('开始自动旋转', 'info');
@@ -754,47 +632,21 @@ function toggleAutoRotation() {
 
 // 重置相机视角
 function resetCameraView() {
-    if (!camera || !controls) {
+    if (!createModelViewer) {
         showMessage('请先生成3D模型', 'warning');
         return;
     }
     
-    // 计算模型的包围盒以确定合适的相机距离
-    let cameraDistance = 3; // 默认距离
-    
-    if (model) {
-        // 计算模型的包围盒
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        
-        // 根据模型大小计算合适的相机距离
-        const maxDim = Math.max(size.x, size.y, size.z);
-        cameraDistance = maxDim * 2; // 距离为模型最大尺寸的2倍
-        
-        // 确保距离在合理范围内
-        cameraDistance = Math.max(1.5, Math.min(cameraDistance, 8));
-    }
-    
     // 停止自动旋转
-    if (isAutoRotating) {
-        toggleAutoRotation();
+    createModelViewer.stopAutoRotate();
+    const rotateBtn = document.getElementById('rotateModel');
+    if (rotateBtn) {
+        rotateBtn.innerHTML = '<i class="fas fa-sync-alt"></i> 自动旋转';
+        rotateBtn.classList.remove('active');
     }
     
-    // 重置模型旋转
-    if (model) {
-        model.rotation.set(0, 0, 0);
-    }
-    
-    // 重置相机位置到合适的距离
-    camera.position.set(0, 0, cameraDistance);
-    camera.lookAt(0, 0, 0);
-    
-    // 重置控制器目标到原点
-    controls.target.set(0, 0, 0);
-    
-    // 更新控制器（不要调用reset，因为会覆盖我们的设置）
-    controls.update();
+    // 重置视角
+    createModelViewer.resetView();
     
     showMessage('视角已重置', 'success');
 }
@@ -1116,17 +968,13 @@ function setMaterialType(type) {
 
 // 切换背景显示
 function toggleBackground() {
-    if (!scene) return;
+    if (!createModelViewer) return;
     
-    backgroundVisible = !backgroundVisible;
+    const backgroundVisible = createModelViewer.toggleBackground();
     
     const backgroundText = document.getElementById('backgroundText');
-    if (backgroundVisible) {
-        scene.background = new THREE.Color(0xf0f0f0);
-        if (backgroundText) backgroundText.textContent = '显示';
-    } else {
-        scene.background = null;
-        if (backgroundText) backgroundText.textContent = '隐藏';
+    if (backgroundText) {
+        backgroundText.textContent = backgroundVisible ? '显示' : '隐藏';
     }
     
     showMessage(`背景已${backgroundVisible ? '显示' : '隐藏'}`, 'success');
@@ -1134,18 +982,19 @@ function toggleBackground() {
 
 // 设置光照强度
 function setLightIntensity(intensity) {
-    if (directionalLight) {
-        directionalLight.intensity = parseFloat(intensity);
+    if (createModelViewer) {
+        createModelViewer.setDirectionalLightIntensity(intensity);
     }
 }
 
 // 重置模型变换
 function resetModelTransform() {
-    if (!model) {
+    if (!createModelViewer || !window.currentModel) {
         showMessage('请先加载3D模型', 'warning');
         return;
     }
     
+    const model = window.currentModel;
     model.position.set(0, 0, 0);
     model.rotation.set(0, 0, 0);
     model.scale.set(1, 1, 1);

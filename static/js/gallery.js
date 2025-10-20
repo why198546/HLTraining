@@ -957,123 +957,270 @@ function closeImageOverlay() {
     }
 }
 
+// 全局变量用于3D模型显示
+let modelViewer = null;
+
 // 显示3D模型模态框
 function showModelModal(modelSrc, title) {
     event.stopPropagation();
     
+    console.log('显示3D模型:', modelSrc, title);
+    
     const modelOverlay = document.getElementById('modelOverlay');
     const modelTitle = document.getElementById('modelTitle');
-    const modelPlaceholder = modelOverlay.querySelector('.model-placeholder');
+    const modelInfo = document.getElementById('modelInfo');
     
     if (modelOverlay && modelTitle) {
         modelTitle.textContent = title;
-        
-        // 更新模型信息
-        const modelDescription = modelPlaceholder.querySelector('p');
-        const modelInfo = modelPlaceholder.querySelector('.model-info');
-        
-        if (modelDescription) {
-            modelDescription.textContent = `正在加载模型: ${modelSrc.split('/').pop()}`;
-        }
-        
         if (modelInfo) {
-            modelInfo.textContent = `模型文件: ${modelSrc}`;
-        }
-        
-        // 添加旋转动画
-        const modelIcon = modelPlaceholder.querySelector('i');
-        if (modelIcon) {
-            modelIcon.style.animation = 'rotate 2s linear infinite';
+            modelInfo.textContent = `准备显示3D模型`;
         }
         
         modelOverlay.classList.add('visible');
         
-        // 模拟加载过程
-        setTimeout(() => {
-            if (modelDescription) {
-                modelDescription.textContent = `模型已加载: ${modelSrc.split('/').pop()}`;
+        // 检查Three.js是否加载
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js 未加载');
+            const loading = document.getElementById('modelLoading');
+            if (loading) {
+                loading.querySelector('p').textContent = 'Three.js 加载失败，请刷新页面重试';
             }
-            if (modelIcon) {
-                modelIcon.style.animation = 'none';
-            }
-        }, 2000);
+            return;
+        }
         
-        console.log('加载3D模型:', modelSrc);
+        console.log('Three.js 已加载，开始初始化3D场景');
+        
+        // 直接初始化3D场景
+        setTimeout(() => {
+            initializeModelViewer();
+            // 检查是否有实际的模型文件，如果没有或加载失败就显示占位符
+            if (modelViewer) {
+                if (modelSrc && modelSrc.trim() !== '' && modelSrc !== 'null') {
+                    const modelUrl = `/static/${modelSrc}`;
+                    modelViewer.loadModel(modelUrl);
+                } else {
+                    // 直接创建占位符模型，不依赖于外部文件
+                    modelViewer.createPlaceholderModel();
+                }
+            }
+        }, 100);
     }
 }
+
+// 初始化3D模型查看器
+function initializeModelViewer() {
+    console.log('初始化ModelViewer3D');
+    
+    // 确保通用模块已加载
+    if (typeof ModelViewer3D === 'undefined') {
+        console.error('ModelViewer3D 模块未加载');
+        const loading = document.getElementById('modelLoading');
+        if (loading) {
+            loading.querySelector('p').textContent = 'ModelViewer3D 模块加载失败';
+        }
+        return;
+    }
+    
+    // 销毁之前的实例
+    if (modelViewer) {
+        modelViewer.dispose();
+    }
+    
+    // 获取canvas元素
+    const canvas = document.getElementById('modelCanvas');
+    if (!canvas) {
+        console.error('找不到modelCanvas元素');
+        return;
+    }
+    
+    // 创建新的3D查看器实例
+    modelViewer = new ModelViewer3D(canvas, {
+        backgroundColor: 0x2c3e50,
+        enableControls: true,
+        enableAutoRotate: false,
+        enableAnimation: true,
+        onModelLoaded: (model) => {
+            console.log('模型加载完成:', model);
+            const loading = document.getElementById('modelLoading');
+            if (loading) {
+                loading.classList.add('hidden');
+            }
+        },
+        onLoadError: (error) => {
+            console.error('模型加载失败:', error);
+            const loading = document.getElementById('modelLoading');
+            if (loading) {
+                loading.querySelector('p').textContent = `加载失败: ${error.message}`;
+            }
+        },
+        onLoadProgress: (progress) => {
+            const loading = document.getElementById('modelLoading');
+            if (loading && progress.loaded && progress.total) {
+                const percent = Math.round((progress.loaded / progress.total) * 100);
+                loading.querySelector('p').textContent = `正在加载模型... ${percent}%`;
+            }
+        }
+    });
+    
+    console.log('ModelViewer3D 初始化完成');
+}
+
+
 
 // 关闭3D模型叠加层
 function closeModelOverlay() {
     const modelOverlay = document.getElementById('modelOverlay');
     if (modelOverlay) {
         modelOverlay.classList.remove('visible');
+        
+        // 清理ModelViewer3D资源
+        if (modelViewer) {
+            modelViewer.dispose();
+            modelViewer = null;
+        }
+        
+        // 显示加载状态
+        const loading = document.getElementById('modelLoading');
+        if (loading) {
+            loading.classList.remove('hidden');
+        }
     }
 }
 
 // 3D模型控制函数
 function rotateModel() {
-    const modelIcon = document.querySelector('#modelOverlay .fas.fa-cube');
-    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
-    
-    if (modelIcon) {
-        modelIcon.style.animation = 'rotate 1s linear 1';
-        setTimeout(() => {
-            modelIcon.style.animation = 'none';
-        }, 1000);
+    if (modelViewer) {
+        console.log('开始旋转模型');
+        modelViewer.rotateModel(2000); // 2秒旋转
     }
-    
-    if (modelDescription) {
-        modelDescription.textContent = '模型正在旋转...';
-        setTimeout(() => {
-            modelDescription.textContent = '旋转完成';
-        }, 1000);
-    }
-    
-    console.log('旋转模型');
 }
 
 function resetView() {
-    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
-    
-    if (modelDescription) {
-        modelDescription.textContent = '视角已重置到默认位置';
-        setTimeout(() => {
-            modelDescription.textContent = '模型已加载完成';
-        }, 2000);
+    if (modelViewer) {
+        console.log('重置视角');
+        modelViewer.resetView();
+        
+        const modelInfo = document.getElementById('modelInfo');
+        if (modelInfo) {
+            modelInfo.textContent = '视角已重置';
+            setTimeout(() => {
+                modelInfo.textContent = '使用鼠标拖拽旋转，滚轮缩放';
+            }, 2000);
+        }
     }
-    
-    console.log('重置视角');
 }
 
 function toggleWireframe() {
-    const wireframeBtn = document.querySelector('#modelOverlay .model-btn:nth-child(3)');
-    const modelDescription = document.querySelector('#modelOverlay .model-placeholder p');
-    
-    if (wireframeBtn) {
-        const isWireframe = wireframeBtn.classList.contains('wireframe-active');
+    if (modelViewer) {
+        const isWireframe = modelViewer.toggleWireframe();
+        console.log('切换线框模式:', isWireframe);
         
-        if (isWireframe) {
-            wireframeBtn.classList.remove('wireframe-active');
-            wireframeBtn.innerHTML = '<i class="fas fa-border-none"></i> 线框';
-            if (modelDescription) {
-                modelDescription.textContent = '已切换到实体模式';
-            }
-        } else {
-            wireframeBtn.classList.add('wireframe-active');
-            wireframeBtn.innerHTML = '<i class="fas fa-border-all"></i> 实体';
-            if (modelDescription) {
-                modelDescription.textContent = '已切换到线框模式';
+        // 更新按钮状态 - 使用事件目标
+        const button = event.target;
+        if (button) {
+            if (isWireframe) {
+                button.classList.add('wireframe-active');
+                button.innerHTML = '<i class="fas fa-border-all"></i> 实体';
+            } else {
+                button.classList.remove('wireframe-active');
+                button.innerHTML = '<i class="fas fa-border-none"></i> 线框';
             }
         }
         
-        setTimeout(() => {
-            if (modelDescription) {
-                modelDescription.textContent = '模型已加载完成';
-            }
-        }, 2000);
+        const modelInfo = document.getElementById('modelInfo');
+        if (modelInfo) {
+            modelInfo.textContent = isWireframe ? '已切换到线框模式' : '已切换到实体模式';
+            setTimeout(() => {
+                modelInfo.textContent = '使用鼠标拖拽旋转，滚轮缩放';
+            }, 2000);
+        }
     }
-    
-    console.log('切换线框模式');
+}
+
+// 切换点云模式
+function togglePointCloud() {
+    if (modelViewer) {
+        const hasPointCloud = modelViewer.togglePointCloud();
+        console.log('切换点云模式:', hasPointCloud);
+        
+        // 更新按钮状态
+        const button = event.target;
+        if (button) {
+            if (hasPointCloud) {
+                button.classList.add('material-active');
+                button.innerHTML = '<i class="fas fa-cube"></i> 实体';
+            } else {
+                button.classList.remove('material-active');
+                button.innerHTML = '<i class="fas fa-braille"></i> 点云';
+            }
+        }
+        
+        const modelInfo = document.getElementById('modelInfo');
+        if (modelInfo) {
+            modelInfo.textContent = hasPointCloud ? '已切换到点云模式' : '已切换到实体模式';
+            setTimeout(() => {
+                modelInfo.textContent = '使用鼠标拖拽旋转，滚轮缩放';
+            }, 2000);
+        }
+    }
+}
+
+// 切换材质类型
+function switchMaterial(materialType) {
+    if (modelViewer) {
+        modelViewer.switchMaterial(materialType);
+        console.log('切换材质类型:', materialType);
+        
+        // 更新按钮状态
+        const allMaterialBtns = document.querySelectorAll('.controls-section:nth-child(2) .model-btn');
+        allMaterialBtns.forEach(btn => btn.classList.remove('material-active'));
+        
+        if (event && event.target) {
+            event.target.classList.add('material-active');
+        }
+        
+        const modelInfo = document.getElementById('modelInfo');
+        if (modelInfo) {
+            const materialNames = {
+                'original': '原始材质',
+                'lambert': '朗伯材质',
+                'phong': '冯氏材质',
+                'standard': '标准材质'
+            };
+            modelInfo.textContent = `已切换到${materialNames[materialType] || '未知材质'}`;
+            setTimeout(() => {
+                modelInfo.textContent = '使用鼠标拖拽旋转，滚轮缩放';
+            }, 2000);
+        }
+    }
+}
+
+// 切换背景显示
+function toggleBackground() {
+    if (modelViewer) {
+        const hasBackground = modelViewer.toggleBackground();
+        console.log('切换背景显示:', hasBackground);
+        
+        // 更新按钮状态
+        const button = event.target;
+        if (button) {
+            if (hasBackground) {
+                button.classList.add('material-active');
+                button.innerHTML = '<i class="fas fa-eye-slash"></i> 隐藏';
+            } else {
+                button.classList.remove('material-active');
+                button.innerHTML = '<i class="fas fa-image"></i> 背景';
+            }
+        }
+        
+        const modelInfo = document.getElementById('modelInfo');
+        if (modelInfo) {
+            modelInfo.textContent = hasBackground ? '背景已显示' : '背景已隐藏';
+            setTimeout(() => {
+                modelInfo.textContent = '使用鼠标拖拽旋转，滚轮缩放';
+            }, 2000);
+        }
+    }
 }
 
 // 双击切换图片显示模式

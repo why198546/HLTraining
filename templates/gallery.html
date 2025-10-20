@@ -6,6 +6,25 @@
     <title>作品展示 - AI创意工坊</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Three.js和GLTFLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        
+        // 将GLTFLoader和OrbitControls添加到全局THREE对象
+        window.THREE = window.THREE || {};
+        window.THREE.GLTFLoader = GLTFLoader;
+        window.THREE.OrbitControls = OrbitControls;
+    </script>
 </head>
 <body>
     <header class="header">
@@ -345,30 +364,86 @@
         <div class="model-overlay-backdrop" onclick="closeModelOverlay()"></div>
         <div class="model-overlay-content">
             <div class="model-viewer-container">
-                <div class="model-placeholder">
-                    <i class="fas fa-cube"></i>
+                <!-- 3D模型canvas -->
+                <canvas id="modelCanvas" class="model-canvas"></canvas>
+                
+                <!-- 加载状态 -->
+                <div id="modelLoading" class="model-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
                     <h3 id="modelTitle">3D模型查看器</h3>
                     <p>模型正在加载中...</p>
-                    <div class="model-controls">
-                        <button class="model-btn" onclick="rotateModel()">
-                            <i class="fas fa-sync-alt"></i>
-                            旋转
-                        </button>
-                        <button class="model-btn" onclick="resetView()">
-                            <i class="fas fa-home"></i>
-                            重置视角
-                        </button>
-                        <button class="model-btn" onclick="toggleWireframe()">
-                            <i class="fas fa-border-none"></i>
-                            线框
-                        </button>
+                </div>
+                
+                <!-- 模型控制面板 -->
+                <div class="model-controls-panel">
+                    <!-- 显示控制 -->
+                    <div class="controls-section">
+                        <h4><i class="fas fa-eye"></i> 显示控制</h4>
+                        <div class="model-controls">
+                            <button class="model-btn" onclick="rotateModel()">
+                                <i class="fas fa-redo"></i> 旋转
+                            </button>
+                            <button class="model-btn" onclick="resetView()">
+                                <i class="fas fa-home"></i> 重置
+                            </button>
+                            <button class="model-btn" onclick="toggleWireframe()">
+                                <i class="fas fa-border-none"></i> 线框
+                            </button>
+                            <button class="model-btn" onclick="togglePointCloud()">
+                                <i class="fas fa-braille"></i> 点云
+                            </button>
+                        </div>
                     </div>
-                    <p class="model-info">点击其他区域关闭</p>
+
+                    <!-- 材质设置 -->
+                    <div class="controls-section">
+                        <h4><i class="fas fa-palette"></i> 材质设置</h4>
+                        <div class="model-controls">
+                            <button class="model-btn" onclick="switchMaterial('original')">
+                                <i class="fas fa-gem"></i> 原始
+                            </button>
+                            <button class="model-btn" onclick="switchMaterial('lambert')">
+                                <i class="fas fa-circle"></i> 朗伯
+                            </button>
+                            <button class="model-btn" onclick="switchMaterial('phong')">
+                                <i class="fas fa-sun"></i> 冯氏
+                            </button>
+                            <button class="model-btn" onclick="switchMaterial('standard')">
+                                <i class="fas fa-star"></i> 标准
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 环境设置 -->
+                    <div class="controls-section">
+                        <h4><i class="fas fa-globe"></i> 环境设置</h4>
+                        <div class="model-controls">
+                            <button class="model-btn" onclick="toggleBackground()">
+                                <i class="fas fa-image"></i> 背景
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 关闭按钮 -->
+                    <div class="controls-section">
+                        <div class="model-controls">
+                            <button class="model-btn close-btn" onclick="closeModelOverlay()">
+                                <i class="fas fa-times"></i> 关闭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 模型信息显示 -->
+                <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
+                    准备加载3D模型...
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 3D模型查看器模块 -->
+    <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
     <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
 </body>
 </html>

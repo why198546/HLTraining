@@ -101,6 +101,16 @@ def debug():
     """调试页面"""
     return render_template('test_debug.html')
 
+@app.route('/test-controls')
+def test_controls():
+    """测试3D模型控制面板"""
+    return render_template('test_model_controls.html')
+
+@app.route('/simple-test')
+def simple_test():
+    """简化3D测试"""
+    return render_template('simple_test.html')
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     """提供上传的文件访问"""
