@@ -1,5 +1,19 @@
 [
   {
+    "id": "24052938-3af6-47e1-b78c-32e64e004015",
+    "title": "画画的小女孩",
+    "artist_name": "王洪宇",
+    "artist_age": 10,
+    "category": "characters",
+    "description": "一个可爱的小女孩在画画",
+    "created_at": "2025-10-21T17:25:29.068597",
+    "original_image": null,
+    "generated_image": "gallery/24052938-3af6-47e1-b78c-32e64e004015/generated_24052938-3af6-47e1-b78c-32e64e004015.png",
+    "model_file": "gallery/24052938-3af6-47e1-b78c-32e64e004015/model_24052938-3af6-47e1-b78c-32e64e004015.glb",
+    "likes": 0,
+    "views": 0
+  },
+  {
     "id": "447fb038-fbda-4bc9-9663-2ab0555accca",
     "title": "骑自行车的小男孩",
     "artist_name": "王洪宇",

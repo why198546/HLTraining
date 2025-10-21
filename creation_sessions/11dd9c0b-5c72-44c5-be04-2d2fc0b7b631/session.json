@@ -1,0 +1,38 @@
+{
+  "session_id": "11dd9c0b-5c72-44c5-be04-2d2fc0b7b631",
+  "created_at": "2025-10-21T20:38:23.889402",
+  "user_info": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15",
+    "timestamp": "2025-10-21T12:38:23.884Z"
+  },
+  "versions": [
+    {
+      "version_id": "0294971b-de57-49dc-9064-7b3575a978c7",
+      "type": "image",
+      "file_path": "creation_sessions/11dd9c0b-5c72-44c5-be04-2d2fc0b7b631/image_v1_0294971b.png",
+      "filename": "image_v1_0294971b.png",
+      "created_at": "2025-10-21T20:40:55.838278",
+      "metadata": {
+        "prompt": "这张图有点儿歪，帮我改成垂直的",
+        "has_sketch": true,
+        "generation_type": "mixed",
+        "note": "cute风格"
+      },
+      "is_selected": true
+    },
+    {
+      "version_id": "d63ebc0c-d8fe-4fb8-8faa-a7fb4ad15f07",
+      "type": "model",
+      "file_path": "creation_sessions/11dd9c0b-5c72-44c5-be04-2d2fc0b7b631/model_v1_d63ebc0c.glb",
+      "filename": "model_v1_d63ebc0c.glb",
+      "created_at": "2025-10-21T20:43:28.461890",
+      "metadata": {
+        "source_image": "uploads/6fe7f4ea-ef8d-4a85-bf4e-9b75f8b3adba_Generated_Image_October_21_2025_-_8_37PM_processed_colored.png",
+        "note": "3D模型 8:41:07 PM"
+      },
+      "is_selected": true
+    }
+  ],
+  "current_step": "model_generated",
+  "status": "active"
+}

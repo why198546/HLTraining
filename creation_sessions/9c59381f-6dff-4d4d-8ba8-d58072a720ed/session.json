@@ -1,0 +1,38 @@
+{
+  "session_id": "9c59381f-6dff-4d4d-8ba8-d58072a720ed",
+  "created_at": "2025-10-21T20:56:32.641389",
+  "user_info": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15",
+    "timestamp": "2025-10-21T12:56:32.636Z"
+  },
+  "versions": [
+    {
+      "version_id": "0198012f-e8bf-4e88-9846-f7a45246f0cb",
+      "type": "image",
+      "file_path": "creation_sessions/9c59381f-6dff-4d4d-8ba8-d58072a720ed/image_v1_0198012f.png",
+      "filename": "image_v1_0198012f.png",
+      "created_at": "2025-10-21T20:57:40.459068",
+      "metadata": {
+        "prompt": "这是儿童画，帮我保留机器人主体，删除背景",
+        "has_sketch": true,
+        "generation_type": "mixed",
+        "note": "cute风格"
+      },
+      "is_selected": true
+    },
+    {
+      "version_id": "62835ef0-19b7-465c-a39d-5ba365e4262e",
+      "type": "model",
+      "file_path": "creation_sessions/9c59381f-6dff-4d4d-8ba8-d58072a720ed/model_v1_62835ef0.glb",
+      "filename": "model_v1_62835ef0.glb",
+      "created_at": "2025-10-21T21:00:26.828025",
+      "metadata": {
+        "source_image": "uploads/f5771d19-79b0-487b-a442-162e34a261de_Weixin_Image_20251021205516_135_1160_processed_colored.png",
+        "note": "3D模型 8:58:11 PM"
+      },
+      "is_selected": true
+    }
+  ],
+  "current_step": "model_generated",
+  "status": "active"
+}

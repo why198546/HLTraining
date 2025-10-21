@@ -8,6 +8,7 @@ import numpy as np
 from api.nano_banana import NanoBananaAPI
 from api.hunyuan3d import Hunyuan3DGenerator
 from gallery_manager import GalleryManager
+from creation_session_manager import CreationSessionManager
 import json
 from dotenv import load_dotenv
 
@@ -22,8 +23,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 # 确保上传目录存在
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# 初始化作品集管理器
+# 初始化作品集管理器和创作会话管理器
 gallery_manager = GalleryManager()
+session_manager = CreationSessionManager()
 
 # 允许的文件扩展名
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
@@ -72,7 +74,10 @@ def generate_3d_model_from_image(image_path):
 @app.route('/')
 def index():
     """主页"""
-    return render_template('index.html')
+    # 获取最新的4个作品用于首页展示
+    gallery_manager = GalleryManager()
+    latest_artworks = gallery_manager.get_latest_artworks(limit=4)
+    return render_template('index.html', latest_artworks=latest_artworks)
 
 @app.route('/create')
 def create():
@@ -121,12 +126,114 @@ def model_file(filename):
     """提供3D模型文件访问"""
     return send_file(os.path.join('models', filename))
 
+@app.route('/session-files/<path:filepath>')
+def session_file(filepath):
+    """提供创作会话文件访问"""
+    return send_file(filepath)
+
+# ===== 创作会话管理API =====
+
+@app.route('/create-session', methods=['POST'])
+def create_session():
+    """创建新的创作会话"""
+    try:
+        user_info = request.get_json() or {}
+        session_id = session_manager.create_session(user_info)
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'message': '创作会话已创建'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'创建会话失败: {str(e)}'}), 500
+
+@app.route('/session/<session_id>/info')
+def get_session_info(session_id):
+    """获取会话信息"""
+    try:
+        session_info = session_manager.get_session_info(session_id)
+        if not session_info:
+            return jsonify({'error': '会话不存在'}), 404
+        
+        return jsonify({
+            'success': True,
+            'session': session_info
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'获取会话信息失败: {str(e)}'}), 500
+
+@app.route('/session/<session_id>/versions')
+def get_session_versions(session_id):
+    """获取会话的所有版本"""
+    try:
+        version_type = request.args.get('type')  # 'image' 或 'model'
+        versions = session_manager.get_session_versions(session_id, version_type)
+        
+        return jsonify({
+            'success': True,
+            'versions': versions
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'获取版本失败: {str(e)}'}), 500
+
+@app.route('/session/<session_id>/selected-versions')
+def get_selected_versions(session_id):
+    """获取当前选择的版本"""
+    try:
+        selected = session_manager.get_selected_versions(session_id)
+        
+        return jsonify({
+            'success': True,
+            'selected': selected
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'获取选择版本失败: {str(e)}'}), 500
+
+@app.route('/session/<session_id>/select-version', methods=['POST'])
+def select_version(session_id):
+    """选择版本"""
+    try:
+        data = request.get_json()
+        version_id = data.get('version_id')
+        
+        if not version_id:
+            return jsonify({'error': '缺少版本ID'}), 400
+        
+        result = session_manager.select_version(session_id, version_id)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': f'选择版本失败: {str(e)}'}), 500
+
+@app.route('/session/<session_id>/delete-version', methods=['DELETE'])
+def delete_version(session_id):
+    """删除版本"""
+    try:
+        data = request.get_json()
+        version_id = data.get('version_id')
+        
+        if not version_id:
+            return jsonify({'error': '缺少版本ID'}), 400
+        
+        result = session_manager.delete_version(session_id, version_id)
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': f'删除版本失败: {str(e)}'}), 500
+
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
-    """统一的图片生成接口 - 支持文字和图片混合输入"""
+    """统一的图片生成接口 - 支持文字和图片混合输入，支持会话版本管理"""
     try:
         prompt = request.form.get('prompt', '').strip()
         uploaded_file = request.files.get('sketch')
+        session_id = request.form.get('session_id')
+        version_note = request.form.get('version_note', '')
         
         if not prompt and not uploaded_file:
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
@@ -164,10 +271,33 @@ def generate_image():
         # 返回相对路径用于前端显示
         relative_path = generated_image_path.replace('uploads/', '/uploads/')
         
+        # 如果有会话ID，添加到会话版本管理
+        version_id = None
+        if session_id:
+            metadata = {
+                'prompt': prompt,
+                'has_sketch': sketch_path is not None,
+                'generation_type': 'mixed' if sketch_path and prompt else ('sketch' if sketch_path else 'text'),
+                'note': version_note
+            }
+            
+            version_result = session_manager.add_version(
+                session_id=session_id,
+                version_type='image',
+                file_path=generated_image_path,
+                metadata=metadata
+            )
+            
+            if version_result['success']:
+                version_id = version_result['version_id']
+                # 自动选择新生成的版本
+                session_manager.select_version(session_id, version_id)
+        
         # 准备返回数据
         response_data = {
             'success': True,
             'image_url': relative_path,
+            'version_id': version_id,
             'message': '图片生成成功！'
         }
         
@@ -221,9 +351,11 @@ def adjust_image():
 
 @app.route('/generate-3d-model', methods=['POST'])
 def generate_3d_model_endpoint():
-    """从图片生成3D模型"""
+    """从图片生成3D模型，支持会话版本管理"""
     try:
         image_path = request.form.get('image_path')
+        session_id = request.form.get('session_id')
+        version_note = request.form.get('version_note', '')
         
         if not image_path:
             return jsonify({'error': '缺少图片路径'}), 400
@@ -239,9 +371,33 @@ def generate_3d_model_endpoint():
         
         print(f"✅ 3D模型生成完成: {model_result}")
         
+        # 如果有会话ID，添加到会话版本管理
+        version_id = None
+        if session_id:
+            # 转换回绝对路径用于存储
+            model_abs_path = model_result.replace('/uploads/', 'uploads/')
+            
+            metadata = {
+                'source_image': image_path,
+                'note': version_note
+            }
+            
+            version_result = session_manager.add_version(
+                session_id=session_id,
+                version_type='model',
+                file_path=model_abs_path,
+                metadata=metadata
+            )
+            
+            if version_result['success']:
+                version_id = version_result['version_id']
+                # 自动选择新生成的版本
+                session_manager.select_version(session_id, version_id)
+        
         return jsonify({
             'success': True,
             'model_url': model_result,
+            'version_id': version_id,
             'message': '3D模型生成成功！'
         })
             
@@ -251,40 +407,65 @@ def generate_3d_model_endpoint():
 
 @app.route('/save-artwork', methods=['POST'])
 def save_artwork():
-    """保存作品到作品集"""
+    """从创作会话保存作品到作品集"""
     try:
         data = request.get_json()
+        print(f"📨 收到保存作品请求: {data}")
         
-        # 验证必需的参数（原始图片可以为空）
-        required_fields = ['generated_image_path', 'title', 'artist_name']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'缺少必需字段: {field}'}), 400
+        # 验证必需的参数
+        session_id = data.get('session_id')
+        print(f"🔍 会话ID: {session_id}")
         
-        # 确保生成的图片文件存在
-        original_path = data.get('original_image_path')
-        generated_path = data['generated_image_path']
+        if not session_id:
+            print("❌ 缺少会话ID")
+            return jsonify({'error': '缺少会话ID'}), 400
         
-        # 原始图片可以为空（纯文字生成的情况）
-        if original_path and not os.path.exists(original_path):
-            return jsonify({'error': '原始图片文件不存在'}), 400
-        if not os.path.exists(generated_path):
-            return jsonify({'error': '生成图片文件不存在'}), 400
+        # 从会话获取选择的版本
+        print(f"🔄 获取会话 {session_id} 的选择版本...")
+        selected_versions = session_manager.get_selected_versions(session_id)
+        print(f"📋 选择的版本: {selected_versions}")
+        
+        if 'image' not in selected_versions:
+            print("❌ 没有选择图片版本")
+            return jsonify({'error': '请先选择一个图片版本'}), 400
+        
+        # 获取文件路径
+        image_version = selected_versions['image']
+        model_version = selected_versions.get('model')
+        
+        image_path = image_version['file_path']
+        model_path = model_version['file_path'] if model_version else None
+        
+        # 验证文件存在
+        if not os.path.exists(image_path):
+            return jsonify({'error': '选择的图片文件不存在'}), 400
+        
+        if model_path and not os.path.exists(model_path):
+            return jsonify({'error': '选择的3D模型文件不存在'}), 400
         
         # 保存作品
         result = gallery_manager.save_artwork(
-            original_image_path=original_path,
-            generated_image_path=generated_path,
-            model_path=data.get('model_path'),
+            original_image_path=None,  # 创作会话中可能没有原始图片
+            generated_image_path=image_path,
+            model_path=model_path,
             title=data.get('title', '我的作品'),
             artist_name=data.get('artist_name', '小朋友'),
             artist_age=int(data.get('artist_age', 10)),
             category=data.get('category', '其他'),
-            description=data.get('description', '')
+            description=data.get('description', ''),
+            version_note=f"从创作会话保存 - 图片v{image_version.get('metadata', {}).get('note', '')}"
         )
         
         if result['success']:
-            return jsonify(result)
+            # 关闭会话（标记为完成）
+            session_manager.close_session(session_id)
+            
+            return jsonify({
+                'success': True,
+                'artwork_id': result['artwork_id'],
+                'message': '作品已成功保存到作品集！',
+                'session_closed': True
+            })
         else:
             return jsonify(result), 500
             

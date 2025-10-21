@@ -1,0 +1,11 @@
+{
+  "session_id": "d8465d90-4f00-46dd-b087-212a194daaa0",
+  "created_at": "2025-10-21T21:22:31.754321",
+  "user_info": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.105.1 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36",
+    "timestamp": "2025-10-21T13:22:31.751Z"
+  },
+  "versions": [],
+  "current_step": "prompt",
+  "status": "active"
+}

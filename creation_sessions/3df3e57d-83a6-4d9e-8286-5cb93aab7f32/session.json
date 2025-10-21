@@ -1,0 +1,50 @@
+{
+  "session_id": "3df3e57d-83a6-4d9e-8286-5cb93aab7f32",
+  "created_at": "2025-10-21T17:49:09.209358",
+  "user_info": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15",
+    "timestamp": "2025-10-21T09:49:09.204Z"
+  },
+  "versions": [
+    {
+      "version_id": "1e7deed3-2333-4ab8-80f5-d7a9d9e68fd0",
+      "type": "image",
+      "file_path": "creation_sessions/3df3e57d-83a6-4d9e-8286-5cb93aab7f32/image_v1_1e7deed3.png",
+      "filename": "image_v1_1e7deed3.png",
+      "created_at": "2025-10-21T17:50:02.737933",
+      "metadata": {
+        "prompt": "一个可爱的小猫咪，在练瑜伽",
+        "has_sketch": false,
+        "generation_type": "text",
+        "note": "cute风格"
+      },
+      "is_selected": true
+    },
+    {
+      "version_id": "e9c2464f-eee8-432a-a8c3-77321ce80345",
+      "type": "model",
+      "file_path": "creation_sessions/3df3e57d-83a6-4d9e-8286-5cb93aab7f32/model_v1_e9c2464f.glb",
+      "filename": "model_v1_e9c2464f.glb",
+      "created_at": "2025-10-21T17:56:11.225728",
+      "metadata": {
+        "source_image": "uploads/nano_banana_text_1761040202_adjusted_1761040242.png",
+        "note": "3D模型 5:53:47 PM"
+      },
+      "is_selected": true
+    },
+    {
+      "version_id": "ce9f45b3-6a63-469d-9c32-af4c33f8671d",
+      "type": "model",
+      "file_path": "creation_sessions/3df3e57d-83a6-4d9e-8286-5cb93aab7f32/model_v2_ce9f45b3.glb",
+      "filename": "model_v2_ce9f45b3.glb",
+      "created_at": "2025-10-21T17:59:31.505993",
+      "metadata": {
+        "source_image": "uploads/nano_banana_text_1761040202_adjusted_1761040242.png",
+        "note": "3D模型 5:56:54 PM"
+      },
+      "is_selected": true
+    }
+  ],
+  "current_step": "model_generated",
+  "status": "active"
+}

@@ -75,57 +75,81 @@
                 <p class="section-subtitle">看看其他小朋友用AI创作的精美作品</p>
                 
                 <div class="gallery-grid">
-                    <div class="gallery-item">
-                        <div class="gallery-image">
-                            <div class="placeholder-image">
-                                <i class="fas fa-image"></i>
-                                <span>示例作品1</span>
+                    {% if latest_artworks %}
+                        {% for artwork in latest_artworks %}
+                        <div class="gallery-item">
+                            <div class="gallery-image">
+                                {% if artwork.generated_image %}
+                                <img src="{{ url_for('static', filename=artwork.generated_image) }}" 
+                                     alt="{{ artwork.title }}"
+                                     loading="lazy">
+                                {% else %}
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                    <span>{{ artwork.title }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="gallery-info">
+                                <h4>{{ artwork.title }}</h4>
+                                <p>{{ artwork.artist_name }}，{{ artwork.artist_age }}岁</p>
                             </div>
                         </div>
-                        <div class="gallery-info">
-                            <h4>可爱的彩虹猫咪</h4>
-                            <p>小明，8岁</p>
-                        </div>
-                    </div>
-                    
-                    <div class="gallery-item">
-                        <div class="gallery-image">
-                            <div class="placeholder-image">
-                                <i class="fas fa-image"></i>
-                                <span>示例作品2</span>
+                        {% endfor %}
+                    {% else %}
+                        <!-- 默认展示示例作品 -->
+                        <div class="gallery-item">
+                            <div class="gallery-image">
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                    <span>示例作品1</span>
+                                </div>
+                            </div>
+                            <div class="gallery-info">
+                                <h4>可爱的彩虹猫咪</h4>
+                                <p>小明，8岁</p>
                             </div>
                         </div>
-                        <div class="gallery-info">
-                            <h4>梦幻城堡</h4>
-                            <p>小红，10岁</p>
-                        </div>
-                    </div>
-                    
-                    <div class="gallery-item">
-                        <div class="gallery-image">
-                            <div class="placeholder-image">
-                                <i class="fas fa-image"></i>
-                                <span>示例作品3</span>
+                        
+                        <div class="gallery-item">
+                            <div class="gallery-image">
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                    <span>示例作品2</span>
+                                </div>
+                            </div>
+                            <div class="gallery-info">
+                                <h4>梦幻城堡</h4>
+                                <p>小红，10岁</p>
                             </div>
                         </div>
-                        <div class="gallery-info">
-                            <h4>太空飞船</h4>
-                            <p>小刚，12岁</p>
-                        </div>
-                    </div>
-                    
-                    <div class="gallery-item">
-                        <div class="gallery-image">
-                            <div class="placeholder-image">
-                                <i class="fas fa-image"></i>
-                                <span>示例作品4</span>
+                        
+                        <div class="gallery-item">
+                            <div class="gallery-image">
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                    <span>示例作品3</span>
+                                </div>
+                            </div>
+                            <div class="gallery-info">
+                                <h4>太空飞船</h4>
+                                <p>小刚，12岁</p>
                             </div>
                         </div>
-                        <div class="gallery-info">
-                            <h4>神奇森林</h4>
-                            <p>小花，9岁</p>
+                        
+                        <div class="gallery-item">
+                            <div class="gallery-image">
+                                <div class="placeholder-image">
+                                    <i class="fas fa-image"></i>
+                                    <span>示例作品4</span>
+                                </div>
+                            </div>
+                            <div class="gallery-info">
+                                <h4>神奇森林</h4>
+                                <p>小花，9岁</p>
+                            </div>
                         </div>
-                    </div>
+                    {% endif %}
                 </div>
                 
                 <div class="gallery-more">

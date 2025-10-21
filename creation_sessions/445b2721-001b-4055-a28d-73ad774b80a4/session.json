@@ -1,0 +1,26 @@
+{
+  "session_id": "445b2721-001b-4055-a28d-73ad774b80a4",
+  "created_at": "2025-10-21T20:33:29.471883",
+  "user_info": {
+    "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15",
+    "timestamp": "2025-10-21T12:33:29.464Z"
+  },
+  "versions": [
+    {
+      "version_id": "f31f5385-1d7e-4d98-854a-ab1feb5695e1",
+      "type": "image",
+      "file_path": "creation_sessions/445b2721-001b-4055-a28d-73ad774b80a4/image_v1_f31f5385.png",
+      "filename": "image_v1_f31f5385.png",
+      "created_at": "2025-10-21T20:34:26.012809",
+      "metadata": {
+        "prompt": "帮我保留可乐瓶的主体，删除杂乱的背景",
+        "has_sketch": true,
+        "generation_type": "mixed",
+        "note": "realistic风格"
+      },
+      "is_selected": true
+    }
+  ],
+  "current_step": "image_generated",
+  "status": "active"
+}

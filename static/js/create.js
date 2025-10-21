@@ -145,6 +145,13 @@ function showStage(stageNumber) {
     }
 
     currentStage = stageNumber;
+    
+    // 通知内联版本管理器阶段变化
+    if (window.inlineVersionManager) {
+        setTimeout(() => {
+            window.inlineVersionManager.showVersionsForStage(stageNumber);
+        }, 100);
+    }
 }
 
 // 获取阶段ID
@@ -205,6 +212,17 @@ async function generateImage() {
         formData.append('style', style);
         formData.append('color_preference', colorPreference);
         
+        // 添加会话ID（支持内联版本管理器）
+        if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
+            formData.append('session_id', window.inlineVersionManager.currentSessionId);
+        } else if (window.versionManager && window.versionManager.currentSessionId) {
+            formData.append('session_id', window.versionManager.currentSessionId);
+        }
+        
+        // 添加版本备注
+        const versionNote = document.querySelector('input[name="version_note"]')?.value || `${style}风格`;
+        formData.append('version_note', versionNote);
+        
         if (uploadedImageFile) {
             formData.append('sketch', uploadedImageFile);
         }
@@ -246,6 +264,13 @@ async function generateImage() {
             if (finalImageEl) {
                 finalImageEl.src = result.image_url;
                 finalImageEl.style.display = 'block';
+            }
+            
+            // 通知版本管理器刷新（支持内联版本管理器）
+            if (window.inlineVersionManager) {
+                window.inlineVersionManager.onGenerationComplete();
+            } else if (window.versionManager) {
+                window.versionManager.onGenerationComplete();
             }
             
             // 更新生成成功状态并显示保存按钮
@@ -327,6 +352,17 @@ async function applyAdjustment() {
         const formData = new FormData();
         formData.append('current_image', generatedImageUrl);
         formData.append('adjust_prompt', adjustmentPrompt);
+        
+        // 添加会话ID（支持内联版本管理器）
+        if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
+            formData.append('session_id', window.inlineVersionManager.currentSessionId);
+        } else if (window.versionManager && window.versionManager.currentSessionId) {
+            formData.append('session_id', window.versionManager.currentSessionId);
+        }
+        
+        // 添加版本备注
+        const versionNote = `调整：${adjustmentPrompt}`;
+        formData.append('version_note', versionNote);
 
         const response = await fetch('/adjust-image', {
             method: 'POST',
@@ -343,6 +379,13 @@ async function applyAdjustment() {
             
             if (currentImageEl) currentImageEl.src = result.image_url;
             if (finalImageEl) finalImageEl.src = result.image_url;
+            
+            // 通知版本管理器刷新（支持内联版本管理器）
+            if (window.inlineVersionManager) {
+                window.inlineVersionManager.onGenerationComplete();
+            } else if (window.versionManager) {
+                window.versionManager.onGenerationComplete();
+            }
             
             hideLoadingOverlay();
             showMessage('图片调整成功！', 'success');
@@ -385,6 +428,17 @@ async function generate3DModel() {
     try {
         const formData = new FormData();
         formData.append('image_path', generatedImageUrl);
+        
+        // 添加会话ID（支持内联版本管理器）
+        if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
+            formData.append('session_id', window.inlineVersionManager.currentSessionId);
+        } else if (window.versionManager && window.versionManager.currentSessionId) {
+            formData.append('session_id', window.versionManager.currentSessionId);
+        }
+        
+        // 添加版本备注
+        const versionNote = `3D模型 ${new Date().toLocaleTimeString()}`;
+        formData.append('version_note', versionNote);
         
         // 添加可选的prompt
         const modelPrompt = document.getElementById('model-prompt');
@@ -440,6 +494,13 @@ async function generate3DModel() {
                 // 加载3D模型（如果有模型文件URL）
                 if (result.model_url) {
                     load3DModel(result.model_url);
+                }
+                
+                // 通知版本管理器刷新（支持内联版本管理器）
+                if (window.inlineVersionManager) {
+                    window.inlineVersionManager.onGenerationComplete();
+                } else if (window.versionManager) {
+                    window.versionManager.onGenerationComplete();
                 }
             }, 500);
         } else {
