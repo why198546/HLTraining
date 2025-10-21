@@ -47,6 +47,8 @@ uploads/*
 # Generated models (可根据需要调整)
 models/*
 !models/.gitkeep
+creation_sessions/*
+!creation_sessions/.gitkeep
 
 # IDE
 .vscode/
