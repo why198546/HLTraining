@@ -789,9 +789,12 @@ function initModelControlsPanel() {
 
 // 显示控制面板
 function showModelControlsPanel() {
-    const panel = document.getElementById('modelControlsPanel');
-    if (panel) {
-        panel.style.display = 'block';
+    const leftPanel = document.getElementById('leftControlsPanel');
+    const rightPanel = document.getElementById('rightControlsPanel');
+    
+    if (leftPanel && rightPanel) {
+        leftPanel.style.display = 'flex';
+        rightPanel.style.display = 'flex';
     }
     
     // 重置渲染控制状态
@@ -800,10 +803,18 @@ function showModelControlsPanel() {
 
 // 隐藏控制面板
 function hideModelControlsPanel() {
-    const panel = document.getElementById('modelControlsPanel');
-    if (panel) {
-        panel.style.display = 'none';
+    const leftPanel = document.getElementById('leftControlsPanel');
+    const rightPanel = document.getElementById('rightControlsPanel');
+    
+    if (leftPanel && rightPanel) {
+        leftPanel.style.display = 'none';
+        rightPanel.style.display = 'none';
     }
+}
+
+// 为了兼容HTML中的onclick调用
+function hideModelControls() {
+    hideModelControlsPanel();
 }
 
 // 设置渲染模式

@@ -477,13 +477,158 @@ main {
 /* 3D模型预览包装器 */
 .model-preview-wrapper {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     align-items: flex-start;
+    position: relative;
+    min-height: 400px;
 }
 
 .model-preview-wrapper .model-container {
     flex: 1;
     min-height: 400px;
+}
+
+/* 左右侧控制面板 */
+.left-controls-panel,
+.right-controls-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 15px 8px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-width: 60px;
+    max-width: 80px;
+}
+
+.left-controls-panel {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.right-controls-panel {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: none;
+}
+
+/* 垂直控制组 */
+.control-group-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+    color: #e0e0e0;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.control-title i {
+    font-size: 1rem;
+    color: #3498db;
+}
+
+.control-title span {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 侧边控制按钮 */
+.side-control-btn {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    position: relative;
+}
+
+.side-control-btn:hover {
+    background: rgba(52, 152, 219, 0.3);
+    border-color: #3498db;
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3);
+}
+
+.side-control-btn.active {
+    background: rgba(52, 152, 219, 0.8);
+    color: white;
+    border-color: #3498db;
+    box-shadow: 0 0 12px rgba(52, 152, 219, 0.5);
+}
+
+.side-control-btn.close-btn {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: rgba(231, 76, 60, 0.5);
+}
+
+.side-control-btn.close-btn:hover {
+    background: rgba(231, 76, 60, 0.6);
+    border-color: #e74c3c;
+}
+
+/* 光照控制 */
+.light-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.light-control i {
+    color: #f1c40f;
+    font-size: 0.9rem;
+}
+
+.vertical-slider {
+    writing-mode: bt-lr; /* IE */
+    -webkit-appearance: slider-vertical; /* WebKit */
+    appearance: slider-vertical; /* Standard */
+    width: 20px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    outline: none;
+    border-radius: 10px;
+}
+
+.vertical-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #f1c40f;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.vertical-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #f1c40f;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* 页脚样式 */
@@ -3100,14 +3245,17 @@ main {
 /* 控制面板 */
 .model-controls-panel {
     position: absolute;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
-    background: rgba(0, 0, 0, 0.9);
-    border-radius: 15px;
-    padding: 20px;
+    background: rgba(0, 0, 0, 0.85);
+    border-radius: 12px;
+    padding: 16px;
     backdrop-filter: blur(10px);
-    max-width: 300px;
+    max-width: 280px;
+    min-width: 250px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .controls-section {
@@ -3124,6 +3272,100 @@ main {
     margin-bottom: 8px;
     padding-bottom: 5px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 控制面板组件样式 */
+.controls-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.controls-header h5 {
+    color: #fff;
+    font-size: 1rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.controls-header i {
+    color: #3498db;
+}
+
+.control-group {
+    margin-bottom: 16px;
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-label {
+    display: block;
+    color: #e0e0e0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.control-buttons.vertical {
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.control-item:last-child {
+    margin-bottom: 0;
+}
+
+.control-text {
+    color: #e0e0e0;
+    font-size: 0.85rem;
+}
+
+.control-slider {
+    width: 100px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.control-slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.control-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #3498db;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .model-placeholder {
@@ -3166,21 +3408,63 @@ main {
     background: rgba(52, 152, 219, 0.8);
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.75rem;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 4px;
     flex: 1;
     min-width: fit-content;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 .model-btn:hover {
     background: rgba(52, 152, 219, 1);
     transform: translateY(-1px);
+}
+
+/* 控制按钮通用样式 */
+.control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+    white-space: nowrap;
+    min-width: fit-content;
+    flex: 1;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateY(-1px);
+}
+
+.control-btn.active {
+    background: rgba(52, 152, 219, 0.8);
+    color: white;
+    border-color: #3498db;
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+}
+
+.control-btn.active:hover {
+    background: rgba(52, 152, 219, 1);
+}
+
+.control-btn i {
+    font-size: 0.8rem;
 }
 
 .model-btn.close-btn {
