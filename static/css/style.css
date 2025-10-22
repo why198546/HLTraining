@@ -1163,6 +1163,90 @@ main {
         width: 100%;
         max-width: 250px;
     }
+    
+    /* 移动端版本面板布局调整 */
+    .generation-workspace {
+        flex-direction: column !important;
+    }
+    
+    .image-panel,
+    .versions-panel {
+        width: 100% !important;
+        margin-right: 0 !important;
+    }
+    
+    .versions-panel {
+        margin-top: 2rem;
+    }
+}
+
+/* 生成阶段的左右分栏布局 */
+.generation-workspace {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.image-panel {
+    flex: 2;
+    min-width: 0; /* 防止flex项目溢出 */
+}
+
+.versions-panel {
+    flex: 1;
+    min-width: 280px;
+    max-width: 350px;
+    background: rgba(248, 249, 255, 0.9);
+    border-radius: 15px;
+    padding: 1.5rem;
+    border: 2px solid #e0e6ff;
+    height: fit-content;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.versions-panel-header {
+    margin-bottom: 1rem;
+}
+
+.versions-panel-header h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.versions-panel-header h4 i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.versions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.no-versions-placeholder {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #666;
+}
+
+.no-versions-placeholder i {
+    font-size: 2rem;
+    color: #ccc;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.no-versions-placeholder p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+    margin: 0;
 }
 
 /* 3D模型结果区域样式 */

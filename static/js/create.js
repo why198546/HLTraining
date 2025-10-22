@@ -89,7 +89,32 @@ function quickAdjust(adjustType) {
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeCreatePage();
+    initializeVersionsPanel();
 });
+
+// 初始化版本面板
+function initializeVersionsPanel() {
+    // 等待版本管理器加载完成
+    setTimeout(() => {
+        if (window.inlineVersionManager) {
+            // 检查是否在生成阶段，如果是则显示版本面板
+            const generationStage = document.getElementById('generation-stage');
+            if (generationStage && generationStage.classList.contains('active')) {
+                const versionsContainer = document.getElementById('versions-container');
+                if (versionsContainer) {
+                    // 隐藏占位符
+                    const placeholder = versionsContainer.querySelector('.no-versions-placeholder');
+                    if (placeholder) {
+                        placeholder.style.display = 'none';
+                    }
+                    
+                    // 注入版本管理器
+                    window.inlineVersionManager.injectVersionPanelToContainer('versions-container', 2);
+                }
+            }
+        }
+    }, 500);
+}
 
 // 初始化创作页面
 function initializeCreatePage() {
@@ -223,7 +248,20 @@ function showStage(stageNumber) {
             };
             const stageId = stageIds[stageNumber];
             if (stageId) {
-                window.inlineVersionManager.injectVersionPanelToStage(stageId, stageNumber);
+                // 特殊处理生成阶段，注入到右侧版本面板
+                if (stageNumber === 2) {
+                    // 隐藏占位符
+                    const versionsContainer = document.getElementById('versions-container');
+                    if (versionsContainer) {
+                        const placeholder = versionsContainer.querySelector('.no-versions-placeholder');
+                        if (placeholder) {
+                            placeholder.style.display = 'none';
+                        }
+                    }
+                    window.inlineVersionManager.injectVersionPanelToContainer('versions-container', stageNumber);
+                } else {
+                    window.inlineVersionManager.injectVersionPanelToStage(stageId, stageNumber);
+                }
             }
         }, 100);
     }
