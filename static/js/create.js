@@ -20,6 +20,23 @@ let backgroundVisible = true; // 背景可见性
 let directionalLight = null; // 定向光源引用
 let pointsObjects = []; // 存储创建的点云对象
 
+// 填充提示词到输入框
+function fillPrompt(promptText) {
+    const textarea = document.getElementById('creation-prompt');
+    if (textarea) {
+        textarea.value = promptText;
+        textarea.focus();
+        
+        // 添加一个轻微的动画效果
+        textarea.style.transform = 'scale(1.02)';
+        textarea.style.transition = 'transform 0.2s ease';
+        
+        setTimeout(() => {
+            textarea.style.transform = 'scale(1)';
+        }, 200);
+    }
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeCreatePage();
