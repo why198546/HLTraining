@@ -164,86 +164,85 @@
                         <p>查看AI为你生成的图片，可以直接调整或确认图片</p>
                     </div>
 
-                    <!-- 左右分栏布局 -->
-                    <div class="generation-workspace">
-                        <!-- 左侧：图片和操作区 -->
-                        <div class="image-panel">
-                            <div class="generated-image-container">
-                                <img id="generated-image" src="" alt="AI生成的图片">
-                            </div>
-                            
-                            <!-- 快速调整按钮 -->
-                            <div class="quick-adjust-buttons">
-                                <h4><i class="fas fa-magic"></i> 快速调整</h4>
-                                <div class="quick-buttons-grid">
-                                    <button class="quick-btn" onclick="quickAdjust('remove-background')">
-                                        <i class="fas fa-cut"></i>
-                                        去除背景
-                                    </button>
-                                    <button class="quick-btn" onclick="quickAdjust('bright-colors')">
-                                        <i class="fas fa-sun"></i>
-                                        更鲜艳
-                                    </button>
-                                    <button class="quick-btn" onclick="quickAdjust('soft-colors')">
-                                        <i class="fas fa-cloud"></i>
-                                        柔和色调
-                                    </button>
-                                    <button class="quick-btn" onclick="quickAdjust('cartoon-style')">
-                                        <i class="fas fa-smile"></i>
-                                        卡通风格
-                                    </button>
-                                    <button class="quick-btn" onclick="quickAdjust('add-sparkles')">
-                                        <i class="fas fa-sparkles"></i>
-                                        添加光效
-                                    </button>
-                                    <button class="quick-btn" onclick="quickAdjust('change-background')">
-                                        <i class="fas fa-image"></i>
-                                        换背景
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- 自定义调整输入 -->
-                            <div class="custom-adjust-section">
-                                <h4><i class="fas fa-edit"></i> 自定义调整</h4>
-                                <textarea 
-                                    id="adjustment-prompt" 
-                                    class="adjustment-input" 
-                                    placeholder="例如：让颜色更鲜艳一些，改变背景为森林，添加彩虹效果..."
-                                    rows="3"
-                                ></textarea>
-                            </div>
-
-                            <!-- 主要操作按钮 -->
-                            <div class="main-actions">
-                                <button class="action-btn regenerate-btn" onclick="regenerateImage()">
-                                    <i class="fas fa-redo"></i>
-                                    重新生成
-                                </button>
-                                <button class="action-btn apply-adjust-btn" onclick="applyAdjustment()">
-                                    <i class="fas fa-magic"></i>
-                                    应用调整
-                                </button>
-                                <button class="action-btn confirm-btn" onclick="confirmImage()">
-                                    <i class="fas fa-check"></i>
-                                    确认图片
-                                </button>
+                    <!-- 生成的图片 -->
+                    <div class="generated-image-container">
+                        <img id="generated-image" src="" alt="AI生成的图片">
+                    </div>
+                    
+                    <!-- 版本管理面板 -->
+                    <div class="versions-panel-inline">
+                        <div class="versions-panel-header">
+                            <h4><i class="fas fa-history"></i> 生成的图片版本（<span id="version-count">2</span>）</h4>
+                            <button class="generate-more-btn">
+                                <i class="fas fa-plus"></i>
+                                生成更多
+                            </button>
+                        </div>
+                        <div id="versions-container" class="versions-container-inline">
+                            <!-- 版本管理器会在这里注入内容 -->
+                            <div class="no-versions-placeholder">
+                                <i class="fas fa-image"></i>
+                                <p>开始生成图片后，版本历史会显示在这里</p>
                             </div>
                         </div>
-                        
-                        <!-- 右侧：版本管理面板 -->
-                        <div class="versions-panel">
-                            <div class="versions-panel-header">
-                                <h4><i class="fas fa-history"></i> 生成的图片版本</h4>
-                            </div>
-                            <div id="versions-container" class="versions-container">
-                                <!-- 版本管理器会在这里注入内容 -->
-                                <div class="no-versions-placeholder">
-                                    <i class="fas fa-image"></i>
-                                    <p>开始生成图片后，<br>版本历史会显示在这里</p>
-                                </div>
-                            </div>
+                    </div>
+                    
+                    <!-- 快速调整按钮 -->
+                    <div class="quick-adjust-buttons">
+                        <h4><i class="fas fa-magic"></i> 快速调整</h4>
+                        <div class="quick-buttons-grid">
+                            <button class="quick-btn" onclick="quickAdjust('remove-background')">
+                                <i class="fas fa-cut"></i>
+                                去除背景
+                            </button>
+                            <button class="quick-btn" onclick="quickAdjust('bright-colors')">
+                                <i class="fas fa-sun"></i>
+                                更鲜艳
+                            </button>
+                            <button class="quick-btn" onclick="quickAdjust('soft-colors')">
+                                <i class="fas fa-cloud"></i>
+                                柔和色调
+                            </button>
+                            <button class="quick-btn" onclick="quickAdjust('cartoon-style')">
+                                <i class="fas fa-smile"></i>
+                                卡通风格
+                            </button>
+                            <button class="quick-btn" onclick="quickAdjust('add-sparkles')">
+                                <i class="fas fa-sparkles"></i>
+                                添加光效
+                            </button>
+                            <button class="quick-btn" onclick="quickAdjust('change-background')">
+                                <i class="fas fa-image"></i>
+                                换背景
+                            </button>
                         </div>
+                    </div>
+
+                    <!-- 自定义调整输入 -->
+                    <div class="custom-adjust-section">
+                        <h4><i class="fas fa-edit"></i> 自定义调整</h4>
+                        <textarea 
+                            id="adjustment-prompt" 
+                            class="adjustment-input" 
+                            placeholder="例如：让颜色更鲜艳一些，改变背景为森林，添加彩虹效果..."
+                            rows="3"
+                        ></textarea>
+                    </div>
+
+                    <!-- 主要操作按钮 -->
+                    <div class="main-actions">
+                        <button class="action-btn regenerate-btn" onclick="regenerateImage()">
+                            <i class="fas fa-redo"></i>
+                            重新生成
+                        </button>
+                        <button class="action-btn apply-adjust-btn" onclick="applyAdjustment()">
+                            <i class="fas fa-magic"></i>
+                            应用调整
+                        </button>
+                        <button class="action-btn confirm-btn" onclick="confirmImage()">
+                            <i class="fas fa-check"></i>
+                            确认图片
+                        </button>
                     </div>
                 </div>
 

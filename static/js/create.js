@@ -248,7 +248,7 @@ function showStage(stageNumber) {
             };
             const stageId = stageIds[stageNumber];
             if (stageId) {
-                // 特殊处理生成阶段，注入到右侧版本面板
+                // 特殊处理生成阶段，注入到版本面板
                 if (stageNumber === 2) {
                     // 隐藏占位符
                     const versionsContainer = document.getElementById('versions-container');

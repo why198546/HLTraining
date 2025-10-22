@@ -1163,49 +1163,35 @@ main {
         width: 100%;
         max-width: 250px;
     }
-    
-    /* 移动端版本面板布局调整 */
-    .generation-workspace {
-        flex-direction: column !important;
-    }
-    
-    .image-panel,
-    .versions-panel {
-        width: 100% !important;
-        margin-right: 0 !important;
-    }
-    
-    .versions-panel {
-        margin-top: 2rem;
-    }
 }
 
-/* 生成阶段的左右分栏布局 */
-.generation-workspace {
-    display: flex;
-    gap: 2rem;
-    margin-top: 1rem;
+/* 生成阶段的垂直布局 */
+.generated-image-container {
+    text-align: center;
+    margin-bottom: 2rem;
 }
 
-.image-panel {
-    flex: 2;
-    min-width: 0; /* 防止flex项目溢出 */
+.generated-image-container img {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0;
 }
 
-.versions-panel {
-    flex: 1;
-    min-width: 280px;
-    max-width: 350px;
+/* 内联版本管理面板样式 */
+.versions-panel-inline {
     background: rgba(248, 249, 255, 0.9);
     border-radius: 15px;
     padding: 1.5rem;
+    margin: 2rem 0;
     border: 2px solid #e0e6ff;
-    height: fit-content;
-    max-height: 80vh;
-    overflow-y: auto;
 }
 
 .versions-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
 }
 
@@ -1224,16 +1210,38 @@ main {
     font-size: 1.2rem;
 }
 
-.versions-container {
+.generate-more-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.generate-more-btn:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.versions-container-inline {
+    display: flex;
     gap: 1rem;
+    overflow-x: auto;
+    padding: 1rem 0;
 }
 
 .no-versions-placeholder {
     text-align: center;
     padding: 2rem 1rem;
     color: #666;
+    width: 100%;
 }
 
 .no-versions-placeholder i {
