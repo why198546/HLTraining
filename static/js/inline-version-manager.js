@@ -608,6 +608,20 @@ class InlineVersionManager {
             this.loadVersionsForStage(this.currentStage);
         }, 1000);
     }
+
+    // 兼容性方法：显示指定阶段的版本
+    showVersionsForStage(stageNumber) {
+        const stageIds = {
+            1: 'input-stage',
+            2: 'generation-stage', 
+            3: 'adjustment-stage',
+            4: 'model-stage'
+        };
+        const stageId = stageIds[stageNumber];
+        if (stageId) {
+            this.injectVersionPanelToStage(stageId, stageNumber);
+        }
+    }
 }
 
 // 全局实例

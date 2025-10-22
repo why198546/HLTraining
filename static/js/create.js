@@ -149,7 +149,17 @@ function showStage(stageNumber) {
     // 通知内联版本管理器阶段变化
     if (window.inlineVersionManager) {
         setTimeout(() => {
-            window.inlineVersionManager.showVersionsForStage(stageNumber);
+            // 根据阶段获取对应的阶段ID并注入版本面板
+            const stageIds = {
+                1: 'input-stage',
+                2: 'generation-stage', 
+                3: 'adjustment-stage',
+                4: 'model-stage'
+            };
+            const stageId = stageIds[stageNumber];
+            if (stageId) {
+                window.inlineVersionManager.injectVersionPanelToStage(stageId, stageNumber);
+            }
         }, 100);
     }
 }
