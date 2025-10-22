@@ -7,6 +7,8 @@ class InlineVersionManager {
             model: null
         };
         this.currentStage = 1;
+        this.stageDetectionTimeout = null;
+        this.loadingVersions = false; // 防止重复加载
         this.init();
     }
 
@@ -19,8 +21,17 @@ class InlineVersionManager {
     // 设置阶段观察器
     setupStageObservers() {
         // 监听阶段变化
-        const observer = new MutationObserver(() => {
-            this.detectCurrentStage();
+        const observer = new MutationObserver((mutations) => {
+            // 避免版本面板变化触发循环
+            const hasVersionPanelChanges = mutations.some(mutation => {
+                return Array.from(mutation.addedNodes).some(node => 
+                    node.nodeType === 1 && node.classList?.contains('inline-version-panel')
+                );
+            });
+            
+            if (!hasVersionPanelChanges) {
+                this.detectCurrentStage();
+            }
         });
 
         observer.observe(document.body, {
@@ -38,22 +49,29 @@ class InlineVersionManager {
 
     // 检测当前阶段
     detectCurrentStage() {
-        const stages = [
-            { id: 'generation-stage', num: 2 },
-            { id: 'adjustment-stage', num: 3 },
-            { id: 'model-stage', num: 4 }
-        ];
-
-        for (const stage of stages) {
-            const element = document.getElementById(stage.id);
-            if (element && element.style.display !== 'none') {
-                if (this.currentStage !== stage.num) {
-                    this.currentStage = stage.num;
-                    this.injectVersionPanelToStage(stage.id, stage.num);
-                }
-                break;
-            }
+        // 防抖：清除之前的定时器
+        if (this.stageDetectionTimeout) {
+            clearTimeout(this.stageDetectionTimeout);
         }
+        
+        this.stageDetectionTimeout = setTimeout(() => {
+            const stages = [
+                { id: 'generation-stage', num: 2 },
+                { id: 'adjustment-stage', num: 3 },
+                { id: 'model-stage', num: 4 }
+            ];
+
+            for (const stage of stages) {
+                const element = document.getElementById(stage.id);
+                if (element && element.style.display !== 'none') {
+                    if (this.currentStage !== stage.num) {
+                        this.currentStage = stage.num;
+                        this.injectVersionPanelToStage(stage.id, stage.num);
+                    }
+                    break;
+                }
+            }
+        }, 300); // 300ms防抖延迟
     }
 
     // 向指定阶段注入版本面板
@@ -164,8 +182,9 @@ class InlineVersionManager {
 
     // 为指定阶段加载版本
     async loadVersionsForStage(stageNum) {
-        if (!this.currentSessionId) return;
+        if (!this.currentSessionId || this.loadingVersions) return;
 
+        this.loadingVersions = true;
         try {
             if (stageNum === 2 || stageNum === 3) {
                 await this.loadImageVersions();
@@ -178,6 +197,8 @@ class InlineVersionManager {
             this.updateUI();
         } catch (error) {
             console.error('❌ 加载版本失败:', error);
+        } finally {
+            this.loadingVersions = false;
         }
     }
 
