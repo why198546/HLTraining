@@ -1048,6 +1048,123 @@ main {
     transform: translateY(-1px);
 }
 
+/* 快速调整按钮样式 */
+.quick-adjust-buttons {
+    background: rgba(248, 249, 255, 0.9);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    border: 2px solid #e0e6ff;
+}
+
+.quick-adjust-buttons h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.quick-adjust-buttons h4 i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.quick-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.8rem;
+}
+
+.quick-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #e0e6ff;
+    border-radius: 12px;
+    padding: 0.8rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    min-height: 70px;
+}
+
+.quick-btn:hover {
+    transform: translateY(-2px);
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.quick-btn i {
+    font-size: 1.2rem;
+    color: #667eea;
+    margin-bottom: 0.2rem;
+}
+
+/* 自定义调整区域 */
+.custom-adjust-section {
+    background: rgba(248, 249, 255, 0.9);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border: 2px solid #e0e6ff;
+}
+
+.custom-adjust-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.custom-adjust-section h4 i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+/* 主要操作按钮 */
+.main-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .quick-buttons-grid {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    }
+    
+    .quick-btn {
+        padding: 0.6rem 0.3rem;
+        font-size: 0.8rem;
+        min-height: 60px;
+    }
+    
+    .main-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .action-btn {
+        width: 100%;
+        max-width: 250px;
+    }
+}
+
 /* 3D模型结果区域样式 */
 .model-result-area {
     background: rgba(255, 255, 255, 0.95);

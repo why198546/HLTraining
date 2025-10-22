@@ -37,6 +37,55 @@ function fillPrompt(promptText) {
     }
 }
 
+// 快速调整功能
+function quickAdjust(adjustType) {
+    const adjustmentTextarea = document.getElementById('adjustment-prompt');
+    if (!adjustmentTextarea) return;
+    
+    let adjustPrompt = '';
+    
+    switch(adjustType) {
+        case 'remove-background':
+            adjustPrompt = '去除背景，让主体突出，背景变为透明或纯色';
+            break;
+        case 'bright-colors':
+            adjustPrompt = '让颜色更加鲜艳明亮，增强色彩饱和度和对比度';
+            break;
+        case 'soft-colors':
+            adjustPrompt = '使用柔和的色调，降低饱和度，创造温馨的感觉';
+            break;
+        case 'cartoon-style':
+            adjustPrompt = '转换为卡通风格，线条更圆润，色彩更简洁';
+            break;
+        case 'add-sparkles':
+            adjustPrompt = '添加闪闪发光的特效，增加星星点点的光芒效果';
+            break;
+        case 'change-background':
+            adjustPrompt = '更换背景为彩虹、森林、蓝天白云或其他美丽的场景';
+            break;
+        default:
+            adjustPrompt = '请描述你想要的调整效果';
+    }
+    
+    // 如果已有内容，则追加；否则替换
+    if (adjustmentTextarea.value.trim()) {
+        adjustmentTextarea.value += '，' + adjustPrompt;
+    } else {
+        adjustmentTextarea.value = adjustPrompt;
+    }
+    
+    // 聚焦到文本框
+    adjustmentTextarea.focus();
+    
+    // 添加视觉反馈
+    adjustmentTextarea.style.transform = 'scale(1.02)';
+    adjustmentTextarea.style.transition = 'transform 0.2s ease';
+    
+    setTimeout(() => {
+        adjustmentTextarea.style.transform = 'scale(1)';
+    }, 200);
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeCreatePage();
@@ -127,8 +176,8 @@ function showStage(stageNumber) {
     if (currentStageElement) {
         currentStageElement.classList.add('active');
         
-        // 特别检查阶段4中的图片元素
-        if (stageNumber === 4) {
+        // 特别检查阶段3中的图片元素
+        if (stageNumber === 3) {
             const finalImageEl = document.getElementById('final-image');
             if (finalImageEl) {
                 // 强制设置图片URL（无论当前src是什么）
@@ -170,8 +219,7 @@ function showStage(stageNumber) {
             const stageIds = {
                 1: 'input-stage',
                 2: 'generation-stage', 
-                3: 'adjustment-stage',
-                4: 'model-stage'
+                3: 'model-stage'
             };
             const stageId = stageIds[stageNumber];
             if (stageId) {
@@ -186,8 +234,7 @@ function getStageId(stageNumber) {
     const stageIds = {
         1: 'input-stage',
         2: 'generation-stage',
-        3: 'adjustment-stage',
-        4: 'model-stage'
+        3: 'model-stage'
     };
     return stageIds[stageNumber];
 }
@@ -323,12 +370,16 @@ function regenerateImage() {
     generateImage();
 }
 
-// 显示调整面板
+// 显示调整面板（已合并到生成阶段，不再需要切换）
 function showAdjustPanel() {
-    showStage(3);
+    // 调整面板已经在生成阶段显示，只需聚焦到调整输入框
+    const adjustmentInput = document.getElementById('adjustment-prompt');
+    if (adjustmentInput) {
+        adjustmentInput.focus();
+    }
 }
 
-// 确认图片（跳过调整）
+// 确认图片（进入3D模型生成）
 function confirmImage() {
     // 确保final-image显示当前生成的图片
     const finalImageEl = document.getElementById('final-image');
@@ -343,10 +394,10 @@ function confirmImage() {
         finalActions.style.display = 'flex';
     }
     
-    showStage(4);
+    showStage(3);
 }
 
-// 跳过调整
+// 跳过调整（进入3D模型生成）
 function skipAdjustment() {
     // 确保final-image显示当前生成的图片
     const finalImageEl = document.getElementById('final-image');
@@ -361,7 +412,7 @@ function skipAdjustment() {
         finalActions.style.display = 'flex';
     }
     
-    showStage(4);
+    showStage(3);
 }
 
 // 应用调整
@@ -439,8 +490,8 @@ async function generate3DModel() {
         return;
     }
 
-    // 切换到第4阶段（3D模型生成阶段）
-    showStage(4);
+    // 切换到第3阶段（3D模型生成阶段）
+    showStage(3);
     
     // 确保final-image在开始3D生成时就显示正确的图片
     const finalImageEl = document.getElementById('final-image');
