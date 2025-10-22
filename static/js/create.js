@@ -424,6 +424,12 @@ async function applyAdjustment() {
         return;
     }
 
+    if (!generatedImageUrl) {
+        showMessage('没有找到要调整的图片', 'error');
+        return;
+    }
+
+    console.log('开始调整图片:', { adjustmentPrompt, generatedImageUrl });
     showLoadingOverlay('正在调整图片...');
 
     try {
@@ -442,19 +448,25 @@ async function applyAdjustment() {
         const versionNote = `调整：${adjustmentPrompt}`;
         formData.append('version_note', versionNote);
 
+        console.log('发送调整请求到服务器...');
         const response = await fetch('/adjust-image', {
             method: 'POST',
             body: formData
         });
 
+        console.log('收到服务器响应:', response.status);
         const result = await response.json();
+        console.log('调整结果:', result);
 
         if (result.success) {
             generatedImageUrl = result.image_url;
             // 更新图片显示元素
+            const generatedImageEl = document.getElementById('generated-image');
             const currentImageEl = document.getElementById('current-image');
             const finalImageEl = document.getElementById('final-image');
             
+            // 主要是更新生成阶段的图片
+            if (generatedImageEl) generatedImageEl.src = result.image_url;
             if (currentImageEl) currentImageEl.src = result.image_url;
             if (finalImageEl) finalImageEl.src = result.image_url;
             
