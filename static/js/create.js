@@ -408,6 +408,12 @@ function regenerateImage() {
     generateImage();
 }
 
+// 生成更多图片
+function generateMoreImages() {
+    // 触发多张图片生成
+    generateImage();
+}
+
 // 显示调整面板（已合并到生成阶段，不再需要切换）
 function showAdjustPanel() {
     // 调整面板已经在生成阶段显示，只需聚焦到调整输入框

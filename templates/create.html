@@ -164,9 +164,34 @@
                         <p>查看AI为你生成的图片，可以直接调整或确认图片</p>
                     </div>
 
-                    <!-- 生成的图片 -->
-                    <div class="generated-image-container">
-                        <img id="generated-image" src="" alt="AI生成的图片">
+                    <!-- 图片和版本缩略图区域 -->
+                    <div class="image-with-thumbnails">
+                        <!-- 主图片 -->
+                        <div class="generated-image-container">
+                            <img id="generated-image" src="" alt="AI生成的图片">
+                        </div>
+                        
+                        <!-- 右侧版本缩略图网格 -->
+                        <div class="thumbnails-grid">
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">1</div>
+                            </div>
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">2</div>
+                            </div>
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">3</div>
+                            </div>
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">4</div>
+                            </div>
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">5</div>
+                            </div>
+                            <div class="thumbnail-slot">
+                                <div class="thumbnail-placeholder">6</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- 版本管理面板 -->
@@ -185,6 +210,18 @@
                                 <p>开始生成图片后，版本历史会显示在这里</p>
                             </div>
                         </div>
+                        <div class="version-tip">
+                            <i class="fas fa-lightbulb"></i>
+                            点击选择你最喜欢的版本，然后继续到下一步
+                        </div>
+                    </div>
+                    
+                    <!-- 全宽生成更多按钮 -->
+                    <div class="full-width-generate">
+                        <button class="full-width-generate-btn" onclick="generateMoreImages()">
+                            <i class="fas fa-plus"></i>
+                            生成更多
+                        </button>
                     </div>
                     
                     <!-- 快速调整按钮 -->
