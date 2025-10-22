@@ -1939,20 +1939,24 @@ main {
 /* 首页特性卡片样式 */
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
     margin: 3rem 0;
-    max-width: 900px;
+    max-width: 1000px;
 }
 
 .feature-card {
     background: rgba(255, 255, 255, 0.9);
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: 20px;
     text-align: center;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .feature-card:hover {
@@ -1961,19 +1965,132 @@ main {
 }
 
 .feature-icon {
-    font-size: 3rem;
+    font-size: 2.5rem;
     margin-bottom: 1rem;
+    line-height: 1;
 }
 
 .feature-card h3 {
     color: #667eea;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
+    margin-bottom: 0.8rem;
+    font-size: 1.2rem;
 }
 
 .feature-card p {
     color: #666;
-    line-height: 1.6;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+/* 自定义调色盘图标 */
+.color-palette-icon {
+    display: inline-block;
+    font-size: 2.5rem;
+    transition: transform 0.3s ease;
+}
+
+.feature-card:hover .color-palette-icon {
+    transform: scale(1.1);
+}
+
+.palette-base {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 45px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 50% 50% 50% 10px;
+    border: 3px solid #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .palette-base {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.color-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .color-dot {
+    transform: scale(1.2);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-red {
+    background: #ff6b6b;
+    top: 8px;
+    left: 12px;
+}
+
+.color-blue {
+    background: #4dabf7;
+    top: 8px;
+    right: 12px;
+}
+
+.color-yellow {
+    background: #ffd43b;
+    top: 20px;
+    left: 8px;
+}
+
+.color-green {
+    background: #51cf66;
+    top: 20px;
+    right: 8px;
+}
+
+.color-purple {
+    background: #9775fa;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.feature-card:hover .color-purple {
+    transform: translateX(-50%) scale(1.2);
+}
+
+.palette-brush {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    color: #8b5a3c;
+    font-size: 0.7em;
+    transform: rotate(45deg);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .palette-brush {
+    transform: rotate(60deg) scale(1.1);
+    color: #6f4e37;
+}
+
+/* 平板响应式设计 */
+@media (max-width: 1024px) {
+    .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        max-width: 800px;
+    }
+    
+    .feature-card {
+        padding: 1.2rem;
+        min-height: 180px;
+    }
+    
+    .feature-icon {
+        font-size: 2.2rem;
+    }
 }
 
 .cta-section {
@@ -2108,17 +2225,18 @@ main {
 
     .features-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: 1rem;
         margin: 2rem 0;
     }
 
-    .preview-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+    .feature-card {
+        padding: 1.2rem;
+        min-height: 160px;
     }
 
-    .feature-card {
-        padding: 1.5rem;
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 0.8rem;
     }
 }
 
