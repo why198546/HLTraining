@@ -91,6 +91,11 @@ def gallery():
     artworks = gallery_manager.get_all_artworks()
     return render_template('gallery.html', artworks=artworks)
 
+@app.route('/tutorial')
+def tutorial():
+    """使用教程页面"""
+    return render_template('tutorial.html')
+
 @app.route('/test-model')
 def test_model():
     """测试3D模型展示"""
