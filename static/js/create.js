@@ -311,7 +311,8 @@ async function generateImage() {
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
 
-    if (!prompt && !uploadedImageFile) {
+    // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
+    if (!prompt && !uploadedImageFile && !originalImagePath) {
         showMessage('请输入创意描述或上传参考图片', 'error');
         return;
     }
@@ -335,8 +336,12 @@ async function generateImage() {
         const versionNote = document.querySelector('input[name="version_note"]')?.value || `${style}风格`;
         formData.append('version_note', versionNote);
         
+        // 优先使用新上传的文件，否则使用原始图片路径（生成更多功能）
         if (uploadedImageFile) {
             formData.append('sketch', uploadedImageFile);
+        } else if (originalImagePath) {
+            // 传递原始图片路径，让后端重用
+            formData.append('original_image_path', originalImagePath);
         }
 
         const response = await fetch('/generate-image', {
@@ -351,6 +356,9 @@ async function generateImage() {
             // 记录原始图片路径（如果有的话）
             if (result.original_image_url) {
                 originalImagePath = result.original_image_url;
+            } else if (uploadedImageFile && !originalImagePath) {
+                // 如果没有返回original_image_url但有上传文件，使用生成的图片作为原始图片
+                originalImagePath = result.image_url;
             }
             
             // 更新图片显示元素
@@ -470,10 +478,10 @@ async function applyAdjustment() {
 
     if (!generatedImageUrl) {
         showMessage('没有找到要调整的图片', 'error');
+        console.error('❌ generatedImageUrl 为空');
         return;
     }
 
-    console.log('开始调整图片:', { adjustmentPrompt, generatedImageUrl });
     showLoadingOverlay('正在调整图片...');
 
     try {
@@ -492,15 +500,12 @@ async function applyAdjustment() {
         const versionNote = `调整：${adjustmentPrompt}`;
         formData.append('version_note', versionNote);
 
-        console.log('发送调整请求到服务器...');
         const response = await fetch('/adjust-image', {
             method: 'POST',
             body: formData
         });
 
-        console.log('收到服务器响应:', response.status);
         const result = await response.json();
-        console.log('调整结果:', result);
 
         if (result.success) {
             generatedImageUrl = result.image_url;
@@ -673,8 +678,6 @@ function load3DModel(modelUrl) {
         enableAutoRotate: false,
         enableAnimation: true,
         onModelLoaded: (loadedModel) => {
-            console.log('3D模型加载完成:', loadedModel);
-            
             // 移除加载占位符
             const container = document.getElementById('modelContainer');
             const placeholder = container.querySelector('.model-placeholder');
@@ -978,8 +981,23 @@ function initModelControlsPanel() {
     document.getElementById('lightIntensity')?.addEventListener('input', (e) => setLightIntensity(e.target.value));
     
     // 模型操作
+    document.getElementById('autoRotateBtn')?.addEventListener('click', toggleModelAutoRotate);
     document.getElementById('resetModel')?.addEventListener('click', resetModelTransform);
     document.getElementById('centerModel')?.addEventListener('click', centerModel);
+}
+
+// 切换自动旋转
+function toggleModelAutoRotate() {
+    if (!createModelViewer) {
+        showMessage('请先加载3D模型', 'error');
+        return;
+    }
+    
+    createModelViewer.toggleAutoRotate();
+    const btn = document.getElementById('autoRotateBtn');
+    if (btn) {
+        btn.classList.toggle('active');
+    }
 }
 
 // 显示控制面板
@@ -1287,6 +1305,9 @@ function closeSaveArtworkDialog() {
 
 // 保存作品到作品集
 async function saveArtworkToGallery() {
+    // 保存按钮的原始文本（在外部定义，避免作用域问题）
+    let originalText = '<i class="fas fa-save"></i> 保存到作品集';
+    
     try {
         // 获取表单数据
         const title = document.getElementById('artwork-title').value.trim();
@@ -1308,9 +1329,11 @@ async function saveArtworkToGallery() {
         
         // 显示加载状态
         const saveBtn = document.querySelector('.modal-footer .primary-btn');
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
-        saveBtn.disabled = true;
+        if (saveBtn) {
+            originalText = saveBtn.innerHTML; // 保存实际的原始文本
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+            saveBtn.disabled = true;
+        }
         
         // 准备保存数据，处理路径格式
         const saveData = {
@@ -1346,12 +1369,15 @@ async function saveArtworkToGallery() {
         }
         
     } catch (error) {
+        console.error('保存作品错误:', error);
         showMessage(`保存失败: ${error.message}`, 'error');
     } finally {
         // 恢复按钮状态
         const saveBtn = document.querySelector('.modal-footer .primary-btn');
-        saveBtn.innerHTML = originalText;
-        saveBtn.disabled = false;
+        if (saveBtn) {
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
     }
 }
 

@@ -79,6 +79,13 @@ class InlineVersionManager {
         const stageElement = document.getElementById(stageId);
         if (!stageElement) return;
 
+        // 在阶段2（生成阶段）不注入版本面板，因为我们使用缩略图网格
+        if (stageNum === 2) {
+            // 只加载版本数据，不创建面板
+            this.loadVersionsForStage(stageNum);
+            return;
+        }
+
         // 移除已存在的版本面板
         const existingPanel = stageElement.querySelector('.inline-version-panel');
         if (existingPanel) {
@@ -91,6 +98,33 @@ class InlineVersionManager {
             this.insertVersionPanel(stageElement, versionPanel, stageNum);
             this.loadVersionsForStage(stageNum);
         }
+    }
+    
+    // 向指定容器注入版本面板内容（用于已有的versions-container）
+    injectVersionPanelToContainer(containerId, stageNum) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        // 在阶段2（生成阶段）不注入版本卡片，只使用缩略图网格
+        if (stageNum === 2) {
+            // 隐藏整个版本容器
+            const versionsPanel = container.closest('.versions-panel-inline');
+            if (versionsPanel) {
+                versionsPanel.style.display = 'none';
+            }
+            // 只加载版本数据到缩略图
+            this.loadVersionsForStage(stageNum);
+            return;
+        }
+        
+        // 隐藏占位符
+        const placeholder = container.querySelector('.no-versions-placeholder');
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        // 加载当前阶段的版本
+        this.loadVersionsForStage(stageNum);
     }
 
     // 为不同阶段创建版本面板
@@ -218,21 +252,84 @@ class InlineVersionManager {
     renderImageVersions(versions) {
         const gallery = document.getElementById('image-version-gallery') || 
                        document.getElementById('adjust-version-gallery');
-        if (!gallery) return;
+        
+        // 如果gallery存在，渲染版本卡片
+        if (gallery) {
+            gallery.innerHTML = '';
 
-        gallery.innerHTML = '';
+            versions.forEach((version, index) => {
+                const item = this.createImageVersionItem(version, index);
+                gallery.appendChild(item);
+            });
 
-        versions.forEach((version, index) => {
-            const item = this.createImageVersionItem(version, index);
-            gallery.appendChild(item);
-        });
-
-        // 更新计数
-        const countElement = document.getElementById('image-count') || 
-                           document.getElementById('adjust-count');
-        if (countElement) {
-            countElement.textContent = versions.length;
+            // 更新计数
+            const countElement = document.getElementById('image-count') || 
+                               document.getElementById('adjust-count');
+            if (countElement) {
+                countElement.textContent = versions.length;
+            }
         }
+        
+        // 总是更新缩略图网格（即使gallery不存在）
+        this.updateThumbnailsGrid(versions);
+    }
+    
+    // 更新右侧缩略图网格
+    updateThumbnailsGrid(versions) {
+        const thumbnailsGrid = document.querySelector('.thumbnails-grid');
+        if (!thumbnailsGrid) {
+            console.warn('⚠️ 未找到 .thumbnails-grid 元素');
+            return;
+        }
+        
+        let thumbnailSlots = thumbnailsGrid.querySelectorAll('.thumbnail-slot');
+        
+        // 如果槽位不存在，创建6个槽位
+        if (thumbnailSlots.length === 0) {
+            thumbnailsGrid.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'thumbnail-slot';
+                thumbnailsGrid.appendChild(slot);
+            }
+            thumbnailSlots = thumbnailsGrid.querySelectorAll('.thumbnail-slot');
+        }
+        
+        // 更新每个缩略图槽位（前5个显示版本，第6个显示"生成更多"按钮）
+        thumbnailSlots.forEach((slot, index) => {
+            // 清空现有内容
+            slot.innerHTML = '';
+            
+            if (index < 5 && index < versions.length) {
+                // 前5个槽位：如果有对应的版本，显示缩略图
+                const version = versions[index];
+                const isSelected = version.is_selected;
+                
+                slot.className = `thumbnail-slot ${isSelected ? 'selected' : ''}`;
+                slot.onclick = () => this.selectVersion(version.version_id);
+                
+                slot.innerHTML = `
+                    <img src="${version.url_path}" alt="版本 ${index + 1}" loading="lazy">
+                    ${isSelected ? '<div class="selected-indicator"><i class="fas fa-check"></i></div>' : ''}
+                    <div class="thumbnail-number">版本 ${index + 1}</div>
+                `;
+            } else if (index === 5) {
+                // 第6个槽位：显示"生成更多"按钮
+                slot.className = 'thumbnail-slot generate-more-btn';
+                slot.onclick = () => this.generateMore();
+                slot.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: #667eea; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-plus-circle" style="font-size: 24px; margin-bottom: 5px;"></i>
+                        <span>生成更多</span>
+                    </div>
+                `;
+            } else if (index < 5) {
+                // 前5个槽位的占位符
+                slot.className = 'thumbnail-slot';
+                slot.onclick = null;
+                slot.innerHTML = `<div class="thumbnail-placeholder">${index + 1}</div>`;
+            }
+        });
     }
 
     // 渲染3D模型版本
@@ -299,8 +396,6 @@ class InlineVersionManager {
     // 创建会话
     async createSession() {
         try {
-            console.log('🔄 正在创建会话...');
-            
             const response = await fetch('/create-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -311,11 +406,9 @@ class InlineVersionManager {
             });
 
             const result = await response.json();
-            console.log('📨 创建会话响应:', result);
             
             if (result.success) {
                 this.currentSessionId = result.session_id;
-                console.log('✅ 会话创建成功:', this.currentSessionId);
                 this.updateFormSessionIds();
             } else {
                 console.error('❌ 创建会话失败:', result.error);
@@ -535,8 +628,6 @@ class InlineVersionManager {
             return;
         }
 
-        console.log('✅ 创建保存对话框，会话ID:', this.currentSessionId);
-
         const modal = document.createElement('div');
         modal.className = 'save-modal';
         modal.innerHTML = `
@@ -581,7 +672,6 @@ class InlineVersionManager {
     async submitSaveForm(modal, formData) {
         try {
             const sessionId = formData.get('session_id');
-            console.log('📤 提交保存表单，会话ID:', sessionId);
             
             if (!sessionId) {
                 alert('会话ID缺失，请刷新页面重试');
@@ -596,8 +686,6 @@ class InlineVersionManager {
                 description: formData.get('description')
             };
 
-            console.log('📤 发送数据:', data);
-
             const response = await fetch('/save-artwork', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -605,7 +693,6 @@ class InlineVersionManager {
             });
 
             const result = await response.json();
-            console.log('📨 服务器响应:', result);
             
             if (result.success) {
                 modal.remove();
@@ -625,9 +712,61 @@ class InlineVersionManager {
 
     // 生成完成后的回调
     onGenerationComplete() {
-        setTimeout(() => {
-            this.loadVersionsForStage(this.currentStage);
+        setTimeout(async () => {
+            await this.loadVersionsForStage(this.currentStage);
+            // 自动选择并显示最新生成的版本
+            await this.autoSelectLatestVersion();
         }, 1000);
+    }
+    
+    // 自动选择最新版本
+    async autoSelectLatestVersion() {
+        try {
+            const versions = await this.fetchVersions('image');
+            if (versions && versions.length > 0) {
+                // 获取最新版本（通常是第一个）
+                const latestVersion = versions[0];
+                
+                // 更新主图片显示
+                const imageElements = [
+                    'generated-image',
+                    'current-image', 
+                    'final-image',
+                    'adjustment-image'
+                ];
+                
+                imageElements.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.src = latestVersion.url_path;
+                        element.style.display = 'block';
+                    }
+                });
+                
+                // 更新全局变量（如果存在）
+                if (window.generatedImageUrl !== undefined) {
+                    window.generatedImageUrl = latestVersion.url_path;
+                }
+            }
+        } catch (error) {
+            console.error('❌ 自动选择最新版本失败:', error);
+        }
+    }
+    
+    // 生成更多版本
+    generateMore() {
+        // 检查是否在生成阶段且有必要的参数
+        if (this.currentStage !== 2) {
+            console.warn('⚠️ 当前不在生成阶段');
+            return;
+        }
+        
+        // 直接调用生成函数，不需要重新上传
+        if (typeof generateImage === 'function') {
+            generateImage();
+        } else {
+            console.error('❌ generateImage 函数未定义');
+        }
     }
 
     // 兼容性方法：显示指定阶段的版本
