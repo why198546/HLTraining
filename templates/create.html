@@ -216,8 +216,8 @@
                         </div>
                     </div>
                     
-                    <!-- 全宽生成更多按钮 -->
-                    <div class="full-width-generate">
+                    <!-- 全宽生成更多按钮（已移至缩略图第6个槽位） -->
+                    <div class="full-width-generate" style="display: none;">
                         <button class="full-width-generate-btn" onclick="generateMoreImages()">
                             <i class="fas fa-plus"></i>
                             生成更多
@@ -268,10 +268,6 @@
 
                     <!-- 主要操作按钮 -->
                     <div class="main-actions">
-                        <button class="action-btn regenerate-btn" onclick="regenerateImage()">
-                            <i class="fas fa-redo"></i>
-                            重新生成
-                        </button>
                         <button class="action-btn apply-adjust-btn" onclick="applyAdjustment()">
                             <i class="fas fa-magic"></i>
                             应用调整
@@ -386,14 +382,14 @@
                                             <i class="fas fa-tools"></i>
                                             <span>操作</span>
                                         </div>
+                                        <button class="side-control-btn" id="autoRotateBtn" title="自动旋转">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
                                         <button class="side-control-btn" id="resetModel" title="重置模型">
                                             <i class="fas fa-undo"></i>
                                         </button>
                                         <button class="side-control-btn" id="centerModel" title="居中显示">
                                             <i class="fas fa-crosshairs"></i>
-                                        </button>
-                                        <button class="side-control-btn close-btn" onclick="hideModelControls()" title="关闭控制面板">
-                                            <i class="fas fa-times"></i>
                                         </button>
                                     </div>
                                 </div>

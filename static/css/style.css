@@ -495,13 +495,13 @@ main {
     flex-direction: column;
     gap: 20px;
     padding: 15px 8px;
-    background: rgba(45, 55, 75, 0.85);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(102, 126, 234, 0.2);
     min-width: 60px;
     max-width: 80px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .left-controls-panel {
@@ -530,14 +530,14 @@ main {
     align-items: center;
     gap: 4px;
     margin-bottom: 8px;
-    color: #e8eaed;
+    color: #2c3e50;
     font-size: 0.75rem;
     text-align: center;
 }
 
 .control-title i {
     font-size: 1rem;
-    color: #8ab4f8;
+    color: #667eea;
 }
 
 .control-title span {
@@ -549,9 +549,9 @@ main {
 .side-control-btn {
     width: 44px;
     height: 44px;
-    background: rgba(255, 255, 255, 0.08);
-    color: #e8eaed;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(102, 126, 234, 0.08);
+    color: #5a6c7d;
+    border: 1px solid rgba(102, 126, 234, 0.2);
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -563,30 +563,18 @@ main {
 }
 
 .side-control-btn:hover {
-    background: rgba(138, 180, 248, 0.2);
-    border-color: rgba(138, 180, 248, 0.4);
+    background: rgba(102, 126, 234, 0.15);
+    border-color: rgba(102, 126, 234, 0.4);
     transform: translateX(2px);
-    box-shadow: 0 2px 8px rgba(138, 180, 248, 0.2);
-    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    color: #667eea;
 }
 
 .side-control-btn.active {
-    background: rgba(138, 180, 248, 0.3);
-    color: white;
-    border-color: rgba(138, 180, 248, 0.6);
-    box-shadow: 0 0 12px rgba(138, 180, 248, 0.3);
-}
-
-.side-control-btn.close-btn {
-    background: rgba(242, 139, 130, 0.2);
-    border-color: rgba(242, 139, 130, 0.3);
-    color: #f28b82;
-}
-
-.side-control-btn.close-btn:hover {
-    background: rgba(242, 139, 130, 0.4);
-    border-color: rgba(242, 139, 130, 0.6);
-    color: #ffffff;
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    border-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 0 0 12px rgba(102, 126, 234, 0.3);
 }
 
 /* 光照控制 */
@@ -1189,12 +1177,20 @@ main {
     gap: 1.5rem;
     margin-bottom: 2rem;
     align-items: flex-start;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
 }
 
 /* 生成阶段的主图片容器 */
 .generated-image-container {
     flex: 1;
     text-align: center;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .generated-image-container img {
@@ -1203,20 +1199,21 @@ main {
     border-radius: 15px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     margin-bottom: 0;
+    display: block;
 }
 
 /* 右侧缩略图网格 */
 .thumbnails-grid {
     display: grid;
-    grid-template-columns: repeat(3, 80px);
-    grid-template-rows: repeat(2, 80px);
-    gap: 8px;
+    grid-template-columns: repeat(3, 110px);
+    grid-template-rows: repeat(2, 110px);
+    gap: 10px;
     margin-top: 20px;
 }
 
 .thumbnail-slot {
-    width: 80px;
-    height: 80px;
+    width: 110px;
+    height: 110px;
     border: 2px solid #e0e6ff;
     border-radius: 8px;
     background: #f8f9ff;
@@ -1248,10 +1245,63 @@ main {
     border-radius: 6px;
 }
 
+.thumbnail-slot.selected {
+    border-color: #667eea;
+    border-width: 3px;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
 .thumbnail-slot.active {
     border-color: #667eea;
     border-width: 3px;
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+/* 选中指示器 */
+.selected-indicator {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: #667eea;
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+}
+
+/* 缩略图编号 */
+.thumbnail-number {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 9px;
+    text-align: center;
+    padding: 2px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* 生成更多按钮样式 */
+.thumbnail-slot.generate-more-btn {
+    background: linear-gradient(135deg, #e8f0ff 0%, #f0f4ff 100%);
+    border: 2px dashed #b8c5e0;
+    color: #667eea;
+}
+
+.thumbnail-slot.generate-more-btn:hover {
+    background: linear-gradient(135deg, #dbe7ff 0%, #e6ecff 100%);
+    border-color: #667eea;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 /* 版本提示样式 */
@@ -1307,6 +1357,8 @@ main {
 
 /* 内联版本管理面板样式 */
 .versions-panel-inline {
+    /* 隐藏版本卡片面板，因为我们使用右侧缩略图网格代替 */
+    display: none;
     background: rgba(248, 249, 255, 0.9);
     border-radius: 15px;
     padding: 1.5rem;
@@ -4175,15 +4227,15 @@ main {
     position: absolute;
     top: 20px;
     right: 20px;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 12px;
     padding: 16px;
     backdrop-filter: blur(10px);
     max-width: 280px;
     min-width: 250px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 100;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .controls-section {
@@ -4195,22 +4247,22 @@ main {
 }
 
 .controls-section h4 {
-    color: #fff;
+    color: #2c3e50;
     font-size: 0.9rem;
     margin-bottom: 8px;
     padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 /* 控制面板组件样式 */
 .controls-header {
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.15);
 }
 
 .controls-header h5 {
-    color: #fff;
+    color: #2c3e50;
     font-size: 1rem;
     margin: 0;
     display: flex;
@@ -4219,7 +4271,7 @@ main {
 }
 
 .controls-header i {
-    color: #8ab4f8;
+    color: #667eea;
 }
 
 .control-group {
@@ -4232,7 +4284,7 @@ main {
 
 .control-label {
     display: block;
-    color: #e0e0e0;
+    color: #5a6c7d;
     font-size: 0.85rem;
     font-weight: 500;
     margin-bottom: 8px;
@@ -4263,14 +4315,14 @@ main {
 }
 
 .control-text {
-    color: #e0e0e0;
+    color: #5a6c7d;
     font-size: 0.85rem;
 }
 
 .control-slider {
     width: 100px;
     height: 4px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(102, 126, 234, 0.2);
     border-radius: 2px;
     outline: none;
     cursor: pointer;
@@ -4280,20 +4332,20 @@ main {
     appearance: none;
     width: 16px;
     height: 16px;
-    background: #8ab4f8;
+    background: #667eea;
     border-radius: 50%;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
 }
 
 .control-slider::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background: #8ab4f8;
+    background: #667eea;
     border-radius: 50%;
     cursor: pointer;
     border: none;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
 }
 
 .model-placeholder {

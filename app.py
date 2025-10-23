@@ -237,16 +237,17 @@ def generate_image():
     try:
         prompt = request.form.get('prompt', '').strip()
         uploaded_file = request.files.get('sketch')
+        original_image_path = request.form.get('original_image_path', '').strip()
         session_id = request.form.get('session_id')
         version_note = request.form.get('version_note', '')
         
-        if not prompt and not uploaded_file:
+        if not prompt and not uploaded_file and not original_image_path:
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
         
-        # 处理上传的图片
+        # 处理上传的图片或使用原始图片路径
         sketch_path = None
         if uploaded_file and allowed_file(uploaded_file.filename):
             filename = str(uuid.uuid4()) + '_' + secure_filename(uploaded_file.filename)
@@ -257,6 +258,15 @@ def generate_image():
             processed_sketch = preprocess_sketch(sketch_path)
             if processed_sketch:
                 sketch_path = processed_sketch
+        elif original_image_path:
+            # 使用已有的原始图片（生成更多功能）
+            # 将URL路径转换为文件系统路径
+            if original_image_path.startswith('/uploads/'):
+                sketch_path = 'uploads' + original_image_path[8:]
+            elif original_image_path.startswith('uploads/'):
+                sketch_path = original_image_path
+            else:
+                sketch_path = os.path.join('uploads', original_image_path)
         
         print(f"🎨 开始生成图片 - 文字: {prompt}, 图片: {sketch_path}")
         
@@ -323,6 +333,8 @@ def adjust_image():
     try:
         current_image = request.form.get('current_image')
         adjust_prompt = request.form.get('adjust_prompt', '').strip()
+        session_id = request.form.get('session_id')
+        version_note = request.form.get('version_note', '')
         
         if not current_image or not adjust_prompt:
             return jsonify({'error': '缺少图片路径或调整说明'}), 400
@@ -344,9 +356,32 @@ def adjust_image():
         # 返回相对路径用于前端显示
         relative_path = adjusted_image_path.replace('uploads/', '/uploads/')
         
+        # 如果有会话ID，添加到会话版本管理
+        version_id = None
+        if session_id:
+            metadata = {
+                'adjust_prompt': adjust_prompt,
+                'base_image': current_image,
+                'generation_type': 'adjustment',
+                'note': version_note
+            }
+            
+            version_result = session_manager.add_version(
+                session_id=session_id,
+                version_type='image',
+                file_path=adjusted_image_path,
+                metadata=metadata
+            )
+            
+            if version_result['success']:
+                version_id = version_result['version_id']
+                # 自动选择新调整的版本
+                session_manager.select_version(session_id, version_id)
+        
         return jsonify({
             'success': True,
             'image_url': relative_path,
+            'version_id': version_id,
             'message': '图片调整成功！'
         })
             
