@@ -552,8 +552,9 @@ def generate_video():
         session_id = data.get('session_id')
         image_url = data.get('image_url')
         prompt = data.get('prompt')
-        duration = data.get('duration', 5)
-        quality = data.get('quality', 'standard')
+        duration = data.get('duration', 8)
+        aspect_ratio = data.get('aspect_ratio', '16:9')
+        quality = data.get('quality', '720p')
         motion_intensity = data.get('motion_intensity', 'medium')
         
         if not session_id or not image_url or not prompt:
@@ -567,6 +568,7 @@ def generate_video():
         print(f"   Image URL: {image_url}")
         print(f"   Prompt: {prompt}")
         print(f"   Duration: {duration}s")
+        print(f"   Aspect Ratio: {aspect_ratio}")
         print(f"   Quality: {quality}")
         print(f"   Motion: {motion_intensity}")
         
@@ -576,6 +578,7 @@ def generate_video():
             image_url=image_url,
             prompt=prompt,
             duration=duration,
+            aspect_ratio=aspect_ratio,
             quality=quality,
             motion_intensity=motion_intensity
         )

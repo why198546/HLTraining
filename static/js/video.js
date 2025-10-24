@@ -41,12 +41,14 @@ async function startVideoGeneration() {
     }
 
     const duration = parseInt(document.getElementById('video-duration').value);
+    const aspectRatio = document.getElementById('aspect-ratio').value;
     const quality = document.getElementById('video-quality').value;
     const motionIntensity = document.getElementById('motion-intensity').value;
 
     console.log('开始生成视频:', {
         prompt,
         duration,
+        aspectRatio,
         quality,
         motionIntensity,
         imageUrl
@@ -67,6 +69,7 @@ async function startVideoGeneration() {
                 image_url: imageUrl,
                 prompt: prompt,
                 duration: duration,
+                aspect_ratio: aspectRatio,
                 quality: quality,
                 motion_intensity: motionIntensity
             })
@@ -76,8 +79,11 @@ async function startVideoGeneration() {
         console.log('API响应:', data);
 
         if (data.success) {
-            // 开始轮询任务状态
-            pollVideoStatus(data.task_id);
+            // 开始轮询任务状态，传入实际的视频时长
+            const actualDuration = parseInt(duration);
+            // Veo 3.1会将5秒调整为8秒，需要考虑这个
+            const adjustedDuration = actualDuration === 5 ? 8 : actualDuration;
+            pollVideoStatus(data.task_id, adjustedDuration);
         } else {
             throw new Error(data.error || '视频生成启动失败');
         }
@@ -92,9 +98,16 @@ async function startVideoGeneration() {
 /**
  * 轮询视频生成状态
  */
-async function pollVideoStatus(taskId) {
-    const maxAttempts = 120; // 最多2分钟
+async function pollVideoStatus(taskId, duration = 8) {
+    // 根据视频时长估算生成时间
+    // 基准：8秒视频约需72秒（1分12秒）
+    const baseTime = 72; // 8秒视频的基准时间（秒）
+    const baseDuration = 8; // 基准视频时长
+    const estimatedTime = Math.round((duration / baseDuration) * baseTime);
+    const maxAttempts = Math.ceil(estimatedTime * 1.5); // 预留50%缓冲时间
+    
     let attempts = 0;
+    let startTime = Date.now();
 
     const checkStatus = async () => {
         if (attempts >= maxAttempts) {
@@ -114,6 +127,7 @@ async function pollVideoStatus(taskId) {
                 // 生成完成
                 updateStatus('生成完成！', 100);
                 setTimeout(() => {
+                    hideGenerationStatus(); // 恢复按钮状态
                     showVideoResult(data.video_url);
                     isGenerating = false;
                 }, 500);
@@ -123,9 +137,19 @@ async function pollVideoStatus(taskId) {
                 alert('视频生成失败：' + (data.error || '未知错误'));
                 isGenerating = false;
             } else {
-                // 继续等待
-                const progress = data.progress || (attempts / maxAttempts * 80);
-                updateStatus(data.message || '生成中...', progress);
+                // 继续等待 - 计算进度和剩余时间
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                const progress = Math.min((elapsedTime / estimatedTime) * 90, 95); // 最多显示95%
+                const remainingTime = Math.max(0, estimatedTime - elapsedTime);
+                
+                // 格式化剩余时间
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                const timeText = minutes > 0 
+                    ? `预计还需 ${minutes}分${seconds}秒` 
+                    : `预计还需 ${seconds}秒`;
+                
+                updateStatus(`生成中... ${timeText}`, progress);
                 attempts++;
                 setTimeout(checkStatus, 1000);
             }

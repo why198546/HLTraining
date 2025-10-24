@@ -29,11 +29,12 @@ class Veo31API:
         print("✅ Veo 3.1 API (Google Gemini)初始化成功")
     
     def generate_video(
-        self,
-        image_url: str,
-        prompt: str,
+        self, 
+        image_url: str, 
+        prompt: str, 
         duration: int = 8,
-        quality: str = "standard",
+        aspect_ratio: str = "16:9",
+        quality: str = "720p",
         motion_intensity: str = "medium"
     ) -> Dict:
         """
@@ -43,7 +44,8 @@ class Veo31API:
             image_url: 源图片URL（本地路径或HTTP URL）
             prompt: 视频动作描述
             duration: 视频时长（4/6/8秒）
-            quality: 视频质量 (draft/standard/high)
+            aspect_ratio: 宽高比 (16:9 或 9:16)
+            quality: 分辨率 (720p 或 1080p)
             motion_intensity: 运动强度 (low/medium/high) - 仅作为提示词参考
             
         Returns:
@@ -54,7 +56,8 @@ class Veo31API:
             print(f"   图片: {image_url}")
             print(f"   提示词: {prompt}")
             print(f"   时长: {duration}秒")
-            print(f"   质量: {quality}")
+            print(f"   宽高比: {aspect_ratio}")
+            print(f"   分辨率: {quality}")
             
             # 读取图片并通过Nano Banana重新生成以获得正确的图片对象
             if image_url.startswith('/'):
@@ -115,18 +118,24 @@ class Veo31API:
             )
             
             # 获取生成的图片对象
+            image_data = None
             if result.candidates and len(result.candidates) > 0:
                 candidate = result.candidates[0]
                 if hasattr(candidate.content, 'parts'):
                     for part in candidate.content.parts:
-                        if hasattr(part, 'inline_data'):
+                        if hasattr(part, 'inline_data') and part.inline_data:
                             image_data = part.inline_data
                             print(f"   ✅ 图片对象已准备 (mime: {image_data.mime_type}, size: {len(image_data.data)} bytes)")
                             break
-                    else:
-                        raise Exception("无法从Nano Banana获取图片数据")
+                    
+                    if not image_data:
+                        # 调试：打印part结构
+                        print(f"   ⚠️  未找到inline_data，检查parts结构:")
+                        for i, part in enumerate(candidate.content.parts):
+                            print(f"      Part {i}: {type(part)}, 属性: {[attr for attr in dir(part) if not attr.startswith('_')]}")
+                        raise Exception("无法从Nano Banana获取图片数据（未找到inline_data）")
                 else:
-                    raise Exception("返回结果格式不正确")
+                    raise Exception("返回结果格式不正确（无parts属性）")
             else:
                 raise Exception("Nano Banana未返回结果")
             
@@ -137,13 +146,12 @@ class Veo31API:
             elif motion_intensity == "low":
                 enhanced_prompt = f"{prompt} The camera moves slowly and gently with minimal motion."
             
-            # 确定视频分辨率
-            resolution = "1080p" if quality == "high" else "720p"
-            
-            # 确保时长有效
-            if duration not in [4, 6, 8]:
-                duration = 8
-                print(f"   ⚠️  时长调整为8秒（Veo 3.1支持: 4/6/8秒）")
+            # 确保时长有效（Veo 3.1支持4-8秒）
+            valid_durations = [4, 6, 8]
+            if duration not in valid_durations:
+                # 找到最接近的有效时长
+                duration = min(valid_durations, key=lambda x: abs(x - duration))
+                print(f"   ⚠️  时长调整为{duration}秒（Veo 3.1支持: {valid_durations}）")
             
             # 调用Veo 3.1 API
             print(f"   🚀 调用Veo 3.1 API...")
@@ -161,8 +169,8 @@ class Veo31API:
                 prompt=enhanced_prompt,
                 image=image_obj,
                 config=types.GenerateVideosConfig(
-                    aspect_ratio="16:9",
-                    resolution=resolution,
+                    aspect_ratio=aspect_ratio,
+                    resolution=quality,
                     duration_seconds=duration,
                 )
             )
@@ -219,6 +227,18 @@ class Veo31API:
                 
                 # 获取生成的视频
                 try:
+                    # 检查response和generated_videos
+                    if not hasattr(operation, 'response') or not operation.response:
+                        print(f"❌ Operation没有response属性")
+                        print(f"   Operation属性: {[attr for attr in dir(operation) if not attr.startswith('_')]}")
+                        raise Exception("视频生成完成但无法获取结果")
+                    
+                    if not hasattr(operation.response, 'generated_videos') or not operation.response.generated_videos:
+                        print(f"❌ Response没有generated_videos或为空")
+                        print(f"   Response属性: {[attr for attr in dir(operation.response) if not attr.startswith('_')]}")
+                        print(f"   Response内容: {operation.response}")
+                        raise Exception("视频生成完成但无法获取视频数据")
+                    
                     generated_video = operation.response.generated_videos[0]
                     video_file = generated_video.video
                     
