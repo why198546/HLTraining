@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试视频按钮</title>
+</head>
+<body>
+    <h1>测试视频按钮点击</h1>
+    <button onclick="generateVideo()">生成视频</button>
+    
+    <script>
+        // 模拟环境
+        let generatedImageUrl = 'https://example.com/test.jpg';
+        
+        window.inlineVersionManager = {
+            sessionId: 'test-session-123'
+        };
+        
+        function generateVideo() {
+            console.log('=== generateVideo 函数被调用 ===');
+            console.log('generatedImageUrl:', generatedImageUrl);
+            
+            if (!generatedImageUrl) {
+                console.warn('没有生成的图片URL');
+                alert('请先生成图片');
+                return;
+            }
+            
+            const sessionId = window.inlineVersionManager?.sessionId || 
+                             window.versionManager?.sessionId || 
+                             '';
+            
+            console.log('会话ID:', sessionId);
+            
+            if (!sessionId) {
+                console.warn('会话ID缺失');
+                alert('会话ID缺失，请刷新页面重试');
+                return;
+            }
+            
+            const targetUrl = `/video?session_id=${sessionId}&image_url=${encodeURIComponent(generatedImageUrl)}`;
+            console.log('跳转到视频生成页面:', targetUrl);
+            
+            alert('准备跳转到: ' + targetUrl);
+            // window.location.href = targetUrl;
+        }
+    </script>
+</body>
+</html>

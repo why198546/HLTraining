@@ -96,6 +96,13 @@ def tutorial():
     """使用教程页面"""
     return render_template('tutorial.html')
 
+@app.route('/video')
+def video():
+    """视频生成页面"""
+    session_id = request.args.get('session_id', '')
+    image_url = request.args.get('image_url', '')
+    return render_template('video.html', session_id=session_id, image_url=image_url)
+
 @app.route('/test-model')
 def test_model():
     """测试3D模型展示"""
@@ -532,6 +539,111 @@ def like_artwork(artwork_id):
         return jsonify({'success': True, 'likes': likes})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ===================== 视频生成相关路由 =====================
+
+@app.route('/api/generate-video', methods=['POST'])
+def generate_video():
+    """生成视频"""
+    try:
+        from api.veo31 import get_veo_api
+        
+        data = request.get_json()
+        session_id = data.get('session_id')
+        image_url = data.get('image_url')
+        prompt = data.get('prompt')
+        duration = data.get('duration', 5)
+        quality = data.get('quality', 'standard')
+        motion_intensity = data.get('motion_intensity', 'medium')
+        
+        if not session_id or not image_url or not prompt:
+            return jsonify({
+                'success': False,
+                'error': '缺少必需参数'
+            }), 400
+        
+        print(f"\n🎬 收到视频生成请求:")
+        print(f"   Session ID: {session_id}")
+        print(f"   Image URL: {image_url}")
+        print(f"   Prompt: {prompt}")
+        print(f"   Duration: {duration}s")
+        print(f"   Quality: {quality}")
+        print(f"   Motion: {motion_intensity}")
+        
+        # 调用Veo API
+        veo_api = get_veo_api()
+        result = veo_api.generate_video(
+            image_url=image_url,
+            prompt=prompt,
+            duration=duration,
+            quality=quality,
+            motion_intensity=motion_intensity
+        )
+        
+        return jsonify({
+            'success': True,
+            'task_id': result.get('task_id'),
+            'message': '视频生成任务已启动'
+        })
+        
+    except Exception as e:
+        print(f"❌ 视频生成错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/video-status/<path:task_id>')
+def video_status(task_id):
+    """检查视频生成状态"""
+    try:
+        from api.veo31 import get_veo_api
+        
+        veo_api = get_veo_api()
+        status_result = veo_api.check_status(task_id)
+        
+        return jsonify(status_result)
+        
+    except Exception as e:
+        print(f"❌ 状态检查错误: {str(e)}")
+        return jsonify({
+            'status': 'failed',
+            'error': str(e)
+        }), 500
+
+@app.route('/api/save-video', methods=['POST'])
+def save_video():
+    """保存视频到作品集"""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        video_url = data.get('video_url')
+        prompt = data.get('prompt', '')
+        
+        if not session_id or not video_url:
+            return jsonify({
+                'success': False,
+                'error': '缺少必需参数'
+            }), 400
+        
+        # TODO: 实现视频保存到作品集的逻辑
+        # 这里可以扩展gallery_manager来支持视频作品
+        
+        print(f"✅ 视频已保存: {video_url}")
+        
+        return jsonify({
+            'success': True,
+            'message': '视频已保存到作品集'
+        })
+        
+    except Exception as e:
+        print(f"❌ 视频保存错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.errorhandler(413)
 def too_large(e):

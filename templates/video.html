@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI视频生成 - 创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-magic"></i>
+                <span>AI创意工坊</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('index') }}" class="nav-link">首页</a></li>
+                <li><a href="/create" class="nav-link">开始创作</a></li>
+                <li><a href="/gallery" class="nav-link">作品展示</a></li>
+                <li><a href="/tutorial" class="nav-link">使用教程</a></li>
+            </ul>
+            <div class="nav-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content video-page">
+        <div class="container">
+            <div class="video-header">
+                <h1><i class="fas fa-video"></i> AI视频生成</h1>
+                <p>基于你的图片，使用Veo 3.1生成精彩的视频</p>
+            </div>
+
+            <!-- 原始图片预览 -->
+            <div class="source-image-section">
+                <h3><i class="fas fa-image"></i> 源图片</h3>
+                <div class="source-image-container">
+                    <img id="source-image" src="{{ image_url }}" alt="源图片">
+                </div>
+            </div>
+
+            <!-- 视频生成配置 -->
+            <div class="video-config-section">
+                <h3><i class="fas fa-cog"></i> 视频设置</h3>
+                
+                <div class="config-group">
+                    <label for="video-prompt">视频动作描述：</label>
+                    <textarea 
+                        id="video-prompt" 
+                        class="video-prompt-input" 
+                        placeholder="例如：角色微笑并挥手，背景中的云朵缓慢移动，整体画面温馨欢快..."
+                        rows="4"
+                    ></textarea>
+                    <div class="input-hint">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>描述你希望画面中的动作、运镜方式、氛围等</span>
+                    </div>
+                </div>
+
+                <div class="config-options">
+                    <div class="option-group">
+                        <label for="video-duration">视频时长：</label>
+                        <select id="video-duration" class="config-select">
+                            <option value="3">3秒</option>
+                            <option value="5" selected>5秒</option>
+                            <option value="8">8秒</option>
+                            <option value="10">10秒</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="video-quality">视频质量：</label>
+                        <select id="video-quality" class="config-select">
+                            <option value="draft">草稿（快速）</option>
+                            <option value="standard" selected>标准</option>
+                            <option value="high">高清</option>
+                        </select>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="motion-intensity">运动强度：</label>
+                        <select id="motion-intensity" class="config-select">
+                            <option value="low">轻微</option>
+                            <option value="medium" selected>中等</option>
+                            <option value="high">强烈</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="generate-video-btn" class="generate-video-btn">
+                    <i class="fas fa-wand-magic-sparkles"></i>
+                    生成视频
+                </button>
+            </div>
+
+            <!-- 视频生成状态 -->
+            <div id="video-generation-status" class="generation-status" style="display: none;">
+                <div class="status-card">
+                    <div class="loading-spinner"></div>
+                    <h3>正在生成视频...</h3>
+                    <p id="status-message">初始化中...</p>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <span id="progress-text" class="progress-text">0%</span>
+                </div>
+            </div>
+
+            <!-- 生成结果 -->
+            <div id="video-result-section" class="video-result-section" style="display: none;">
+                <h3><i class="fas fa-check-circle"></i> 生成完成</h3>
+                <div class="video-player-container">
+                    <video id="generated-video" controls>
+                        <source src="" type="video/mp4">
+                        您的浏览器不支持视频播放。
+                    </video>
+                </div>
+
+                <div class="video-actions">
+                    <button class="action-btn download-btn" onclick="downloadVideo()">
+                        <i class="fas fa-download"></i>
+                        下载视频
+                    </button>
+                    <button class="action-btn save-btn" onclick="saveToGallery()">
+                        <i class="fas fa-save"></i>
+                        保存到作品集
+                    </button>
+                    <button class="action-btn regenerate-btn" onclick="regenerateVideo()">
+                        <i class="fas fa-redo"></i>
+                        重新生成
+                    </button>
+                    <button class="action-btn back-btn" onclick="backToCreate()">
+                        <i class="fas fa-arrow-left"></i>
+                        返回创作
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI创意工坊 - 让每个孩子都成为小小创作家</p>
+        </div>
+    </footer>
+
+    <script>
+        const sessionId = "{{ session_id }}";
+        const imageUrl = "{{ image_url }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/video.js') }}"></script>
+</body>
+</html>

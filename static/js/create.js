@@ -1,4 +1,6 @@
 // 创作页面相关功能
+console.log('✅ create.js 脚本已加载');
+
 let currentStage = 1;
 let generatedImageUrl = '';
 let uploadedImageFile = null;
@@ -88,6 +90,15 @@ function quickAdjust(adjustType) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ DOM已加载，开始初始化...');
+    
+    // 测试generateVideo函数是否存在
+    if (typeof generateVideo === 'function') {
+        console.log('✅ generateVideo 函数已定义');
+    } else {
+        console.error('❌ generateVideo 函数未定义！');
+    }
+    
     initializeCreatePage();
     initializeVersionsPanel();
 });
@@ -447,6 +458,39 @@ function confirmImage() {
     }
     
     showStage(3);
+}
+
+// 生成视频
+function generateVideo() {
+    console.log('=== generateVideo 函数被调用 ===');
+    console.log('generatedImageUrl:', generatedImageUrl);
+    
+    if (!generatedImageUrl) {
+        console.warn('没有生成的图片URL');
+        showMessage('请先生成图片', 'error');
+        return;
+    }
+    
+    // 获取会话ID - 修正：使用currentSessionId而不是sessionId
+    const sessionId = window.inlineVersionManager?.currentSessionId || 
+                     window.versionManager?.currentSessionId || 
+                     '';
+    
+    console.log('会话ID:', sessionId);
+    console.log('inlineVersionManager:', window.inlineVersionManager);
+    console.log('versionManager:', window.versionManager);
+    
+    if (!sessionId) {
+        console.warn('会话ID缺失');
+        showMessage('会话ID缺失，请刷新页面重试', 'error');
+        return;
+    }
+    
+    const targetUrl = `/video?session_id=${sessionId}&image_url=${encodeURIComponent(generatedImageUrl)}`;
+    console.log('跳转到视频生成页面:', targetUrl);
+    
+    // 跳转到视频生成页面
+    window.location.href = targetUrl;
 }
 
 // 跳过调整（进入3D模型生成）
