@@ -79,11 +79,11 @@ async function startVideoGeneration() {
         console.log('API响应:', data);
 
         if (data.success) {
-            // 开始轮询任务状态，传入实际的视频时长
+            // 开始轮询任务状态，传入实际的视频时长和分辨率
             const actualDuration = parseInt(duration);
-            // Veo 3.1会将5秒调整为8秒，需要考虑这个
-            const adjustedDuration = actualDuration === 5 ? 8 : actualDuration;
-            pollVideoStatus(data.task_id, adjustedDuration);
+            // Veo 3.1支持4-8秒
+            const adjustedDuration = actualDuration;
+            pollVideoStatus(data.task_id, adjustedDuration, quality);
         } else {
             throw new Error(data.error || '视频生成启动失败');
         }
@@ -98,12 +98,20 @@ async function startVideoGeneration() {
 /**
  * 轮询视频生成状态
  */
-async function pollVideoStatus(taskId, duration = 8) {
-    // 根据视频时长估算生成时间
-    // 基准：8秒视频约需72秒（1分12秒）
-    const baseTime = 72; // 8秒视频的基准时间（秒）
+async function pollVideoStatus(taskId, duration = 8, quality = '720p') {
+    // 根据视频时长和分辨率估算生成时间
+    // 基准：720p 8秒视频约需72秒（1分12秒）
+    const baseTime = 72; // 720p 8秒视频的基准时间（秒）
     const baseDuration = 8; // 基准视频时长
-    const estimatedTime = Math.round((duration / baseDuration) * baseTime);
+    
+    // 根据时长计算基础时间
+    let estimatedTime = Math.round((duration / baseDuration) * baseTime);
+    
+    // 1080p时间加倍
+    if (quality === '1080p') {
+        estimatedTime = estimatedTime * 2;
+    }
+    
     const maxAttempts = Math.ceil(estimatedTime * 1.5); // 预留50%缓冲时间
     
     let attempts = 0;
