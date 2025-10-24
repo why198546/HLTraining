@@ -243,6 +243,8 @@ def generate_image():
     """统一的图片生成接口 - 支持文字和图片混合输入，支持会话版本管理"""
     try:
         prompt = request.form.get('prompt', '').strip()
+        style = request.form.get('style', 'cute')
+        color_preference = request.form.get('color_preference', 'colorful')
         uploaded_file = request.files.get('sketch')
         original_image_path = request.form.get('original_image_path', '').strip()
         session_id = request.form.get('session_id')
@@ -250,6 +252,8 @@ def generate_image():
         
         if not prompt and not uploaded_file and not original_image_path:
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
+        
+        print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}")
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
@@ -277,16 +281,16 @@ def generate_image():
         
         print(f"🎨 开始生成图片 - 文字: {prompt}, 图片: {sketch_path}")
         
-        # 根据输入类型生成图片
+        # 根据输入类型生成图片（传入风格和色彩偏好）
         if sketch_path and prompt:
             # 图片+文字模式
-            generated_image_path = nano_banana.generate_image_from_sketch_and_text(sketch_path, prompt)
+            generated_image_path = nano_banana.generate_image_from_sketch_and_text(sketch_path, prompt, style=style, color_preference=color_preference)
         elif sketch_path:
             # 纯图片模式
-            generated_image_path = nano_banana.generate_image_from_sketch(sketch_path)
+            generated_image_path = nano_banana.generate_image_from_sketch(sketch_path, style=style, color_preference=color_preference)
         else:
             # 纯文字模式
-            generated_image_path = nano_banana.generate_image_from_text(prompt)
+            generated_image_path = nano_banana.generate_image_from_text(prompt, style=style, color_preference=color_preference)
         
         print(f"✅ 图片生成完成: {generated_image_path}")
         
