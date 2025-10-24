@@ -981,9 +981,93 @@ function initModelControlsPanel() {
     document.getElementById('lightIntensity')?.addEventListener('input', (e) => setLightIntensity(e.target.value));
     
     // 模型操作
+    document.getElementById('fullscreenBtn')?.addEventListener('click', toggleFullscreen);
     document.getElementById('autoRotateBtn')?.addEventListener('click', toggleModelAutoRotate);
     document.getElementById('resetModel')?.addEventListener('click', resetModelTransform);
     document.getElementById('centerModel')?.addEventListener('click', centerModel);
+}
+
+// 切换全屏
+function toggleFullscreen() {
+    const modelContainer = document.getElementById('modelContainer');
+    if (!modelContainer) {
+        showMessage('模型容器未找到', 'error');
+        return;
+    }
+    
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const icon = fullscreenBtn.querySelector('i');
+    
+    if (!document.fullscreenElement) {
+        // 进入全屏
+        if (modelContainer.requestFullscreen) {
+            modelContainer.requestFullscreen();
+        } else if (modelContainer.webkitRequestFullscreen) {
+            modelContainer.webkitRequestFullscreen();
+        } else if (modelContainer.msRequestFullscreen) {
+            modelContainer.msRequestFullscreen();
+        }
+        
+        // 更新按钮图标
+        icon.classList.remove('fa-expand');
+        icon.classList.add('fa-compress');
+        fullscreenBtn.title = '退出全屏';
+        
+        // 调整模型查看器尺寸
+        if (createModelViewer) {
+            setTimeout(() => {
+                createModelViewer.onWindowResize();
+            }, 100);
+        }
+    } else {
+        // 退出全屏
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        
+        // 更新按钮图标
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+        fullscreenBtn.title = '全屏显示';
+        
+        // 调整模型查看器尺寸
+        if (createModelViewer) {
+            setTimeout(() => {
+                createModelViewer.onWindowResize();
+            }, 100);
+        }
+    }
+}
+
+// 监听全屏状态变化
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    if (!fullscreenBtn) return;
+    
+    const icon = fullscreenBtn.querySelector('i');
+    
+    if (!document.fullscreenElement) {
+        // 已退出全屏
+        icon.classList.remove('fa-compress');
+        icon.classList.add('fa-expand');
+        fullscreenBtn.title = '全屏显示';
+        
+        // 调整模型查看器尺寸
+        if (createModelViewer) {
+            setTimeout(() => {
+                createModelViewer.onWindowResize();
+            }, 100);
+        }
+    }
 }
 
 // 切换自动旋转
@@ -1335,8 +1419,16 @@ async function saveArtworkToGallery() {
             saveBtn.disabled = true;
         }
         
+        // 获取会话ID
+        const sessionId = window.inlineVersionManager?.currentSessionId || window.versionManager?.currentSessionId;
+        if (!sessionId) {
+            showMessage('保存失败：缺少会话ID，请刷新页面重试', 'error');
+            return;
+        }
+        
         // 准备保存数据，处理路径格式
         const saveData = {
+            session_id: sessionId,
             original_image_path: originalImagePath ? (originalImagePath.startsWith('/') ? originalImagePath.substring(1) : originalImagePath) : null,
             generated_image_path: generatedImageUrl.startsWith('/') ? generatedImageUrl.substring(1) : generatedImageUrl,
             model_path: modelFilePath,

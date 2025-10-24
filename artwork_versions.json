@@ -1,0 +1,50 @@
+[
+  {
+    "version_id": "004cd7d0-ee9d-404c-8f6a-26702c3a11fb",
+    "artwork_id": "f06854ad-abbd-473b-a939-ee3976063aa3",
+    "created_at": "2025-10-23T23:14:01.916330",
+    "version_note": "从创作会话保存 - 图片v调整：去除背景，让主体突出，背景变为透明或纯色",
+    "auto_note": "初始创建",
+    "files": {
+      "image": "gallery/f06854ad-abbd-473b-a939-ee3976063aa3/versions/004cd7d0-ee9d-404c-8f6a-26702c3a11fb/image_v004cd7d0-ee9d-404c-8f6a-26702c3a11fb.png",
+      "model": "gallery/f06854ad-abbd-473b-a939-ee3976063aa3/versions/004cd7d0-ee9d-404c-8f6a-26702c3a11fb/model_v004cd7d0-ee9d-404c-8f6a-26702c3a11fb.glb"
+    },
+    "is_current": true
+  },
+  {
+    "version_id": "b693e106-fb45-47c4-ae1d-417b913906ce",
+    "artwork_id": "65ca1782-8e91-4f3a-8658-a606cd20b093",
+    "created_at": "2025-10-23T23:21:34.401877",
+    "version_note": "从创作会话保存 - 图片v调整：去除背景，让主体突出，背景变为透明或纯色",
+    "auto_note": "初始创建",
+    "files": {
+      "image": "gallery/65ca1782-8e91-4f3a-8658-a606cd20b093/versions/b693e106-fb45-47c4-ae1d-417b913906ce/image_vb693e106-fb45-47c4-ae1d-417b913906ce.png",
+      "model": "gallery/65ca1782-8e91-4f3a-8658-a606cd20b093/versions/b693e106-fb45-47c4-ae1d-417b913906ce/model_vb693e106-fb45-47c4-ae1d-417b913906ce.glb"
+    },
+    "is_current": true
+  },
+  {
+    "version_id": "32eac20b-7757-49ab-bfaf-ecf5f092160d",
+    "artwork_id": "4d22f964-73b6-40b6-b7a5-4f9c0dded3a9",
+    "created_at": "2025-10-23T23:42:17.284681",
+    "version_note": "从创作会话保存 - 图片v调整：去掉下方的文字",
+    "auto_note": "初始创建",
+    "files": {
+      "image": "gallery/4d22f964-73b6-40b6-b7a5-4f9c0dded3a9/versions/32eac20b-7757-49ab-bfaf-ecf5f092160d/image_v32eac20b-7757-49ab-bfaf-ecf5f092160d.png",
+      "model": "gallery/4d22f964-73b6-40b6-b7a5-4f9c0dded3a9/versions/32eac20b-7757-49ab-bfaf-ecf5f092160d/model_v32eac20b-7757-49ab-bfaf-ecf5f092160d.glb"
+    },
+    "is_current": true
+  },
+  {
+    "version_id": "93c30fc3-b501-40c0-ad0b-52eddee47918",
+    "artwork_id": "a1725a92-6b65-4b0c-95e0-518154b6fa4f",
+    "created_at": "2025-10-24T09:07:55.152680",
+    "version_note": "从创作会话保存 - 图片v调整：去除背景，让主体突出，背景变为透明或纯色",
+    "auto_note": "初始创建",
+    "files": {
+      "image": "gallery/a1725a92-6b65-4b0c-95e0-518154b6fa4f/versions/93c30fc3-b501-40c0-ad0b-52eddee47918/image_v93c30fc3-b501-40c0-ad0b-52eddee47918.png",
+      "model": "gallery/a1725a92-6b65-4b0c-95e0-518154b6fa4f/versions/93c30fc3-b501-40c0-ad0b-52eddee47918/model_v93c30fc3-b501-40c0-ad0b-52eddee47918.glb"
+    },
+    "is_current": true
+  }
+]

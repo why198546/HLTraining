@@ -58,6 +58,17 @@
                     </div>
 
                     <div class="creation-input-area">
+                        <!-- 上传的图片预览 - 移到最上方 -->
+                        <div id="uploaded-image-preview" class="image-preview" style="display: none;">
+                            <div class="preview-header">
+                                <span><i class="fas fa-image"></i> 参考图片</span>
+                                <button class="remove-image-btn" onclick="removeUploadedImage()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <img id="uploaded-image" src="" alt="上传的参考图片">
+                        </div>
+
                         <div class="prompt-input-container">
                             <div class="input-wrapper">
                                 <textarea 
@@ -119,15 +130,6 @@
                         </div>
 
                         <!-- 上传的图片预览 -->
-                        <div id="uploaded-image-preview" class="image-preview" style="display: none;">
-                            <div class="preview-header">
-                                <span><i class="fas fa-image"></i> 参考图片</span>
-                                <button class="remove-image-btn" onclick="removeUploadedImage()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <img id="uploaded-image" src="" alt="上传的参考图片">
-                        </div>
                         
                         <div class="generation-options">
                             <div class="option-group">
@@ -382,6 +384,9 @@
                                             <i class="fas fa-tools"></i>
                                             <span>操作</span>
                                         </div>
+                                        <button class="side-control-btn" id="fullscreenBtn" title="全屏显示">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
                                         <button class="side-control-btn" id="autoRotateBtn" title="自动旋转">
                                             <i class="fas fa-sync-alt"></i>
                                         </button>

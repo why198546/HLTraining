@@ -1268,3 +1268,95 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+// 切换Gallery 3D模型全屏
+function toggleGalleryFullscreen() {
+    const modelOverlay = document.getElementById('modelOverlay');
+    if (!modelOverlay) {
+        console.error('模型容器未找到');
+        return;
+    }
+    
+    const fullscreenBtn = document.getElementById('galleryFullscreenBtn');
+    const icon = fullscreenBtn?.querySelector('i');
+    
+    if (!document.fullscreenElement) {
+        // 进入全屏
+        if (modelOverlay.requestFullscreen) {
+            modelOverlay.requestFullscreen();
+        } else if (modelOverlay.webkitRequestFullscreen) {
+            modelOverlay.webkitRequestFullscreen();
+        } else if (modelOverlay.msRequestFullscreen) {
+            modelOverlay.msRequestFullscreen();
+        }
+        
+        // 更新按钮
+        if (icon) {
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        }
+        if (fullscreenBtn) {
+            fullscreenBtn.innerHTML = '<i class="fas fa-compress"></i> 退出全屏';
+        }
+        
+        // 调整模型查看器尺寸
+        if (modelViewer) {
+            setTimeout(() => {
+                modelViewer.onWindowResize();
+            }, 100);
+        }
+    } else {
+        // 退出全屏
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+        
+        // 更新按钮
+        if (icon) {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+        if (fullscreenBtn) {
+            fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> 全屏';
+        }
+        
+        // 调整模型查看器尺寸
+        if (modelViewer) {
+            setTimeout(() => {
+                modelViewer.onWindowResize();
+            }, 100);
+        }
+    }
+}
+
+// 监听全屏状态变化
+document.addEventListener('fullscreenchange', handleGalleryFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleGalleryFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleGalleryFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleGalleryFullscreenChange);
+
+function handleGalleryFullscreenChange() {
+    const fullscreenBtn = document.getElementById('galleryFullscreenBtn');
+    if (!fullscreenBtn) return;
+    
+    const icon = fullscreenBtn.querySelector('i');
+    
+    if (!document.fullscreenElement) {
+        // 已退出全屏
+        if (icon) {
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        }
+        fullscreenBtn.innerHTML = '<i class="fas fa-expand"></i> 全屏';
+        
+        // 调整模型查看器尺寸
+        if (modelViewer) {
+            setTimeout(() => {
+                modelViewer.onWindowResize();
+            }, 100);
+        }
+    }
+}
