@@ -321,6 +321,7 @@ async function generateImage() {
     const prompt = document.getElementById('creation-prompt').value.trim();
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
+    const expertMode = document.getElementById('expert-mode').checked; // 获取expert模式状态
 
     // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
     if (!prompt && !uploadedImageFile && !originalImagePath) {
@@ -335,6 +336,7 @@ async function generateImage() {
         formData.append('prompt', prompt);
         formData.append('style', style);
         formData.append('color_preference', colorPreference);
+        formData.append('expert_mode', expertMode); // 添加expert模式参数
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
@@ -529,9 +531,12 @@ async function applyAdjustment() {
     showLoadingOverlay('正在调整图片...');
 
     try {
+        const expertMode = document.getElementById('expert-mode').checked; // 获取expert模式状态
+        
         const formData = new FormData();
         formData.append('current_image', generatedImageUrl);
         formData.append('adjust_prompt', adjustmentPrompt);
+        formData.append('expert_mode', expertMode); // 添加expert模式参数
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {

@@ -237,6 +237,20 @@ class Veo31API:
                         print(f"❌ Response没有generated_videos或为空")
                         print(f"   Response属性: {[attr for attr in dir(operation.response) if not attr.startswith('_')]}")
                         print(f"   Response内容: {operation.response}")
+                        
+                        # 检查是否是内容安全过滤导致的失败
+                        if hasattr(operation.response, 'rai_media_filtered_reasons') and operation.response.rai_media_filtered_reasons:
+                            reasons = operation.response.rai_media_filtered_reasons
+                            print(f"⚠️ 内容安全过滤原因: {reasons}")
+                            
+                            # 返回特定的内容安全错误
+                            return {
+                                'status': 'content_filtered',
+                                'error': 'content_safety_violation',
+                                'message': '; '.join(reasons),
+                                'filtered_reasons': reasons
+                            }
+                        
                         raise Exception("视频生成完成但无法获取视频数据")
                     
                     generated_video = operation.response.generated_videos[0]

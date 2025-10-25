@@ -44,6 +44,7 @@ async function startVideoGeneration() {
     const aspectRatio = document.getElementById('aspect-ratio').value;
     const quality = document.getElementById('video-quality').value;
     const motionIntensity = document.getElementById('motion-intensity').value;
+    const paddingMode = document.getElementById('padding-mode').value;
 
     console.log('开始生成视频:', {
         prompt,
@@ -51,14 +52,43 @@ async function startVideoGeneration() {
         aspectRatio,
         quality,
         motionIntensity,
+        paddingMode,
         imageUrl
     });
 
     isGenerating = true;
     showGenerationStatus();
-    updateStatus('正在准备生成...', 0);
+    updateStatus('正在转换图片比例...', 0);
 
     try {
+        // 第一步：转换图片为视频所需的宽高比
+        console.log('🎬 步骤1: 转换图片比例');
+        const convertResponse = await fetch('/api/convert-image-for-video', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                image_path: imageUrl,
+                aspect_ratio: aspectRatio,
+                padding_mode: paddingMode
+            })
+        });
+
+        const convertData = await convertResponse.json();
+        console.log('图片转换响应:', convertData);
+
+        if (!convertData.success) {
+            throw new Error(convertData.error || '图片转换失败');
+        }
+
+        const convertedImageUrl = convertData.converted_image_url;
+        console.log('✅ 图片转换完成:', convertedImageUrl);
+        
+        updateStatus('图片转换完成，正在生成视频...', 10);
+
+        // 第二步：使用转换后的图片生成视频
+        console.log('🎬 步骤2: 生成视频');
         const response = await fetch('/api/generate-video', {
             method: 'POST',
             headers: {
@@ -66,7 +96,7 @@ async function startVideoGeneration() {
             },
             body: JSON.stringify({
                 session_id: sessionId,
-                image_url: imageUrl,
+                image_url: convertedImageUrl,  // 使用转换后的图片
                 prompt: prompt,
                 duration: duration,
                 aspect_ratio: aspectRatio,
@@ -79,9 +109,8 @@ async function startVideoGeneration() {
         console.log('API响应:', data);
 
         if (data.success) {
-            // 开始轮询任务状态，传入实际的视频时长和分辨率
+            // 开始轮询任务状态
             const actualDuration = parseInt(duration);
-            // Veo 3.1支持4-8秒
             const adjustedDuration = actualDuration;
             pollVideoStatus(data.task_id, adjustedDuration, quality);
         } else {
@@ -139,6 +168,52 @@ async function pollVideoStatus(taskId, duration = 8, quality = '720p') {
                     showVideoResult(data.video_url);
                     isGenerating = false;
                 }, 500);
+            } else if (data.status === 'content_filtered') {
+                // 内容安全过滤
+                hideGenerationStatus();
+                
+                // 显示更友好的错误提示
+                const message = data.message || "Sorry, we can't create videos from input images containing photorealistic children. Please remove the reference and try again.";
+                
+                // 创建自定义弹窗
+                const modalHtml = `
+                    <div id="content-filter-modal" style="
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                        background: rgba(0,0,0,0.7); z-index: 10000; display: flex; 
+                        align-items: center; justify-content: center;
+                    ">
+                        <div style="
+                            background: white; padding: 30px; border-radius: 12px; 
+                            max-width: 500px; margin: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                        ">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <div style="
+                                    width: 60px; height: 60px; background: #ff6b6b; 
+                                    border-radius: 50%; margin: 0 auto 15px; 
+                                    display: flex; align-items: center; justify-content: center;
+                                ">
+                                    <i class="fas fa-exclamation-triangle" style="color: white; font-size: 24px;"></i>
+                                </div>
+                                <h3 style="margin: 0; color: #333;">内容安全提示</h3>
+                            </div>
+                            <p style="color: #666; line-height: 1.6; margin-bottom: 25px; text-align: center;">
+                                ${message}
+                            </p>
+                            <div style="text-align: center;">
+                                <button onclick="closeContentFilterModal()" style="
+                                    background: #007bff; color: white; border: none; 
+                                    padding: 12px 30px; border-radius: 6px; cursor: pointer;
+                                    font-size: 16px;
+                                ">
+                                    我知道了
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                isGenerating = false;
             } else if (data.status === 'failed') {
                 // 生成失败
                 hideGenerationStatus();
@@ -312,4 +387,14 @@ function regenerateVideo() {
  */
 function backToCreate() {
     window.location.href = '/create';
+}
+
+/**
+ * 关闭内容安全过滤弹窗
+ */
+function closeContentFilterModal() {
+    const modal = document.getElementById('content-filter-modal');
+    if (modal) {
+        modal.remove();
+    }
 }

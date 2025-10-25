@@ -245,6 +245,7 @@ def generate_image():
         prompt = request.form.get('prompt', '').strip()
         style = request.form.get('style', 'cute')
         color_preference = request.form.get('color_preference', 'colorful')
+        expert_mode = request.form.get('expert_mode', 'false').lower() == 'true'
         uploaded_file = request.files.get('sketch')
         original_image_path = request.form.get('original_image_path', '').strip()
         session_id = request.form.get('session_id')
@@ -253,7 +254,7 @@ def generate_image():
         if not prompt and not uploaded_file and not original_image_path:
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
-        print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}")
+        print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}, Expert模式: {expert_mode}")
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
@@ -281,16 +282,22 @@ def generate_image():
         
         print(f"🎨 开始生成图片 - 文字: {prompt}, 图片: {sketch_path}")
         
-        # 根据输入类型生成图片（传入风格和色彩偏好）
+        # 根据输入类型生成图片（不再自动转换16:9）
         if sketch_path and prompt:
             # 图片+文字模式
-            generated_image_path = nano_banana.generate_image_from_sketch_and_text(sketch_path, prompt, style=style, color_preference=color_preference)
+            generated_image_path = nano_banana.generate_image_from_sketch_and_text(
+                sketch_path, prompt, style=style, color_preference=color_preference, expert_mode=expert_mode
+            )
         elif sketch_path:
             # 纯图片模式
-            generated_image_path = nano_banana.generate_image_from_sketch(sketch_path, style=style, color_preference=color_preference)
+            generated_image_path = nano_banana.generate_image_from_sketch(
+                sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode
+            )
         else:
             # 纯文字模式
-            generated_image_path = nano_banana.generate_image_from_text(prompt, style=style, color_preference=color_preference)
+            generated_image_path = nano_banana.generate_image_from_text(
+                prompt, style=style, color_preference=color_preference, expert_mode=expert_mode
+            )
         
         print(f"✅ 图片生成完成: {generated_image_path}")
         
@@ -344,6 +351,7 @@ def adjust_image():
     try:
         current_image = request.form.get('current_image')
         adjust_prompt = request.form.get('adjust_prompt', '').strip()
+        expert_mode = request.form.get('expert_mode', 'false').lower() == 'true'
         session_id = request.form.get('session_id')
         version_note = request.form.get('version_note', '')
         
@@ -357,10 +365,10 @@ def adjust_image():
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
         
-        print(f"🔧 开始调整图片: {current_image} - 调整说明: {adjust_prompt}")
+        print(f"🔧 开始调整图片: {current_image} - 调整说明: {adjust_prompt}, Expert模式: {expert_mode}")
         
         # 使用调整提示词重新生成图片
-        adjusted_image_path = nano_banana.adjust_image(current_image, adjust_prompt)
+        adjusted_image_path = nano_banana.adjust_image(current_image, adjust_prompt, expert_mode=expert_mode)
         
         print(f"✅ 图片调整完成: {adjusted_image_path}")
         
@@ -545,6 +553,51 @@ def like_artwork(artwork_id):
         return jsonify({'error': str(e)}), 500
 
 # ===================== 视频生成相关路由 =====================
+
+@app.route('/api/convert-image-for-video', methods=['POST'])
+def convert_image_for_video():
+    """将图片转换为视频所需的宽高比"""
+    try:
+        data = request.get_json()
+        image_path = data.get('image_path')
+        aspect_ratio = data.get('aspect_ratio', '16:9')
+        padding_mode = data.get('padding_mode', 'blur')
+        
+        if not image_path:
+            return jsonify({'success': False, 'error': '缺少图片路径'}), 400
+        
+        # 转换路径
+        if image_path.startswith('/uploads/'):
+            image_path = 'uploads' + image_path[8:]
+        elif image_path.startswith('uploads/'):
+            pass
+        else:
+            image_path = os.path.join('uploads', image_path)
+        
+        print(f"🎬 转换图片用于视频: {image_path}")
+        print(f"📐 目标宽高比: {aspect_ratio}, 填充模式: {padding_mode}")
+        
+        # 调用转换函数
+        nano_banana = NanoBananaAPI()
+        converted_path = nano_banana.convert_image_for_video(
+            image_path, 
+            aspect_ratio=aspect_ratio, 
+            padding_mode=padding_mode
+        )
+        
+        # 返回相对路径
+        relative_path = converted_path.replace('uploads/', '/uploads/')
+        
+        return jsonify({
+            'success': True,
+            'converted_image_url': relative_path
+        })
+        
+    except Exception as e:
+        print(f"❌ 图片转换错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate-video', methods=['POST'])
 def generate_video():

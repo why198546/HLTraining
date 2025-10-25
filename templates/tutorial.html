@@ -43,29 +43,29 @@
                         <div class="quick-step">
                             <div class="step-number">1</div>
                             <div class="step-content">
-                                <h3>准备你的简笔画</h3>
-                                <p>在纸上画一个简单的图案，然后用手机或相机拍照</p>
+                                <h3>选择创作方式</h3>
+                                <p>可以上传简笔画进行AI上色，或使用Expert模式直接输入描述生成图片</p>
                             </div>
                         </div>
                         <div class="quick-step">
                             <div class="step-number">2</div>
                             <div class="step-content">
-                                <h3>上传到网站</h3>
-                                <p>点击"开始创作"按钮，选择你拍摄的图片文件</p>
+                                <h3>AI生成图片</h3>
+                                <p>AI会根据你的输入生成精美的图片，保持正方形格式便于后续处理</p>
                             </div>
                         </div>
                         <div class="quick-step">
                             <div class="step-number">3</div>
                             <div class="step-content">
-                                <h3>等待AI处理</h3>
-                                <p>AI会自动为你的画作上色，并生成3D模型</p>
+                                <h3>生成动态视频</h3>
+                                <p>点击图片进入视频页面，选择宽高比和填充模式，AI将为你生成动态视频</p>
                             </div>
                         </div>
                         <div class="quick-step">
                             <div class="step-number">4</div>
                             <div class="step-content">
                                 <h3>下载和分享</h3>
-                                <p>保存你的作品，并与朋友们分享你的创意！</p>
+                                <p>保存你的图片和视频作品，与朋友们分享你的AI创意！</p>
                             </div>
                         </div>
                     </div>
@@ -79,13 +79,75 @@
                     </h2>
                     
                     <div class="tutorial-tabs">
-                        <button class="tab-button active" data-tab="drawing">绘制技巧</button>
+                        <button class="tab-button active" data-tab="creation">创作方式</button>
+                        <button class="tab-button" data-tab="drawing">绘制技巧</button>
                         <button class="tab-button" data-tab="upload">上传指南</button>
                         <button class="tab-button" data-tab="ai">AI处理</button>
-                        <button class="tab-button" data-tab="3d">3D模型</button>
+                        <button class="tab-button" data-tab="video">视频生成</button>
                     </div>
 
-                    <div class="tab-content active" id="drawing">
+                    <div class="tab-content active" id="creation">
+                        <h3>两种创作方式</h3>
+                        <div class="tutorial-grid">
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </div>
+                                <h4>简笔画上色</h4>
+                                <p>上传你手绘的简笔画，AI会自动识别并为其添加丰富的色彩和细节。适合有具体创意想法的小朋友。</p>
+                                <div class="feature-list">
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        保留原创风格
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        智能色彩搭配
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        手办风格转换
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h4>Expert模式</h4>
+                                <p>直接输入文字描述，AI会根据你的想象生成完整的图片。适合想要尝试更多创意可能的用户。</p>
+                                <div class="feature-list">
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        无限创意空间
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        专业提示词支持
+                                    </div>
+                                    <div class="feature">
+                                        <i class="fas fa-check"></i>
+                                        快速原型制作
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <h4>色彩偏好设置</h4>
+                                <p>无论选择哪种创作方式，都可以设置色彩偏好，让AI按照你喜欢的色调风格来生成作品。</p>
+                                <div class="color-options">
+                                    <span class="color-tag warm">温暖色调</span>
+                                    <span class="color-tag cool">冷色调</span>
+                                    <span class="color-tag vibrant">鲜艳色彩</span>
+                                    <span class="color-tag pastel">柔和色彩</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="drawing">
                         <h3>绘制简笔画的技巧</h3>
                         <div class="tutorial-grid">
                             <div class="tutorial-card">
@@ -208,57 +270,121 @@
                         </div>
                     </div>
 
-                    <div class="tab-content" id="3d">
-                        <h3>3D模型生成与查看</h3>
+                    <div class="tab-content" id="video">
+                        <h3>AI视频生成全攻略</h3>
                         <div class="tutorial-grid">
                             <div class="tutorial-card">
                                 <div class="card-icon">
-                                    <i class="fas fa-cube"></i>
+                                    <i class="fas fa-play"></i>
                                 </div>
-                                <h4>3D模型生成</h4>
-                                <p>系统使用Hunyuan3D技术，将你的2D图像转换为3D模型，这个过程通常需要1-2分钟。</p>
-                                <div class="feature-list">
-                                    <div class="feature">
-                                        <i class="fas fa-check"></i>
-                                        自动建模
+                                <h4>视频生成流程</h4>
+                                <p>生成图片后，点击图片即可进入视频制作页面。AI会将静态图片转换为动态视频，让你的作品活起来！</p>
+                                <div class="process-mini">
+                                    <span>选择图片</span> → <span>设置参数</span> → <span>AI生成</span> → <span>下载视频</span>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                </div>
+                                <h4>宽高比选择</h4>
+                                <p>支持两种视频格式，满足不同的分享需求。横屏适合电脑观看，竖屏适合手机分享。</p>
+                                <div class="aspect-ratios">
+                                    <div class="ratio-option">
+                                        <div class="ratio-demo landscape"></div>
+                                        <span>16:9 横屏</span>
+                                        <small>电脑、TV观看</small>
                                     </div>
-                                    <div class="feature">
-                                        <i class="fas fa-check"></i>
-                                        纹理映射
-                                    </div>
-                                    <div class="feature">
-                                        <i class="fas fa-check"></i>
-                                        Web优化
+                                    <div class="ratio-option">
+                                        <div class="ratio-demo portrait"></div>
+                                        <span>9:16 竖屏</span>
+                                        <small>手机、短视频</small>
                                     </div>
                                 </div>
                             </div>
                             <div class="tutorial-card">
                                 <div class="card-icon">
-                                    <i class="fas fa-mouse"></i>
+                                    <i class="fas fa-fill-drip"></i>
                                 </div>
-                                <h4>3D查看器操作</h4>
-                                <p>在3D查看器中，你可以旋转、缩放模型，从不同角度观看你的作品。</p>
-                                <div class="controls-guide">
-                                    <div class="control">
-                                        <strong>旋转：</strong>鼠标左键拖拽
+                                <h4>三种填充模式</h4>
+                                <p>将正方形图片转换为视频比例时，可以选择不同的边缘处理方式，每种都有独特效果。</p>
+                                <div class="padding-modes">
+                                    <div class="mode-option">
+                                        <div class="mode-icon black"></div>
+                                        <strong>黑边填充</strong>
+                                        <small>电影感、处理最快</small>
                                     </div>
-                                    <div class="control">
-                                        <strong>缩放：</strong>鼠标滚轮
+                                    <div class="mode-option">
+                                        <div class="mode-icon blur"></div>
+                                        <strong>模糊边缘</strong>
+                                        <small>自然过渡、效果平衡</small>
                                     </div>
-                                    <div class="control">
-                                        <strong>平移：</strong>鼠标右键拖拽
+                                    <div class="mode-option recommended">
+                                        <div class="mode-icon ai"></div>
+                                        <strong>AI智能填充</strong>
+                                        <small>生成新像素、效果最佳</small>
+                                        <span class="badge">推荐</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="tutorial-card">
                                 <div class="card-icon">
-                                    <i class="fas fa-download"></i>
+                                    <i class="fas fa-wand-magic-sparkles"></i>
                                 </div>
-                                <h4>下载和分享</h4>
-                                <p>你可以下载生成的图片和3D模型文件，也可以分享链接给朋友们欣赏你的作品。</p>
-                                <div class="download-formats">
-                                    <span>图片：PNG格式</span>
-                                    <span>3D模型：GLTF格式</span>
+                                <h4>动作描述技巧</h4>
+                                <p>输入生动的动作描述，让AI为你的画面添加动态效果。描述越具体，动画效果越精彩！</p>
+                                <div class="prompt-examples">
+                                    <div class="example good">
+                                        <i class="fas fa-check"></i>
+                                        <span>"角色微笑并挥手，背景云朵缓慢移动"</span>
+                                    </div>
+                                    <div class="example good">
+                                        <i class="fas fa-check"></i>
+                                        <span>"花朵在微风中轻柔摆动，蝴蝶翩翩起舞"</span>
+                                    </div>
+                                    <div class="example bad">
+                                        <i class="fas fa-times"></i>
+                                        <span>"动起来"</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <h4>视频设置选项</h4>
+                                <p>可以调整视频时长、分辨率和运动强度，创造出最符合你想法的动态效果。</p>
+                                <div class="settings-grid">
+                                    <div class="setting">
+                                        <strong>时长：</strong>4-8秒可选
+                                    </div>
+                                    <div class="setting">
+                                        <strong>分辨率：</strong>720p/1080p
+                                    </div>
+                                    <div class="setting">
+                                        <strong>运动强度：</strong>轻微/中等/强烈
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="tutorial-card">
+                                <div class="card-icon">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <h4>内容安全提示</h4>
+                                <p>AI视频生成有内容安全检测，某些类型的图片可能无法生成视频。遇到提示时请尝试其他主题。</p>
+                                <div class="safety-tips">
+                                    <div class="tip safe">
+                                        <i class="fas fa-check"></i>
+                                        风景、动物、卡通角色
+                                    </div>
+                                    <div class="tip safe">
+                                        <i class="fas fa-check"></i>
+                                        抽象艺术、几何图形
+                                    </div>
+                                    <div class="tip warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        避免真实人物照片
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -272,6 +398,50 @@
                         常见问题
                     </h2>
                     <div class="faq-list">
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>Expert模式是什么？如何使用？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>Expert模式允许你直接输入文字描述来生成图片，无需上传简笔画：</p>
+                                <ul>
+                                    <li>在创作页面勾选"Expert模式"</li>
+                                    <li>在文本框中详细描述你想要的图片</li>
+                                    <li>设置色彩偏好和风格选择</li>
+                                    <li>点击生成，AI会根据描述创作图片</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>视频生成失败，提示内容安全问题怎么办？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>AI视频生成有内容安全检测机制，建议：</p>
+                                <ul>
+                                    <li>避免使用包含真实人物的图片</li>
+                                    <li>选择风景、动物、卡通等主题</li>
+                                    <li>修改视频动作描述，避免敏感词汇</li>
+                                    <li>尝试重新生成不同风格的图片</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>三种填充模式有什么区别？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>在生成视频时，正方形图片需要转换为视频比例：</p>
+                                <ul>
+                                    <li><strong>黑边填充：</strong>添加纯黑色边框，电影感强，处理最快</li>
+                                    <li><strong>模糊边缘：</strong>使用边缘模糊效果填充，自然过渡</li>
+                                    <li><strong>AI智能填充（推荐）：</strong>AI生成新像素延伸画面，效果最自然</li>
+                                </ul>
+                            </div>
+                        </div>
                         <div class="faq-item">
                             <div class="faq-question">
                                 <h4>为什么我的图片上传失败了？</h4>
@@ -299,6 +469,21 @@
                                     <li>突出主要特征，避免过于复杂的细节</li>
                                     <li>使用对比度高的黑白图片</li>
                                     <li>可以尝试重新绘制或调整拍照角度</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="faq-item">
+                            <div class="faq-question">
+                                <h4>视频生成需要多长时间？</h4>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="faq-answer">
+                                <p>视频生成时间取决于多个因素：</p>
+                                <ul>
+                                    <li>图片复杂度：简单图片约30-60秒，复杂图片需要1-3分钟</li>
+                                    <li>填充模式：黑边最快，模糊中等，AI填充最慢但效果最好</li>
+                                    <li>服务器负载：高峰期可能需要更长时间</li>
+                                    <li>网络状况：稳定的网络连接能确保顺畅体验</li>
                                 </ul>
                             </div>
                         </div>
@@ -387,9 +572,11 @@
                     <h4>功能特色</h4>
                     <ul>
                         <li>简笔画智能上色</li>
+                        <li>Expert模式直接创作</li>
+                        <li>AI动态视频生成</li>
+                        <li>多种填充模式</li>
+                        <li>双向宽高比支持</li>
                         <li>3D模型自动生成</li>
-                        <li>手办风格转换</li>
-                        <li>AI技术学习</li>
                     </ul>
                 </div>
                 <div class="footer-section">
