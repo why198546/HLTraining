@@ -1115,6 +1115,12 @@ def update_artwork_privacy(artwork_id):
         db.session.rollback()
         return jsonify({'error': f'更新失败: {str(e)}'}), 500
 
+@app.route('/test-privacy-toggles')
+def test_privacy_toggles():
+    """测试隐私设置切换开关页面"""
+    with open('/Users/hongyuwang/code/HLTraining/test_privacy_toggles.html', 'r', encoding='utf-8') as f:
+        return f.read()
+
 if __name__ == '__main__':
     print("🚀 儿童AI培训网站启动中...")
     print("📝 功能特色:")

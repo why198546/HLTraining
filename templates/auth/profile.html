@@ -237,8 +237,8 @@
                                     <p>允许其他人在作品展示页面看到我的作品</p>
                                 </div>
                                 <div class="privacy-toggle">
-                                    {{ privacy_form.show_in_gallery(style="display: none;") }}
-                                    <label for="{{ privacy_form.show_in_gallery.id }}" class="toggle-switch">
+                                    {{ privacy_form.show_in_gallery(style="display: none;", id="show_in_gallery_checkbox") }}
+                                    <label for="show_in_gallery_checkbox" class="toggle-switch">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -250,8 +250,8 @@
                                     <p>在作品上显示我的年龄信息</p>
                                 </div>
                                 <div class="privacy-toggle">
-                                    {{ privacy_form.show_age(style="display: none;") }}
-                                    <label for="{{ privacy_form.show_age.id }}" class="toggle-switch">
+                                    {{ privacy_form.show_age(style="display: none;", id="show_age_checkbox") }}
+                                    <label for="show_age_checkbox" class="toggle-switch">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -263,8 +263,8 @@
                                     <p>向家长发送我的使用情况报告</p>
                                 </div>
                                 <div class="privacy-toggle">
-                                    {{ privacy_form.allow_parent_reports(style="display: none;") }}
-                                    <label for="{{ privacy_form.allow_parent_reports.id }}" class="toggle-switch">
+                                    {{ privacy_form.allow_parent_reports(style="display: none;", id="allow_parent_reports_checkbox") }}
+                                    <label for="allow_parent_reports_checkbox" class="toggle-switch">
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </div>
@@ -546,14 +546,16 @@
         
         // 初始化隐私设置切换开关
         function initPrivacyToggles() {
-            // 获取所有隐私设置的切换开关
-            const privacyFields = ['show_in_gallery', 'show_age', 'allow_parent_reports'];
+            // 直接查找所有隐私设置项
+            const privacyItems = document.querySelectorAll('.privacy-item');
             
-            privacyFields.forEach(fieldName => {
-                const checkbox = document.querySelector(`input[name="${fieldName}"]`);
-                const label = document.querySelector(`label[for="${fieldName}"]`);
+            privacyItems.forEach((item, index) => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const label = item.querySelector('label.toggle-switch');
                 
-                if (!checkbox || !label) return;
+                if (!checkbox || !label) {
+                    return;
+                }
                 
                 // 初始化开关状态
                 updateToggleState(label, checkbox.checked);

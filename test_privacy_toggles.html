@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>隐私设置切换开关测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .privacy-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+            background: white;
+            margin: 10px 0;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .privacy-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .privacy-info p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .privacy-toggle {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+            background-color: #ddd;
+            border-radius: 26px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .toggle-switch:hover {
+            background-color: #ccc;
+        }
+        
+        .toggle-switch.active {
+            background-color: #007bff;
+            box-shadow: inset 0 2px 4px rgba(0,123,255,0.2);
+        }
+        
+        .toggle-switch.active:hover {
+            background-color: #0056b3;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 22px;
+            height: 22px;
+            background-color: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        .test-result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>隐私设置切换开关测试</h1>
+    
+    <div class="privacy-item">
+        <div class="privacy-info">
+            <h4>作品展示</h4>
+            <p>允许其他人在作品展示页面看到我的作品</p>
+        </div>
+        <div class="privacy-toggle">
+            <input type="checkbox" name="show_in_gallery" id="show_in_gallery" style="display: none;" checked>
+            <label for="show_in_gallery" class="toggle-switch">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="privacy-item">
+        <div class="privacy-info">
+            <h4>显示年龄</h4>
+            <p>在作品上显示我的年龄信息</p>
+        </div>
+        <div class="privacy-toggle">
+            <input type="checkbox" name="show_age" id="show_age" style="display: none;">
+            <label for="show_age" class="toggle-switch">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="privacy-item">
+        <div class="privacy-info">
+            <h4>使用报告</h4>
+            <p>向家长发送我的使用情况报告</p>
+        </div>
+        <div class="privacy-toggle">
+            <input type="checkbox" name="allow_parent_reports" id="allow_parent_reports" style="display: none;" checked>
+            <label for="allow_parent_reports" class="toggle-switch">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="test-result">
+        <h3>测试结果：</h3>
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        // 初始化隐私设置切换开关
+        function initPrivacyToggles() {
+            console.log('初始化隐私设置切换开关...');
+            
+            // 直接查找所有隐私设置项
+            const privacyItems = document.querySelectorAll('.privacy-item');
+            console.log(`找到 ${privacyItems.length} 个隐私设置项`);
+            
+            privacyItems.forEach((item, index) => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const label = item.querySelector('label.toggle-switch');
+                
+                if (!checkbox || !label) {
+                    console.log(`项目 ${index}: 缺少复选框或标签`);
+                    return;
+                }
+                
+                console.log(`项目 ${index}: 找到复选框 (name: ${checkbox.name}, checked: ${checkbox.checked})`);
+                
+                // 初始化开关状态
+                updateToggleState(label, checkbox.checked);
+                
+                // 添加点击事件到标签
+                label.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log(`点击切换开关: ${checkbox.name}, 当前状态: ${checkbox.checked}`);
+                    
+                    checkbox.checked = !checkbox.checked;
+                    updateToggleState(this, checkbox.checked);
+                    
+                    console.log(`新状态: ${checkbox.checked}`);
+                    
+                    // 更新测试结果
+                    updateTestResult();
+                    
+                    // 触发change事件以便表单验证
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+        
+        // 更新切换开关的视觉状态
+        function updateToggleState(toggleElement, isActive) {
+            console.log(`更新切换状态: ${isActive ? '激活' : '未激活'}`);
+            
+            if (isActive) {
+                toggleElement.classList.add('active');
+            } else {
+                toggleElement.classList.remove('active');
+            }
+        }
+        
+        // 更新测试结果显示
+        function updateTestResult() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            let result = '<strong>当前设置状态：</strong><br>';
+            
+            checkboxes.forEach(checkbox => {
+                result += `${checkbox.name}: ${checkbox.checked ? '开启' : '关闭'}<br>`;
+            });
+            
+            document.getElementById('result').innerHTML = result;
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initPrivacyToggles();
+            updateTestResult();
+        });
+    </script>
+</body>
+</html>
