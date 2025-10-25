@@ -1,0 +1,36 @@
+<!-- 统一网站导航栏 -->
+<header class="header">
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-magic"></i>
+            <span>AI创意工坊</span>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="{{ url_for('index') }}" class="nav-link {{ 'active' if request.endpoint == 'index' }}">首页</a></li>
+            <li><a href="{{ url_for('create') }}" class="nav-link {{ 'active' if request.endpoint == 'create' }}">开始创作</a></li>
+            <li><a href="{{ url_for('gallery') }}" class="nav-link {{ 'active' if request.endpoint == 'gallery' }}">作品展示</a></li>
+            <li><a href="{{ url_for('tutorial') }}" class="nav-link {{ 'active' if request.endpoint == 'tutorial' }}">使用教程</a></li>
+            {% if current_user.is_authenticated %}
+                <li><a href="{{ url_for('auth.my_artworks') }}" class="nav-link {{ 'active' if request.endpoint == 'auth.my_artworks' }}">我的作品</a></li>
+                <li class="nav-dropdown">
+                    <a href="#" class="nav-link">{{ current_user.nickname }} <i class="fas fa-chevron-down"></i></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="{{ url_for('auth.profile') }}">我的资料</a></li>
+                        <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
+                    </ul>
+                </li>
+            {% else %}
+                <li><a href="{{ url_for('auth.login') }}" class="nav-link {{ 'active' if request.endpoint == 'auth.login' }}">登录</a></li>
+                <li><a href="{{ url_for('auth.register') }}" class="nav-link btn-primary {{ 'active' if request.endpoint == 'auth.register' }}">免费注册</a></li>
+            {% endif %}
+        </ul>
+        <div class="nav-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+</header>
+
+<!-- 导航栏JavaScript -->
+<script src="{{ url_for('static', filename='js/navbar.js') }}"></script>

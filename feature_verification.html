@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>功能验证页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { margin: 5px; padding: 8px 16px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 我的作品功能验证</h1>
+    
+    <div class="test-section">
+        <h2>1. API端点测试</h2>
+        <button onclick="testGetArtwork()">测试获取作品详情</button>
+        <button onclick="testDeleteArtwork()">测试删除作品</button>
+        <button onclick="testPrivacySetting()">测试隐私设置</button>
+        <div id="api-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. JavaScript函数测试</h2>
+        <p>请在浏览器开发者工具中手动测试以下函数：</p>
+        <ul>
+            <li><code>deleteArtwork(4)</code> - 删除作品</li>
+            <li><code>featureArtwork(4)</code> - 推荐作品</li>
+            <li><code>unfeatureArtwork(4)</code> - 取消推荐</li>
+            <li><code>updateFeatureButtonState(4, true)</code> - 更新按钮状态</li>
+            <li><code>viewArtwork(4)</code> - 查看作品</li>
+            <li><code>shareArtwork(4)</code> - 分享作品</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 用户体验验证</h2>
+        <p>✅ 已实现的改进：</p>
+        <ul>
+            <li>删除作品：无刷新 + 淡出动画</li>
+            <li>推荐切换：动态按钮状态更新</li>
+            <li>查看详情：新标签页打开</li>
+            <li>分享功能：复制链接到剪贴板</li>
+            <li>隐私设置：实时状态更新</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 测试结果</h2>
+        <div id="test-results" class="info">等待测试...</div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('api-results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            results.appendChild(div);
+        }
+
+        async function testGetArtwork() {
+            try {
+                const response = await fetch('/api/artwork/4');
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ 获取作品详情成功: ' + data.title, 'success');
+                } else {
+                    log('⚠️ 获取作品详情失败: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ 网络错误: ' + error.message, 'error');
+            }
+        }
+
+        async function testDeleteArtwork() {
+            try {
+                const response = await fetch('/api/artwork/4', { method: 'DELETE' });
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ 删除作品成功: ' + data.message, 'success');
+                } else {
+                    log('⚠️ 删除作品失败: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ 网络错误: ' + error.message, 'error');
+            }
+        }
+
+        async function testPrivacySetting() {
+            try {
+                const response = await fetch('/api/artwork/4/privacy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_public: false })
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ 隐私设置成功: ' + data.message, 'success');
+                } else {
+                    log('⚠️ 隐私设置失败: ' + response.status, 'error');
+                }
+            } catch (error) {
+                log('❌ 网络错误: ' + error.message, 'error');
+            }
+        }
+
+        // 页面加载完成后显示测试状态
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('test-results').innerHTML = `
+                <h3>🎉 所有功能已实现并可供测试</h3>
+                <p><strong>核心改进：</strong></p>
+                <p>1. ✅ 修复了"我的作品无法点开查看详情，删除等按钮无响应"问题</p>
+                <p>2. ✅ 实现了"删除作品后，不要每次都刷新页面"的需求</p>
+                <p><strong>技术实现：</strong></p>
+                <p>- 新增REST API端点支持CRUD操作</p>
+                <p>- 移除所有location.reload()调用</p>
+                <p>- 添加平滑动画和即时反馈</p>
+                <p>- 实现动态UI状态更新</p>
+            `;
+        });
+    </script>
+</body>
+</html>

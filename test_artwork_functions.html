@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品功能测试</title>
+    <style>
+        .artwork-card { 
+            border: 1px solid #ddd; 
+            padding: 20px; 
+            margin: 10px; 
+            border-radius: 8px; 
+        }
+        .action-btn { 
+            margin: 5px; 
+            padding: 8px 12px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        .action-btn:hover { background: #0056b3; }
+        .delete-btn { background: #dc3545; }
+        .delete-btn:hover { background: #c82333; }
+        #artwork-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            margin: 10% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 8px;
+        }
+        .message-toast {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1001;
+        }
+        .message-toast.success { background: #28a745; }
+        .message-toast.error { background: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>🧪 作品功能测试页面</h1>
+    
+    <!-- 模拟作品卡片 -->
+    <div class="artwork-card" data-artwork-id="1">
+        <h3>测试作品 1</h3>
+        <p>这是一个测试作品</p>
+        
+        <div class="artwork-actions">
+            <button class="action-btn view-btn" onclick="viewArtwork('1')">
+                查看详情
+            </button>
+            <button class="action-btn edit-btn" onclick="editArtwork('1')">
+                编辑
+            </button>
+            <button class="action-btn feature-btn" onclick="featureArtwork('1')">
+                设为推荐
+            </button>
+            <button class="action-btn share-btn" onclick="shareArtwork('1')">
+                分享
+            </button>
+            <button class="action-btn delete-btn" onclick="deleteArtwork('1')">
+                删除
+            </button>
+        </div>
+    </div>
+
+    <!-- 作品详情模态框 -->
+    <div id="artwork-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">作品详情</h3>
+                <button class="modal-close" onclick="closeModal()" style="float: right;">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-content-area">
+                    <!-- 动态加载作品详情 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟API响应
+        const mockArtworkData = {
+            id: 1,
+            title: '测试作品 1',
+            description: '这是一个测试作品的详细描述',
+            created_at: '2025年10月25日 14:27',
+            artwork_type: 'AI上色',
+            image_url: '/static/images/placeholder.png',
+            views: 0,
+            likes: 0,
+            is_featured: false,
+            is_public: true
+        };
+
+        function viewArtwork(artworkId) {
+            console.log('查看作品:', artworkId);
+            
+            // 模拟API调用
+            if (artworkId === '1') {
+                showArtworkModal(mockArtworkData);
+            } else {
+                showMessage('作品不存在', 'error');
+            }
+        }
+
+        function editArtwork(artworkId) {
+            console.log('编辑作品:', artworkId);
+            showMessage(`正在跳转到编辑页面 (作品ID: ${artworkId})`, 'success');
+        }
+
+        function shareArtwork(artworkId) {
+            console.log('分享作品:', artworkId);
+            const url = `http://localhost:8080/artwork/${artworkId}`;
+            
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    showMessage('作品链接已复制到剪贴板！', 'success');
+                }).catch(() => {
+                    showMessage('复制失败', 'error');
+                });
+            } else {
+                showMessage('浏览器不支持复制功能', 'error');
+            }
+        }
+
+        function deleteArtwork(artworkId) {
+            console.log('删除作品:', artworkId);
+            
+            if (confirm('确定要删除这件作品吗？删除后无法恢复。')) {
+                // 模拟删除
+                const artworkCard = document.querySelector(`[data-artwork-id="${artworkId}"]`);
+                if (artworkCard) {
+                    artworkCard.style.opacity = '0.5';
+                    showMessage('作品删除中...', 'success');
+                    
+                    setTimeout(() => {
+                        artworkCard.remove();
+                        showMessage('作品已删除', 'success');
+                    }, 1000);
+                }
+            }
+        }
+
+        async function featureArtwork(artworkId) {
+            console.log('设为推荐:', artworkId);
+            showMessage(`正在设置作品 ${artworkId} 为推荐作品`, 'success');
+        }
+
+        function showArtworkModal(artwork) {
+            const modal = document.getElementById('artwork-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content-area');
+            
+            modalTitle.textContent = artwork.title || '我的作品';
+            modalContent.innerHTML = `
+                <div class="artwork-detail">
+                    <div class="artwork-image-large">
+                        <img src="${artwork.image_url}" alt="${artwork.title}" style="max-width: 100%; height: auto;">
+                    </div>
+                    <div class="artwork-info-detail">
+                        <p><strong>创作时间：</strong>${artwork.created_at}</p>
+                        <p><strong>作品类型：</strong>${artwork.artwork_type}</p>
+                        <p><strong>浏览次数：</strong>${artwork.views}</p>
+                        <p><strong>点赞数量：</strong>${artwork.likes}</p>
+                        ${artwork.description ? `<p><strong>作品描述：</strong>${artwork.description}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('artwork-modal').style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('artwork-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        function showMessage(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 3000);
+        }
+
+        // 测试所有功能
+        function runTests() {
+            console.log('🧪 开始功能测试...');
+            
+            setTimeout(() => viewArtwork('1'), 1000);
+            setTimeout(() => closeModal(), 3000);
+            setTimeout(() => shareArtwork('1'), 4000);
+            setTimeout(() => featureArtwork('1'), 5000);
+            
+            console.log('✅ 所有测试完成');
+        }
+
+        // 页面加载完成后运行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📄 测试页面加载完成');
+            console.log('💡 点击按钮测试功能，或运行 runTests() 自动测试');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>邮件模板预览 - AI创意工坊</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .preview-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .preview-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-container">
+        <div class="preview-header">
+            <h1>📧 邮件模板预览</h1>
+            <p>AI创意工坊 - 家长验证邮件</p>
+        </div>
+        
+        <div id="email-preview">
+            <!-- 邮件内容将在这里显示 -->
+        </div>
+        
+        <script>
+            // 模拟邮件内容
+            const emailHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    .email-container {
+                        max-width: 650px;
+                        margin: 0 auto;
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        line-height: 1.6;
+                        color: #333;
+                        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                        padding: 20px;
+                        border-radius: 15px;
+                    }
+                    .header {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 40px 30px;
+                        text-align: center;
+                        border-radius: 15px 15px 0 0;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .header::before {
+                        content: '';
+                        position: absolute;
+                        top: -50%;
+                        left: -50%;
+                        width: 200%;
+                        height: 200%;
+                        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="20" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="15" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="25" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+                        animation: float 20s infinite linear;
+                    }
+                    @keyframes float {
+                        0% { transform: translate(-50%, -50%) rotate(0deg); }
+                        100% { transform: translate(-50%, -50%) rotate(360deg); }
+                    }
+                    .header-content {
+                        position: relative;
+                        z-index: 2;
+                    }
+                    .logo {
+                        font-size: 48px;
+                        margin-bottom: 10px;
+                        display: block;
+                    }
+                    .content {
+                        background: white;
+                        padding: 40px 30px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+                        position: relative;
+                    }
+                    .welcome-banner {
+                        background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+                        padding: 25px;
+                        border-radius: 12px;
+                        text-align: center;
+                        margin: 20px 0;
+                        color: #2c3e50;
+                    }
+                    .child-avatar {
+                        width: 80px;
+                        height: 80px;
+                        background: linear-gradient(45deg, #667eea, #764ba2);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 36px;
+                        color: white;
+                        margin: 0 auto 15px;
+                        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                    }
+                    .verification-section {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 15px;
+                        text-align: center;
+                        margin: 30px 0;
+                        position: relative;
+                        overflow: hidden;
+                    }
+                    .verification-section::before {
+                        content: '🎨✨🎭🖌️🎪';
+                        position: absolute;
+                        top: 10px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        font-size: 20px;
+                        opacity: 0.3;
+                        letter-spacing: 20px;
+                    }
+                    .code-container {
+                        background: rgba(255,255,255,0.2);
+                        border: 2px dashed rgba(255,255,255,0.5);
+                        padding: 25px;
+                        border-radius: 12px;
+                        margin: 20px 0;
+                        backdrop-filter: blur(10px);
+                    }
+                    .code {
+                        font-size: 42px;
+                        font-weight: bold;
+                        letter-spacing: 12px;
+                        font-family: 'Courier New', monospace;
+                        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                        margin: 10px 0;
+                    }
+                    .verify-button {
+                        display: inline-block;
+                        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+                        color: white;
+                        padding: 18px 40px;
+                        text-decoration: none;
+                        border-radius: 50px;
+                        margin: 25px 0;
+                        font-weight: bold;
+                        font-size: 18px;
+                        box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+                        transition: all 0.3s ease;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                    }
+                    .features-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 20px;
+                        margin: 30px 0;
+                    }
+                    .feature-card {
+                        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                        color: white;
+                        padding: 25px;
+                        border-radius: 15px;
+                        text-align: center;
+                        box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+                        transform: scale(1);
+                        transition: transform 0.3s ease;
+                    }
+                    .feature-icon {
+                        font-size: 48px;
+                        margin-bottom: 15px;
+                        display: block;
+                    }
+                    .feature-title {
+                        font-size: 18px;
+                        font-weight: bold;
+                        margin-bottom: 10px;
+                    }
+                    .feature-desc {
+                        font-size: 14px;
+                        opacity: 0.9;
+                    }
+                    .safety-notice {
+                        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+                        border-left: 5px solid #ff8a80;
+                        color: #2c3e50;
+                        padding: 25px;
+                        border-radius: 12px;
+                        margin: 25px 0;
+                        position: relative;
+                    }
+                    .safety-icon {
+                        position: absolute;
+                        top: -10px;
+                        right: 20px;
+                        font-size: 36px;
+                        background: #ff8a80;
+                        color: white;
+                        width: 60px;
+                        height: 60px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+                    .steps-container {
+                        background: #f8f9fa;
+                        padding: 25px;
+                        border-radius: 12px;
+                        margin: 25px 0;
+                    }
+                    .step {
+                        display: flex;
+                        align-items: center;
+                        margin: 15px 0;
+                        padding: 15px;
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }
+                    .step-number {
+                        background: linear-gradient(45deg, #667eea, #764ba2);
+                        color: white;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        margin-right: 15px;
+                    }
+                    .footer {
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px;
+                        text-align: center;
+                        border-radius: 0 0 15px 15px;
+                        font-size: 14px;
+                    }
+                    .social-links {
+                        margin: 20px 0;
+                    }
+                    .social-link {
+                        display: inline-block;
+                        margin: 0 10px;
+                        font-size: 24px;
+                        text-decoration: none;
+                        color: rgba(255,255,255,0.8);
+                    }
+                    .countdown {
+                        background: rgba(255,255,255,0.1);
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin: 15px 0;
+                        backdrop-filter: blur(10px);
+                    }
+                    @media (max-width: 600px) {
+                        .email-container { padding: 10px; }
+                        .features-grid { grid-template-columns: 1fr; }
+                        .code { font-size: 32px; letter-spacing: 8px; }
+                        .verify-button { padding: 15px 30px; font-size: 16px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="email-container">
+                    <div class="header">
+                        <div class="header-content">
+                            <span class="logo">🎨</span>
+                            <h1 style="margin: 0; font-size: 36px;">AI创意工坊</h1>
+                            <p style="margin: 10px 0 0; font-size: 18px; opacity: 0.9;">✨ 儿童AI艺术创作平台 ✨</p>
+                        </div>
+                    </div>
+                    
+                    <div class="content">
+                        <div class="welcome-banner">
+                            <div class="child-avatar">👶</div>
+                            <h2 style="margin: 0 0 10px; color: #2c3e50;">🎉 新的小艺术家加入啦！</h2>
+                            <p style="margin: 0; font-size: 16px;">您的孩子 <strong style="color: #667eea;">小明</strong> 想要开启AI艺术创作之旅</p>
+                        </div>
+                        
+                        <h2 style="color: #2c3e50; margin-top: 30px;">💌 亲爱的家长，您好！</h2>
+                        
+                        <p style="font-size: 16px; line-height: 1.8;">
+                            感谢您关注AI创意工坊！我们是一个专为 <strong>10-14岁儿童</strong> 设计的安全、有趣的AI艺术创作平台。
+                            孩子们可以通过上传简笔画，体验AI智能上色、3D建模和动画制作的神奇过程。
+                        </p>
+                        
+                        <div class="safety-notice">
+                            <div class="safety-icon">🛡️</div>
+                            <h3 style="margin: 0 0 15px; color: #2c3e50;">🔒 儿童安全第一</h3>
+                            <p style="margin: 0; line-height: 1.6;">
+                                为了保护您孩子的网络安全和隐私，我们需要获得您的许可才能激活账户。
+                                所有创作内容都将受到严格的安全保护，我们承诺不会收集任何个人敏感信息。
+                            </p>
+                        </div>
+                        
+                        <div class="verification-section">
+                            <h2 style="margin: 30px 0 20px; font-size: 28px;">🎯 账户验证</h2>
+                            
+                            <div class="code-container">
+                                <p style="margin: 0 0 10px; font-size: 18px; opacity: 0.9;">✨ 验证码 ✨</p>
+                                <div class="code">123456</div>
+                                <div class="countdown">
+                                    <p style="margin: 0; font-size: 14px; opacity: 0.8;">
+                                        ⏰ 验证码24小时内有效
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <a href="#" class="verify-button">
+                                🚀 立即验证账户
+                            </a>
+                        </div>
+                        
+                        <div class="steps-container">
+                            <h3 style="color: #2c3e50; text-align: center; margin-bottom: 25px;">📝 验证步骤</h3>
+                            <div class="step">
+                                <div class="step-number">1</div>
+                                <div>
+                                    <strong>点击验证按钮</strong><br>
+                                    <small>点击上方蓝色按钮进入验证页面</small>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">2</div>
+                                <div>
+                                    <strong>输入验证码</strong><br>
+                                    <small>在验证页面输入6位验证码</small>
+                                </div>
+                            </div>
+                            <div class="step">
+                                <div class="step-number">3</div>
+                                <div>
+                                    <strong>完成验证</strong><br>
+                                    <small>验证成功后孩子即可开始创作</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h3 style="color: #2c3e50; text-align: center; margin: 40px 0 25px;">🌟 平台特色功能</h3>
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <span class="feature-icon">🎨</span>
+                                <div class="feature-title">智能上色</div>
+                                <div class="feature-desc">AI为简笔画自动添加丰富色彩</div>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🎬</span>
+                                <div class="feature-title">动态视频</div>
+                                <div class="feature-desc">将静态图片转换为动态视频</div>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🏛️</span>
+                                <div class="feature-title">3D建模</div>
+                                <div class="feature-desc">自动生成精美3D模型</div>
+                            </div>
+                            <div class="feature-card">
+                                <span class="feature-icon">🔒</span>
+                                <div class="feature-title">安全保护</div>
+                                <div class="feature-desc">严格的儿童隐私安全保护</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 30px 0; text-align: center;">
+                            <h3 style="color: #2c3e50; margin: 0 0 15px;">💡 温馨提示</h3>
+                            <div style="background: white; padding: 20px; border-radius: 8px; text-align: left;">
+                                <p style="margin: 0 0 10px; color: #555;">✅ 验证完成后，您将收到家长监护面板链接</p>
+                                <p style="margin: 0 0 10px; color: #555;">✅ 您可以随时查看孩子的创作活动记录</p>
+                                <p style="margin: 0 0 10px; color: #555;">✅ 所有作品数据均安全存储，绝不外泄</p>
+                                <p style="margin: 0; color: #555;">✅ 支持家长权限管理和时间控制</p>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 12px;">
+                            <h3 style="margin: 0 0 15px;">🎪 加入我们的创作社区</h3>
+                            <p style="margin: 0 0 20px; opacity: 0.9;">让孩子在安全、有趣的环境中探索AI艺术的无限可能</p>
+                            <div style="margin: 20px 0;">
+                                <span style="margin: 0 10px; font-size: 24px;">🎨</span>
+                                <span style="margin: 0 10px; font-size: 24px;">🎬</span>
+                                <span style="margin: 0 10px; font-size: 24px;">🏛️</span>
+                                <span style="margin: 0 10px; font-size: 24px;">✨</span>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin: 30px 0;">
+                            <p style="color: #667eea; font-weight: bold; margin: 0;">
+                                🌟 祝愿您的孩子在AI创意工坊收获满满的快乐与成长！
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="footer">
+                        <h3 style="margin: 0 0 15px;">🎨 AI创意工坊</h3>
+                        <p style="margin: 0 0 10px; font-size: 16px; opacity: 0.9;">让每个孩子都成为小小创作家</p>
+                        <p style="margin: 0 0 20px; font-size: 14px; opacity: 0.8;">专为10-14岁儿童设计的AI艺术创作平台</p>
+                        
+                        <div class="social-links">
+                            <span class="social-link">🌐</span>
+                            <span class="social-link">📧</span>
+                            <span class="social-link">📱</span>
+                        </div>
+                        
+                        <p style="margin: 20px 0 0; font-size: 12px; opacity: 0.7;">
+                            此邮件由系统自动发送，请勿回复<br>
+                            如果无法点击按钮，请复制验证链接到浏览器打开
+                        </p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+            
+            document.getElementById('email-preview').innerHTML = emailHTML;
+        </script>
+    </div>
+</body>
+</html>

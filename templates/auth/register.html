@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册账户 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="auth-body">
+    {% include 'components/auth_header.html' %}
+
+    <!-- 背景装饰 -->
+    <div class="auth-background">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <div class="auth-wrapper register-wrapper">
+        <!-- 左侧欢迎区域 -->
+        <div class="auth-welcome">
+            <div class="welcome-content">
+                <div class="logo-section">
+                    <i class="fas fa-magic"></i>
+                    <h1>AI创意工坊</h1>
+                </div>
+                
+                <div class="welcome-text">
+                    <h2>加入我们！</h2>
+                    <p>开启你的AI艺术创作之旅</p>
+                </div>
+
+                <div class="features-simple">
+                    <div class="feature-highlight">
+                        <i class="fas fa-magic"></i>
+                        <h3>AI创作神器</h3>
+                        <p>上传简笔画，AI帮你变成精美艺术品</p>
+                    </div>
+                    
+                    <div class="feature-highlight">
+                        <i class="fas fa-users"></i>
+                        <h3>已有1000+小朋友</h3>
+                        <p>和其他小伙伴一起创作精彩作品</p>
+                    </div>
+                </div>
+
+                <div class="safety-highlight">
+                    <div class="safety-badge">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>100%安全</span>
+                    </div>
+                    <p>专为10-14岁儿童设计，家长全程监护</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧注册表单 -->
+        <div class="auth-form-section register-form-section">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>创建你的账户</h2>
+                    <p>几步简单操作，开始创作</p>
+                </div>
+
+                <!-- 显示消息 -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-info-circle"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" class="register-form">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- 基本注册信息 -->
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user-plus"></i>
+                            创建你的账户
+                        </h3>
+                        
+                        <div class="input-group">
+                            {{ form.username.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-user input-icon"></i>
+                                {{ form.username(class="form-input", placeholder="选择一个用户名") }}
+                            </div>
+                            {% if form.username.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.username.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="input-hint">
+                                <i class="fas fa-info-circle"></i>
+                                <span>3-20个字符，这将是你的登录用户名</span>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.nickname.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-heart input-icon"></i>
+                                {{ form.nickname(class="form-input", placeholder="起个好听的昵称") }}
+                            </div>
+                            {% if form.nickname.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.nickname.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.role.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-user-tag input-icon"></i>
+                                {{ form.role(class="form-select", id="role-select-register") }}
+                            </div>
+                            {% if form.role.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.role.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.birth_date.label(class="input-label") }}
+                            <span id="age-hint-register" class="age-hint">(学生：5-24岁)</span>
+                            <div class="input-wrapper">
+                                <i class="fas fa-birthday-cake input-icon"></i>
+                                {{ form.birth_date(class="form-input", id="birth-date-input-register") }}
+                            </div>
+                            {% if form.birth_date.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.birth_date.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.gender.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-venus-mars input-icon"></i>
+                                {{ form.gender(class="form-select") }}
+                            </div>
+                            {% if form.gender.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.gender.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.contact_phone.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone input-icon"></i>
+                                {{ form.contact_phone(class="form-input", placeholder="联系电话（可选）") }}
+                            </div>
+                            {% if form.contact_phone.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.contact_phone.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.mailing_address.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-map-marker-alt input-icon"></i>
+                                {{ form.mailing_address(class="form-textarea", placeholder="邮寄地址（可选，用于3D模型邮寄）", rows="3") }}
+                            </div>
+                            {% if form.mailing_address.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.mailing_address.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                                <div class="input-hint">
+                                    <i class="fas fa-star"></i>
+                                    <span>其他小朋友看到的名字</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            {{ form.parent_email.label(class="input-label") }}
+                            <div class="input-wrapper">
+                                <i class="fas fa-envelope input-icon"></i>
+                                {{ form.parent_email(class="form-input", placeholder="家长邮箱地址") }}
+                            </div>
+                            {% if form.parent_email.errors %}
+                                <div class="input-errors">
+                                    {% for error in form.parent_email.errors %}
+                                        <span class="error-message">{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="input-hint important">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>家长邮箱验证后才能激活账户</span>
+                            </div>
+                        </div>
+
+                        <div class="input-row">
+                            <div class="input-group half-width">
+                                {{ form.password.label(class="input-label") }}
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    {{ form.password(class="form-input", placeholder="设置登录密码") }}
+                                    <button type="button" class="password-toggle" onclick="togglePassword('password')">
+                                        <i class="fas fa-eye" id="passwordIcon1"></i>
+                                    </button>
+                                </div>
+                                {% if form.password.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.password.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group half-width">
+                                {{ form.password_confirm.label(class="input-label") }}
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock input-icon"></i>
+                                    {{ form.password_confirm(class="form-input", placeholder="再次输入密码") }}
+                                    <button type="button" class="password-toggle" onclick="togglePassword('password_confirm')">
+                                        <i class="fas fa-eye" id="passwordIcon2"></i>
+                                    </button>
+                                </div>
+                                {% if form.password_confirm.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.password_confirm.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 隐藏的色彩偏好字段，设置默认值 -->
+                    {{ form.color_preference(style="display: none;", value="warm") }}
+
+                    <!-- 简化的安全提示 -->
+                    <div class="safety-notice-simple">
+                        <div class="notice-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>我们严格保护你的个人信息</span>
+                        </div>
+                        <div class="notice-item">
+                            <i class="fas fa-eye"></i>
+                            <span>家长可以监督你的创作活动</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="register-btn">
+                        <i class="fas fa-rocket"></i>
+                        <span>创建账户</span>
+                    </button>
+                </form>
+
+                <div class="form-footer">
+                    <p>已经有账户了？ <a href="{{ url_for('auth.login') }}" class="login-link">立即登录</a></p>
+                    <p class="help-text">
+                        <i class="fas fa-question-circle"></i>
+                        有问题？请联系客服获得帮助
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 密码显示/隐藏切换
+        function togglePassword(fieldName) {
+            const passwordField = document.querySelector(`input[name="${fieldName}"]`);
+            const icon = fieldName === 'password' ? document.getElementById('passwordIcon1') : document.getElementById('passwordIcon2');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                passwordField.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // 表单增强功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.form-input, .form-select');
+            
+            // 输入框焦点效果
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.parentElement.parentElement.classList.remove('focused');
+                    }
+                });
+                
+                // 如果已有值，保持focused状态
+                if (input.value) {
+                    input.parentElement.parentElement.classList.add('focused');
+                }
+            });
+
+            // 密码匹配验证
+            const passwordField = document.querySelector('input[name="password"]');
+            const confirmField = document.querySelector('input[name="password_confirm"]');
+            
+            function checkPasswordMatch() {
+                if (passwordField.value && confirmField.value) {
+                    if (passwordField.value !== confirmField.value) {
+                        confirmField.setCustomValidity('密码不匹配');
+                        confirmField.parentElement.parentElement.classList.add('error');
+                    } else {
+                        confirmField.setCustomValidity('');
+                        confirmField.parentElement.parentElement.classList.remove('error');
+                    }
+                }
+            }
+            
+            if (passwordField && confirmField) {
+                passwordField.addEventListener('input', checkPasswordMatch);
+                confirmField.addEventListener('input', checkPasswordMatch);
+            }
+
+            // 角色和出生日期的动态提示
+            const roleSelect = document.getElementById('role-select-register');
+            const ageHint = document.getElementById('age-hint-register');
+            const birthDateField = document.getElementById('birth-date-input-register');
+            
+            function updateAgeHint() {
+                const role = roleSelect.value;
+                if (role === 'student') {
+                    ageHint.textContent = '(学生：5-24岁)';
+                    ageHint.style.color = '#28a745';
+                } else if (role === 'teacher' || role === 'parent') {
+                    ageHint.textContent = '(老师/家长：20-80岁)';
+                    ageHint.style.color = '#007bff';
+                }
+            }
+            
+            function calculateAge(birthDate) {
+                const today = new Date();
+                const birth = new Date(birthDate);
+                let age = today.getFullYear() - birth.getFullYear();
+                const monthDiff = today.getMonth() - birth.getMonth();
+                
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                    age--;
+                }
+                
+                return age;
+            }
+            
+            if (roleSelect && ageHint) {
+                // 初始化提示
+                updateAgeHint();
+                
+                // 角色改变时更新提示
+                roleSelect.addEventListener('change', updateAgeHint);
+            }
+
+            // 出生日期验证
+            if (birthDateField) {
+                birthDateField.addEventListener('change', function() {
+                    if (this.value) {
+                        const age = calculateAge(this.value);
+                        const role = roleSelect ? roleSelect.value : 'student';
+                        let minAge, maxAge;
+                        
+                        if (role === 'student') {
+                            minAge = 5;
+                            maxAge = 24;
+                        } else {
+                            minAge = 20;
+                            maxAge = 80;
+                        }
+                        
+                        if (age < minAge || age > maxAge) {
+                            this.setCustomValidity(`该角色年龄必须在${minAge}-${maxAge}岁之间`);
+                            this.parentElement.parentElement.classList.add('error');
+                        } else {
+                            this.setCustomValidity('');
+                            this.parentElement.parentElement.classList.remove('error');
+                        }
+                    }
+                });
+            }
+
+            // 浮动形状动画
+            const shapes = document.querySelectorAll('.floating-shape');
+            shapes.forEach((shape, index) => {
+                shape.style.animationDelay = `${index * 2}s`;
+            });
+
+            // 导航栏移动端切换
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', function() {
+                    navMenu.classList.toggle('active');
+                    this.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

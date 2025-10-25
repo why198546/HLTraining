@@ -11,17 +11,61 @@ from gallery_manager import GalleryManager
 from creation_session_manager import CreationSessionManager
 import json
 from dotenv import load_dotenv
+from datetime import datetime
+
+# 用户管理系统导入
+from flask_login import LoginManager, login_required, current_user
+from models import db, User, Artwork, CreationSession
+from auth import auth_bp
+from auth.routes import *
+from utils.email_service import init_mail
 
 # 加载环境变量
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+# 数据库配置
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hltraining.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# 初始化扩展
+db.init_app(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+login_manager.login_message = '请先登录才能访问此页面'
+login_manager.login_message_category = 'info'
+
+# 初始化邮件服务
+init_mail(app)
+
+# 注册蓝图
+app.register_blueprint(auth_bp)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# 创建应用上下文并初始化数据库
+with app.app_context():
+    try:
+        db.create_all()
+        print("数据库表创建成功")
+    except Exception as e:
+        print(f"数据库初始化错误: {e}")
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # 确保上传目录存在
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# 创建数据库表
+with app.app_context():
+    db.create_all()
 
 # 初始化作品集管理器和创作会话管理器
 gallery_manager = GalleryManager()
@@ -71,6 +115,58 @@ def generate_3d_model_from_image(image_path):
     print(f"✅ 3D模型生成成功: {model_path}")
     return model_path.replace('uploads/', '/uploads/')
 
+def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, prompt=None):
+    """自动保存作品到数据库"""
+    try:
+        from models import Artwork
+        
+        # 检查是否已存在该会话的作品
+        existing_artwork = Artwork.query.filter_by(session_id=session_id).first()
+        
+        if existing_artwork:
+            # 更新现有作品
+            existing_artwork.status = 'completed'
+            existing_artwork.updated_at = datetime.utcnow()
+            
+            # 更新文件路径
+            if generated_image_path:
+                existing_artwork.colored_image = os.path.basename(generated_image_path)
+            if sketch_path:
+                existing_artwork.original_sketch = os.path.basename(sketch_path)
+            if prompt:
+                existing_artwork.prompt_text = prompt
+                
+            print(f"🔄 更新现有作品: {existing_artwork.id}")
+        else:
+            # 创建新作品
+            artwork = Artwork(
+                session_id=session_id,
+                title=f"AI创作 {datetime.now().strftime('%m-%d %H:%M')}",
+                user_id=current_user.id
+            )
+            
+            artwork.status = 'completed'
+            artwork.description = prompt or "AI生成的精美作品"
+            
+            # 设置文件路径
+            if generated_image_path:
+                artwork.colored_image = os.path.basename(generated_image_path)
+            if sketch_path:
+                artwork.original_sketch = os.path.basename(sketch_path)
+            if prompt:
+                artwork.prompt_text = prompt
+                
+            db.session.add(artwork)
+            print(f"➕ 创建新作品记录: {session_id}")
+        
+        db.session.commit()
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ 自动保存失败: {str(e)}")
+        return False
+
 @app.route('/')
 def index():
     """主页"""
@@ -80,6 +176,7 @@ def index():
     return render_template('index.html', latest_artworks=latest_artworks)
 
 @app.route('/create')
+@login_required
 def create():
     """创作页面"""
     return render_template('create.html')
@@ -87,8 +184,11 @@ def create():
 @app.route('/gallery')
 def gallery():
     """显示作品画廊"""
-    gallery_manager = GalleryManager()
-    artworks = gallery_manager.get_all_artworks()
+    # 获取所有推荐的作品
+    artworks = Artwork.query.filter_by(
+        is_featured=True, 
+        is_public=True
+    ).order_by(Artwork.vote_count.desc(), Artwork.created_at.desc()).all()
     return render_template('gallery.html', artworks=artworks)
 
 @app.route('/tutorial')
@@ -325,6 +425,14 @@ def generate_image():
                 version_id = version_result['version_id']
                 # 自动选择新生成的版本
                 session_manager.select_version(session_id, version_id)
+                
+                # 自动保存到数据库（如果用户已登录）
+                if current_user.is_authenticated:
+                    try:
+                        auto_save_artwork_to_db(session_id, generated_image_path, sketch_path, prompt)
+                        print(f"🎨 作品已自动保存到数据库: {session_id}")
+                    except Exception as e:
+                        print(f"⚠️ 自动保存失败: {str(e)}")
         
         # 准备返回数据
         response_data = {
@@ -465,8 +573,9 @@ def generate_3d_model_endpoint():
         return jsonify({'error': f'生成失败: {str(e)}'}), 500
 
 @app.route('/save-artwork', methods=['POST'])
+@login_required  # 添加登录验证
 def save_artwork():
-    """从创作会话保存作品到作品集"""
+    """从创作会话保存作品到数据库"""
     try:
         data = request.get_json()
         print(f"📨 收到保存作品请求: {data}")
@@ -502,33 +611,70 @@ def save_artwork():
         if model_path and not os.path.exists(model_path):
             return jsonify({'error': '选择的3D模型文件不存在'}), 400
         
-        # 保存作品
-        result = gallery_manager.save_artwork(
-            original_image_path=None,  # 创作会话中可能没有原始图片
-            generated_image_path=image_path,
-            model_path=model_path,
-            title=data.get('title', '我的作品'),
-            artist_name=data.get('artist_name', '小朋友'),
-            artist_age=int(data.get('artist_age', 10)),
-            category=data.get('category', '其他'),
-            description=data.get('description', ''),
-            version_note=f"从创作会话保存 - 图片v{image_version.get('metadata', {}).get('note', '')}"
-        )
+        # 检查是否已存在该会话的作品
+        from models import Artwork
+        existing_artwork = Artwork.query.filter_by(session_id=session_id).first()
         
-        if result['success']:
-            # 关闭会话（标记为完成）
-            session_manager.close_session(session_id)
+        if existing_artwork:
+            # 更新现有作品
+            existing_artwork.title = data.get('title', '我的作品')
+            existing_artwork.description = data.get('description', '')
+            existing_artwork.status = 'completed'
+            existing_artwork.updated_at = datetime.utcnow()
             
-            return jsonify({
-                'success': True,
-                'artwork_id': result['artwork_id'],
-                'message': '作品已成功保存到作品集！',
-                'session_closed': True
-            })
+            # 更新文件路径（相对路径）
+            session_folder = f"creation_sessions/{session_id}"
+            if image_path.startswith(session_folder):
+                existing_artwork.colored_image = os.path.basename(image_path)
+            
+            if model_path and model_path.startswith(session_folder):
+                existing_artwork.model_3d = os.path.basename(model_path)
+            
+            artwork_id = existing_artwork.id
+            print(f"✅ 更新现有作品: {artwork_id}")
         else:
-            return jsonify(result), 500
+            # 创建新作品记录
+            artwork = Artwork(
+                session_id=session_id,
+                title=data.get('title', '我的作品'),
+                user_id=current_user.id
+            )
+            
+            artwork.description = data.get('description', '')
+            artwork.status = 'completed'
+            
+            # 设置文件路径（只保存文件名，路径由session_id构建）
+            session_folder = f"creation_sessions/{session_id}"
+            if image_path.startswith(session_folder):
+                artwork.colored_image = os.path.basename(image_path)
+            
+            if model_path and model_path.startswith(session_folder):
+                artwork.model_3d = os.path.basename(model_path)
+            
+            # 保存到数据库
+            db.session.add(artwork)
+            artwork_id = None  # 将在commit后获取
+            print(f"✅ 创建新作品记录")
+        
+        db.session.commit()
+        
+        # 获取artwork_id（对于新创建的作品）
+        if not existing_artwork:
+            artwork_id = artwork.id
+        
+        # 关闭会话（标记为完成）
+        session_manager.close_session(session_id)
+        
+        return jsonify({
+            'success': True,
+            'artwork_id': artwork_id,
+            'message': '作品已成功保存到作品集！',
+            'session_closed': True
+        })
             
     except Exception as e:
+        db.session.rollback()
+        print(f"❌ 保存作品失败: {str(e)}")
         return jsonify({'error': f'保存作品失败: {str(e)}'}), 500
 
 @app.route('/artwork/<artwork_id>')
@@ -716,14 +862,270 @@ def internal_error(e):
     print(f"服务器错误: {str(e)}")
     return jsonify({'error': '服务器内部错误，请稍后重试'}), 500
 
+@app.route('/static/creation_sessions/<path:filename>')
+def serve_creation_sessions(filename):
+    """提供creation_sessions文件夹中的静态文件"""
+    from flask import send_from_directory
+    return send_from_directory('creation_sessions', filename)
+
+@app.route('/feature-artwork/<int:artwork_id>', methods=['POST'])
+@login_required
+def feature_artwork(artwork_id):
+    """设置作品为推荐作品"""
+    try:
+        from models import Artwork
+        
+        # 获取作品
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        # 取消当前用户的其他推荐作品
+        Artwork.query.filter_by(user_id=current_user.id, is_featured=True).update({
+            'is_featured': False,
+            'featured_at': None
+        })
+        
+        # 设置新的推荐作品
+        artwork.is_featured = True
+        artwork.is_public = True  # 推荐作品自动设为公开
+        artwork.featured_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '已设为推荐作品！'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'设置失败: {str(e)}'}), 500
+
+@app.route('/vote-artwork/<int:artwork_id>', methods=['POST'])
+@login_required
+def vote_artwork(artwork_id):
+    """为作品投票"""
+    try:
+        from models import Artwork, ArtworkVote
+        
+        data = request.get_json()
+        vote_type = data.get('vote_type', 'like')
+        
+        # 验证投票类型
+        if vote_type not in ['like', 'love', 'wow', 'cool']:
+            return jsonify({'error': '无效的投票类型'}), 400
+        
+        # 获取作品
+        artwork = Artwork.query.get(artwork_id)
+        if not artwork or not artwork.is_public:
+            return jsonify({'error': '作品不存在或未公开'}), 404
+        
+        # 不能给自己的作品投票
+        if artwork.user_id == current_user.id:
+            return jsonify({'error': '不能为自己的作品投票'}), 400
+        
+        # 检查是否已投票
+        existing_vote = ArtworkVote.query.filter_by(
+            artwork_id=artwork_id, 
+            voter_id=current_user.id
+        ).first()
+        
+        if existing_vote:
+            # 更新投票类型
+            existing_vote.vote_type = vote_type
+            message = '投票已更新！'
+        else:
+            # 新投票
+            vote = ArtworkVote(artwork_id, current_user.id, vote_type)
+            db.session.add(vote)
+            
+            # 更新作品投票数
+            artwork.vote_count = (artwork.vote_count or 0) + 1
+            message = '投票成功！'
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'vote_count': artwork.vote_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'投票失败: {str(e)}'}), 500
+
+@app.route('/gallery')
+def public_gallery():
+    """公共作品展示页面"""
+    try:
+        from models import Artwork, User
+        from sqlalchemy import desc
+        
+        # 获取所有公开的推荐作品
+        featured_artworks = Artwork.query.filter_by(
+            is_public=True, 
+            is_featured=True
+        ).join(User).order_by(desc(Artwork.featured_at)).all()
+        
+        return render_template('gallery.html', artworks=featured_artworks)
+        
+    except Exception as e:
+        print(f"❌ 加载作品展示失败: {str(e)}")
+        return render_template('gallery.html', artworks=[])
+
+@app.route('/unfeature-artwork/<int:artwork_id>', methods=['POST'])
+@login_required
+def unfeature_artwork(artwork_id):
+    """取消推荐作品"""
+    try:
+        from models import Artwork
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        artwork.is_featured = False
+        artwork.featured_at = None
+        # 注意：保持is_public状态，用户可以单独控制
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '已取消推荐'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'操作失败: {str(e)}'}), 500
+
+# API路由 - 作品管理
+@app.route('/api/artwork/<int:artwork_id>', methods=['GET'])
+@login_required
+def get_artwork_api(artwork_id):
+    """获取作品详情API"""
+    try:
+        from models import Artwork, User
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        file_urls = artwork.get_file_urls()
+        
+        artwork_data = {
+            'id': artwork.id,
+            'title': artwork.title or '未命名作品',
+            'description': artwork.description,
+            'created_at': artwork.created_at.strftime('%Y年%m月%d日 %H:%M'),
+            'artwork_type': '3D模型' if file_urls.model_3d else 'AI上色' if file_urls.colored_image else '手绘作品',
+            'image_url': file_urls.colored_image or file_urls.figurine_image or file_urls.original_sketch or '/static/images/placeholder.png',
+            'views': artwork.view_count or 0,
+            'likes': artwork.vote_count or 0,
+            'is_featured': artwork.is_featured,
+            'is_public': artwork.is_public,
+            'files': {
+                'original_sketch': file_urls.original_sketch,
+                'colored_image': file_urls.colored_image,
+                'figurine_image': file_urls.figurine_image,
+                'model_3d': file_urls.model_3d,
+                'video_file': file_urls.video_file
+            }
+        }
+        
+        return jsonify(artwork_data)
+        
+    except Exception as e:
+        return jsonify({'error': f'获取作品详情失败: {str(e)}'}), 500
+
+@app.route('/api/artwork/<int:artwork_id>', methods=['DELETE'])
+@login_required
+def delete_artwork_api(artwork_id):
+    """删除作品API"""
+    try:
+        from models import Artwork, ArtworkVote
+        import os
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        # 删除相关的投票记录
+        ArtworkVote.query.filter_by(artwork_id=artwork_id).delete()
+        
+        # 删除文件
+        session_folder = os.path.join('creation_sessions', artwork.session_id)
+        if os.path.exists(session_folder):
+            import shutil
+            try:
+                shutil.rmtree(session_folder)
+            except Exception as file_error:
+                print(f"删除文件失败: {file_error}")
+        
+        # 删除数据库记录
+        db.session.delete(artwork)
+        db.session.commit()
+        
+        # 计算删除后的统计信息
+        from sqlalchemy import func
+        remaining_count = Artwork.query.filter_by(user_id=current_user.id).count()
+        total_likes = db.session.query(func.sum(Artwork.vote_count)).filter_by(user_id=current_user.id).scalar() or 0
+        total_views = db.session.query(func.sum(Artwork.view_count)).filter_by(user_id=current_user.id).scalar() or 0
+        
+        return jsonify({
+            'success': True,
+            'message': '作品已删除',
+            'stats': {
+                'total_artworks': remaining_count,
+                'total_likes': total_likes,
+                'total_views': total_views
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'删除失败: {str(e)}'}), 500
+
+@app.route('/api/artwork/<int:artwork_id>/privacy', methods=['POST'])
+@login_required
+def update_artwork_privacy(artwork_id):
+    """更新作品隐私设置API"""
+    try:
+        from models import Artwork
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        data = request.get_json()
+        is_public = data.get('is_public', False)
+        
+        artwork.is_public = is_public
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '隐私设置已更新',
+            'is_public': artwork.is_public
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'更新失败: {str(e)}'}), 500
+
 if __name__ == '__main__':
     print("🚀 儿童AI培训网站启动中...")
     print("📝 功能特色:")
+    print("   - 用户管理系统：注册、登录、家长验证")
     print("   - 统一创作界面：文字+图片混合输入")
     print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
     print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
     print("   - 3D模型生成：使用腾讯云AI3D (混元3D)")
     print("   - 适合儿童：10-14岁友好界面设计")
     print("\n🌐 访问地址: http://127.0.0.1:8080")
-    print("🔗 创作页面: http://127.0.0.1:8080/create")
+    print("🔗 注册页面: http://127.0.0.1:8080/auth/register")
+    print("🔗 登录页面: http://127.0.0.1:8080/auth/login")
+    print("🔗 创作页面: http://127.0.0.1:8080/create (需要登录)")
     app.run(debug=True, host='0.0.0.0', port=8080)

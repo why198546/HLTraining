@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <title>我的作品 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    </header>
+
+    <main class="main-content my-artworks-page">
+        <div class="container">
+            <div class="page-header">
+                <div class="header-content">
+                    <h1><i class="fas fa-palette"></i> 我的作品</h1>
+                    <p>这里展示了你所有的精彩创作</p>
+                </div>
+                <div class="header-actions">
+                    <a href="{{ url_for('create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        创作新作品
+                    </a>
+                </div>
+            </div>
+
+            <!-- 作品统计 -->
+            <div class="artworks-stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ total_artworks }}</h3>
+                            <p>总作品数</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ total_likes }}</h3>
+                            <p>获得点赞</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ total_views }}</h3>
+                            <p>总浏览量</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-share"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>{{ public_artworks }}</h3>
+                            <p>公开作品</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 筛选和排序 -->
+            <div class="artworks-filters">
+                <div class="filter-section">
+                    <h4>筛选作品：</h4>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">
+                            <i class="fas fa-list"></i>
+                            全部 ({{ artworks.total }})
+                        </button>
+                        <button class="filter-btn" data-filter="ai-coloring">
+                            <i class="fas fa-palette"></i>
+                            AI上色 ({{ ai_coloring_count }})
+                        </button>
+                        <button class="filter-btn" data-filter="3d-model">
+                            <i class="fas fa-cube"></i>
+                            3D模型 ({{ model_3d_count }})
+                        </button>
+                        <button class="filter-btn" data-filter="video">
+                            <i class="fas fa-film"></i>
+                            动画视频 ({{ video_count }})
+                        </button>
+                        <button class="filter-btn" data-filter="public">
+                            <i class="fas fa-globe"></i>
+                            公开展示 ({{ public_artworks }})
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="sort-section">
+                    <h4>排序方式：</h4>
+                    <select class="sort-select" id="sort-select">
+                        <option value="newest">最新创作</option>
+                        <option value="oldest">最早创作</option>
+                        <option value="most-liked">最多点赞</option>
+                        <option value="most-viewed">最多浏览</option>
+                        <option value="name">作品名称</option>
+                    </select>
+                </div>
+            </div>
+
+            {% if artworks %}
+            <!-- 作品网格 -->
+            <div class="artworks-grid" id="artworks-grid">
+                {% for artwork in artworks.items %}
+                                <!-- 作品卡片 -->
+                <div class="artwork-card"
+                     data-artwork-id="{{ artwork.id }}"
+                     data-type="{% if artwork.colored_image %}ai-coloring{% elif artwork.model_3d %}3d-model{% elif artwork.video_file %}video{% else %}other{% endif %}" 
+                     data-date="{{ artwork.created_at.isoformat() }}"
+                     data-likes="{{ artwork.vote_count or 0 }}"
+                     data-views="{{ artwork.view_count or 0 }}"
+                     data-name="{{ artwork.title or '未命名作品' }}"
+                     data-public="{{ 'true' if artwork.is_public else 'false' }}">>
+                    
+                    <div class="artwork-image">
+                        {% set file_urls = artwork.get_file_urls() %}
+                        {% if file_urls.colored_image %}
+                            <img src="{{ file_urls.colored_image }}" 
+                                 alt="{{ artwork.title or '我的作品' }}"
+                                 loading="lazy">
+                        {% elif file_urls.figurine_image %}
+                            <img src="{{ file_urls.figurine_image }}" 
+                                 alt="{{ artwork.title or '我的作品' }}"
+                                 loading="lazy">
+                        {% elif file_urls.original_sketch %}
+                            <img src="{{ file_urls.original_sketch }}" 
+                                 alt="{{ artwork.title or '我的作品' }}"
+                                 loading="lazy">
+                        {% else %}
+                            <div class="placeholder-image">
+                                <i class="fas fa-image"></i>
+                                <p>图片加载中...</p>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 作品类型标签 -->
+                        <div class="artwork-type-badge">
+                            {% if artwork.colored_image %}
+                                <i class="fas fa-palette"></i> AI上色
+                            {% elif artwork.model_3d %}
+                                <i class="fas fa-cube"></i> 3D模型
+                            {% elif artwork.video_file %}
+                                <i class="fas fa-film"></i> 动画视频
+                            {% else %}
+                                <i class="fas fa-image"></i> 作品
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 悬浮操作按钮 -->
+                        <div class="artwork-actions">
+                            <button class="action-btn view-btn" onclick="viewArtwork('{{ artwork.id }}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit-btn" onclick="editArtwork('{{ artwork.id }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if artwork.is_featured %}
+                                <button class="action-btn featured-btn active" onclick="unfeatureArtwork('{{ artwork.id }}')">
+                                    <i class="fas fa-crown"></i>
+                                </button>
+                            {% else %}
+                                <button class="action-btn feature-btn" onclick="featureArtwork('{{ artwork.id }}')">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                            {% endif %}
+                            <button class="action-btn share-btn" onclick="shareArtwork('{{ artwork.id }}')">
+                                <i class="fas fa-share"></i>
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteArtwork('{{ artwork.id }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="artwork-info">
+                        <h3 class="artwork-title">{{ artwork.title or '未命名作品' }}</h3>
+                        <p class="artwork-date">{{ artwork.created_at.strftime('%Y年%m月%d日') }}</p>
+                        
+                        {% if artwork.is_featured %}
+                            <div class="featured-badge">
+                                <i class="fas fa-crown"></i> 推荐作品
+                            </div>
+                        {% endif %}
+                        
+                        <div class="artwork-stats">
+                            <span class="stat-item">
+                                <i class="fas fa-heart"></i>
+                                {{ artwork.vote_count or 0 }}
+                            </span>
+                            <span class="stat-item">
+                                <i class="fas fa-eye"></i>
+                                {{ artwork.view_count or 0 }}
+                            </span>
+                        </div>
+                        
+                        {% if artwork.description %}
+                        <p class="artwork-description">{{ artwork.description[:50] }}{% if artwork.description|length > 50 %}...{% endif %}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% else %}
+            <!-- 空状态 -->
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-palette"></i>
+                </div>
+                <h3>还没有创作作品</h3>
+                <p>赶快开始你的第一件AI创作吧！</p>
+                <a href="{{ url_for('create') }}" class="btn btn-primary btn-large">
+                    <i class="fas fa-plus"></i>
+                    开始创作
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- 分页 -->
+            {% if pagination and pagination.pages > 1 %}
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('auth.my_artworks', page=pagination.prev_num) }}" class="page-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                {% endif %}
+                
+                {% for page_num in pagination.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <a href="{{ url_for('auth.my_artworks', page=page_num) }}" class="page-btn">{{ page_num }}</a>
+                        {% else %}
+                            <span class="page-btn active">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="page-btn dots">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('auth.my_artworks', page=pagination.next_num) }}" class="page-btn">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI创意工坊 - 让每个孩子都成为小小创作家</p>
+        </div>
+    </footer>
+
+    <!-- 作品详情模态框 -->
+    <div id="artwork-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">作品详情</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-content-area">
+                    <!-- 动态加载作品详情 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 筛选功能
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const artworkCards = document.querySelectorAll('.artwork-card');
+            
+            filterButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 更新按钮状态
+                    filterButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filter = this.dataset.filter;
+                    
+                    artworkCards.forEach(card => {
+                        if (filter === 'all') {
+                            card.style.display = 'block';
+                        } else if (filter === 'public') {
+                            card.style.display = card.dataset.public === 'true' ? 'block' : 'none';
+                        } else {
+                            card.style.display = card.dataset.type === filter ? 'block' : 'none';
+                        }
+                    });
+                });
+            });
+            
+            // 排序功能
+            const sortSelect = document.getElementById('sort-select');
+            const artworksGrid = document.getElementById('artworks-grid');
+            
+            sortSelect.addEventListener('change', function() {
+                const sortBy = this.value;
+                const cards = Array.from(artworkCards);
+                
+                cards.sort((a, b) => {
+                    switch(sortBy) {
+                        case 'newest':
+                            return new Date(b.dataset.date) - new Date(a.dataset.date);
+                        case 'oldest':
+                            return new Date(a.dataset.date) - new Date(b.dataset.date);
+                        case 'most-liked':
+                            return parseInt(b.dataset.likes) - parseInt(a.dataset.likes);
+                        case 'most-viewed':
+                            return parseInt(b.dataset.views) - parseInt(a.dataset.views);
+                        case 'name':
+                            return a.dataset.name.localeCompare(b.dataset.name);
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // 重新排列DOM元素
+                cards.forEach(card => artworksGrid.appendChild(card));
+            });
+            
+            // 懒加载图片
+            const images = document.querySelectorAll('img[loading="lazy"]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.src; // 触发加载
+                        observer.unobserve(img);
+                    }
+                });
+            });
+            
+            images.forEach(img => imageObserver.observe(img));
+        });
+        
+        // 作品操作函数
+        function viewArtwork(artworkId) {
+            // 查看作品详情
+            fetch(`/api/artwork/${artworkId}`)
+                .then(response => response.json())
+                .then(data => {
+                    showArtworkModal(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('加载作品详情失败');
+                });
+        }
+        
+        function editArtwork(artworkId) {
+            // 编辑作品
+            window.location.href = `/edit/${artworkId}`;
+        }
+        
+        function shareArtwork(artworkId) {
+            // 分享作品
+            const url = `${window.location.origin}/artwork/${artworkId}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: '看看我的AI创作！',
+                    text: '我用AI创意工坊制作了一件超棒的作品！',
+                    url: url
+                });
+            } else {
+                // 复制链接到剪贴板
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('作品链接已复制到剪贴板！');
+                });
+            }
+        }
+        
+        function deleteArtwork(artworkId) {
+            if (confirm('确定要删除这件作品吗？删除后无法恢复。')) {
+                fetch(`/api/artwork/${artworkId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 从页面移除作品卡片
+                        const artworkCard = document.querySelector(`[data-artwork-id="${artworkId}"]`);
+                        if (artworkCard) {
+                            // 添加删除动画
+                            artworkCard.style.transition = 'all 0.3s ease';
+                            artworkCard.style.transform = 'scale(0.8)';
+                            artworkCard.style.opacity = '0';
+                            
+                            // 延迟移除元素
+                            setTimeout(() => {
+                                artworkCard.remove();
+                                // 使用后端返回的统计数据更新页面
+                                if (data.stats) {
+                                    updateArtworkStatsFromAPI(data.stats);
+                                }
+                                // 检查是否没有作品了，显示空状态
+                                checkEmptyState();
+                            }, 300);
+                        }
+                        showMessage('作品已删除', 'success');
+                    } else {
+                        showMessage('删除失败：' + (data.error || data.message), 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('删除失败，请稍后重试', 'error');
+                });
+            }
+        }
+        
+        function showArtworkModal(artwork) {
+            const modal = document.getElementById('artwork-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content-area');
+            
+            modalTitle.textContent = artwork.title || '我的作品';
+            modalContent.innerHTML = `
+                <div class="artwork-detail">
+                    <div class="artwork-image-large">
+                        <img src="${artwork.image_url}" alt="${artwork.title}">
+                    </div>
+                    <div class="artwork-info-detail">
+                        <p><strong>创作时间：</strong>${artwork.created_at}</p>
+                        <p><strong>作品类型：</strong>${artwork.artwork_type}</p>
+                        <p><strong>浏览次数：</strong>${artwork.views}</p>
+                        <p><strong>点赞数量：</strong>${artwork.likes}</p>
+                        ${artwork.description ? `<p><strong>作品描述：</strong>${artwork.description}</p>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            modal.style.display = 'block';
+        }
+        
+        function closeModal() {
+            document.getElementById('artwork-modal').style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modal = document.getElementById('artwork-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+        
+        // 设置推荐作品
+        async function featureArtwork(artworkId) {
+            try {
+                const response = await fetch(`/feature-artwork/${artworkId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    // 更新推荐状态显示，不刷新页面
+                    updateFeatureButtonState(artworkId, true);
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                console.error('设置推荐失败:', error);
+                showMessage('设置推荐失败，请稍后重试', 'error');
+            }
+        }
+        
+        // 取消推荐作品
+        async function unfeatureArtwork(artworkId) {
+            try {
+                const response = await fetch(`/unfeature-artwork/${artworkId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    // 更新推荐状态显示，不刷新页面
+                    updateFeatureButtonState(artworkId, false);
+                } else {
+                    showMessage(result.error, 'error');
+                }
+            } catch (error) {
+                console.error('取消推荐失败:', error);
+                showMessage('取消推荐失败，请稍后重试', 'error');
+            }
+        }
+        
+        // 更新推荐按钮状态
+        function updateFeatureButtonState(artworkId, isFeatured) {
+            const artworkCard = document.querySelector(`[data-artwork-id="${artworkId}"]`);
+            if (artworkCard) {
+                // 查找推荐按钮
+                const featureBtn = artworkCard.querySelector('.feature-btn');
+                const featuredBtn = artworkCard.querySelector('.featured-btn');
+                
+                if (isFeatured) {
+                    // 切换为已推荐状态
+                    if (featureBtn) {
+                        featureBtn.className = 'action-btn featured-btn active';
+                        featureBtn.innerHTML = '<i class="fas fa-crown"></i>';
+                        featureBtn.setAttribute('onclick', `unfeatureArtwork('${artworkId}')`);
+                    }
+                    
+                    // 添加推荐标签到作品信息中
+                    const artworkInfo = artworkCard.querySelector('.artwork-info');
+                    if (artworkInfo && !artworkInfo.querySelector('.featured-badge')) {
+                        const featuredBadge = document.createElement('div');
+                        featuredBadge.className = 'featured-badge';
+                        featuredBadge.innerHTML = '<i class="fas fa-crown"></i> 推荐作品';
+                        
+                        // 插入到合适位置
+                        const statsElement = artworkInfo.querySelector('.artwork-stats');
+                        if (statsElement) {
+                            artworkInfo.insertBefore(featuredBadge, statsElement);
+                        } else {
+                            artworkInfo.appendChild(featuredBadge);
+                        }
+                    }
+                } else {
+                    // 切换为未推荐状态
+                    if (featuredBtn) {
+                        featuredBtn.className = 'action-btn feature-btn';
+                        featuredBtn.innerHTML = '<i class="fas fa-star"></i>';
+                        featuredBtn.setAttribute('onclick', `featureArtwork('${artworkId}')`);
+                    }
+                    
+                    // 移除推荐标签
+                    const featuredBadge = artworkCard.querySelector('.featured-badge');
+                    if (featuredBadge) {
+                        featuredBadge.remove();
+                    }
+                }
+            }
+        }
+        
+        // 显示消息提示
+        function showMessage(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `message-toast ${type}`;
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4caf50' : '#f44336'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 1000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (document.body.contains(toast)) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+        
+        // 使用API返回的数据更新作品统计
+        function updateArtworkStatsFromAPI(stats) {
+            // 更新总作品数
+            const totalStatsElement = document.querySelector('.stat-card:first-child .stat-info h3');
+            if (totalStatsElement) {
+                totalStatsElement.textContent = stats.total_artworks;
+            }
+            
+            // 更新总点赞数
+            const likesStatsElement = document.querySelector('.stat-card:nth-child(2) .stat-info h3');
+            if (likesStatsElement) {
+                likesStatsElement.textContent = stats.total_likes;
+            }
+            
+            // 更新总浏览数
+            const viewsStatsElement = document.querySelector('.stat-card:nth-child(3) .stat-info h3');
+            if (viewsStatsElement) {
+                viewsStatsElement.textContent = stats.total_views;
+            }
+        }
+        
+        // 更新作品统计数据（本地计算版本）
+        function updateArtworkStats() {
+            const remainingCards = document.querySelectorAll('.artwork-card').length;
+            
+            // 更新总作品数
+            const totalStatsElement = document.querySelector('.stat-card:first-child .stat-info h3');
+            if (totalStatsElement) {
+                totalStatsElement.textContent = remainingCards;
+            }
+        }
+        
+        // 检查是否需要显示空状态
+        function checkEmptyState() {
+            const artworkCards = document.querySelectorAll('.artwork-card');
+            const artworksGrid = document.getElementById('artworks-grid');
+            const container = artworksGrid?.parentElement;
+            
+            if (artworkCards.length === 0 && container) {
+                // 隐藏作品网格
+                if (artworksGrid) {
+                    artworksGrid.style.display = 'none';
+                }
+                
+                // 查找并移除现有的空状态
+                const existingEmptyState = container.querySelector('.empty-state');
+                if (existingEmptyState) {
+                    existingEmptyState.remove();
+                }
+                
+                // 创建并显示空状态
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                    <div class="empty-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3>还没有创作作品</h3>
+                    <p>赶快开始你的第一件AI创作吧！</p>
+                    <a href="/create" class="btn btn-primary btn-large">
+                        <i class="fas fa-plus"></i>
+                        开始创作
+                    </a>
+                `;
+                
+                container.appendChild(emptyState);
+            }
+        }
+    </script>
+</body>
+</html>

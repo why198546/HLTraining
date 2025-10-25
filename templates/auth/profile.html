@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的资料 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    </header>
+
+    <main class="main-content profile-page">
+        <div class="container">
+            <div class="profile-container">
+                <!-- 用户头像和基本信息 -->
+                <div class="profile-header">
+                    <div class="user-avatar-section">
+                        <div class="user-avatar large">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="user-basic-info">
+                            <h1>{{ user.nickname }}</h1>
+                            <p class="user-meta">@{{ user.username }} · {{ user.age }}岁</p>
+                            <p class="join-date">{{ user.created_at.strftime('%Y年%m月%d日') }} 加入</p>
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">{{ artwork_count }}</div>
+                            <div class="stat-label">创作作品</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ session_count }}</div>
+                            <div class="stat-label">创作次数</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">{{ days_joined }}</div>
+                            <div class="stat-label">加入天数</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 成就徽章 -->
+                <div class="achievements-section">
+                    <h2>🏆 我的成就</h2>
+                    <div class="achievements-grid">
+                        <div class="achievement-badge {{ 'earned' if artwork_count >= 1 else 'locked' }}">
+                            <div class="badge-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <h4>初次创作</h4>
+                            <p>完成第一件作品</p>
+                        </div>
+                        
+                        <div class="achievement-badge {{ 'earned' if artwork_count >= 5 else 'locked' }}">
+                            <div class="badge-icon">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <h4>小画家</h4>
+                            <p>创作5件作品</p>
+                        </div>
+                        
+                        <div class="achievement-badge {{ 'earned' if artwork_count >= 10 else 'locked' }}">
+                            <div class="badge-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <h4>创作大师</h4>
+                            <p>创作10件作品</p>
+                        </div>
+                        
+                        <div class="achievement-badge {{ 'earned' if days_joined >= 7 else 'locked' }}">
+                            <div class="badge-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <h4>一周达人</h4>
+                            <p>连续使用7天</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个人资料编辑 -->
+                <div class="profile-edit-section">
+                    <h2>✏️ 编辑资料</h2>
+                    
+                    <form method="POST" class="profile-form">
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="form_type" value="profile">
+                        
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="{{ form.nickname.id }}">
+                                    <i class="fas fa-user"></i>
+                                    昵称
+                                </label>
+                                {{ form.nickname(class="form-input") }}
+                                {% if form.nickname.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.nickname.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.role.id }}">
+                                    <i class="fas fa-user-tag"></i>
+                                    角色
+                                </label>
+                                {{ form.role(class="form-select", id="role-select") }}
+                                {% if form.role.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.role.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.birth_date.id }}">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    出生日期 <span id="age-hint" class="age-hint"></span>
+                                </label>
+                                {{ form.birth_date(class="form-input", id="birth-date-input") }}
+                                {% if form.birth_date.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.birth_date.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.gender.id }}">
+                                    <i class="fas fa-venus-mars"></i>
+                                    性别
+                                </label>
+                                {{ form.gender(class="form-select") }}
+                                {% if form.gender.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.gender.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.contact_phone.id }}">
+                                    <i class="fas fa-phone"></i>
+                                    联系电话
+                                </label>
+                                {{ form.contact_phone(class="form-input", placeholder="联系电话（可选）") }}
+                                {% if form.contact_phone.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.contact_phone.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.mailing_address.id }}">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    邮寄地址
+                                </label>
+                                {{ form.mailing_address(class="form-textarea", placeholder="邮寄地址（可选，用于3D模型邮寄）", rows="3") }}
+                                {% if form.mailing_address.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.mailing_address.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="{{ form.color_preference.id }}">
+                                    <i class="fas fa-palette"></i>
+                                    喜欢的色彩风格
+                                </label>
+                                {{ form.color_preference(class="form-select") }}
+                                {% if form.color_preference.errors %}
+                                    <div class="error-messages">
+                                        {% for error in form.color_preference.errors %}
+                                            <p class="error-message">{{ error }}</p>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.bio.id }}">
+                                <i class="fas fa-edit"></i>
+                                个人简介
+                            </label>
+                            {{ form.bio(class="form-textarea", placeholder="说说你喜欢什么吧，比如喜欢画什么...") }}
+                            {% if form.bio.errors %}
+                                <div class="error-messages">
+                                    {% for error in form.bio.errors %}
+                                        <p class="error-message">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 隐私设置 -->
+                <div class="privacy-section">
+                    <h2>🔒 隐私设置</h2>
+                    
+                    <form method="POST" action="{{ url_for('auth.profile') }}" class="privacy-form">
+                        {{ privacy_form.hidden_tag() }}
+                        <input type="hidden" name="form_type" value="privacy">
+                        
+                        
+                        <div class="privacy-settings">
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h4>作品展示</h4>
+                                    <p>允许其他人在作品展示页面看到我的作品</p>
+                                </div>
+                                <div class="privacy-toggle">
+                                    {{ privacy_form.show_in_gallery(style="display: none;") }}
+                                    <label for="{{ privacy_form.show_in_gallery.id }}" class="toggle-switch">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h4>显示年龄</h4>
+                                    <p>在作品上显示我的年龄信息</p>
+                                </div>
+                                <div class="privacy-toggle">
+                                    {{ privacy_form.show_age(style="display: none;") }}
+                                    <label for="{{ privacy_form.show_age.id }}" class="toggle-switch">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h4>使用报告</h4>
+                                    <p>向家长发送我的使用情况报告</p>
+                                </div>
+                                <div class="privacy-toggle">
+                                    {{ privacy_form.allow_parent_reports(style="display: none;") }}
+                                    <label for="{{ privacy_form.allow_parent_reports.id }}" class="toggle-switch">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-shield-check"></i>
+                                更新隐私设置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 使用统计 -->
+                <div class="usage-stats-section">
+                    <h2>📊 使用统计</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>总使用时长</h4>
+                                <p class="stat-value">{{ total_hours }}小时</p>
+                                <p class="stat-detail">今天使用了{{ today_hours }}小时</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>最喜欢的功能</h4>
+                                <p class="stat-value">AI上色</p>
+                                <p class="stat-detail">使用了{{ coloring_count }}次</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-thumbs-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h4>获得点赞</h4>
+                                <p class="stat-value">{{ total_likes }}</p>
+                                <p class="stat-detail">来自其他小朋友</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 家长信息 -->
+                <div class="parent-section">
+                    <h2>👨‍👩‍👧‍👦 家长信息</h2>
+                    <div class="parent-info-card">
+                        <div class="parent-contact">
+                            <i class="fas fa-envelope"></i>
+                            <span>家长邮箱：{{ current_user.parent_email }}</span>
+                        </div>
+                        <div class="parent-actions">
+                            {% if current_user.verification_token %}
+                            <a href="{{ url_for('auth.parent_dashboard', verification_token=current_user.verification_token) }}" 
+                               class="btn btn-outline">
+                                <i class="fas fa-tachometer-alt"></i>
+                                家长控制台
+                            </a>
+                            {% else %}
+                            <span class="btn btn-outline disabled">
+                                <i class="fas fa-tachometer-alt"></i>
+                                家长控制台（不可用）
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI创意工坊 - 让每个孩子都成为小小创作家</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 隐私开关动画
+            const toggleSwitches = document.querySelectorAll('.toggle-switch');
+            toggleSwitches.forEach(toggle => {
+                const checkbox = toggle.previousElementSibling;
+                if (checkbox && checkbox.checked) {
+                    toggle.classList.add('active');
+                }
+                
+                checkbox.addEventListener('change', function() {
+                    toggle.classList.toggle('active', this.checked);
+                });
+            });
+
+            // 成就徽章动画
+            const achievementBadges = document.querySelectorAll('.achievement-badge.earned');
+            achievementBadges.forEach((badge, index) => {
+                setTimeout(() => {
+                    badge.style.animation = `badgeGlow 2s ease-in-out infinite ${index * 0.5}s`;
+                }, 1000);
+            });
+
+            // 表单提交成功提示
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+                        submitBtn.disabled = true;
+                    }
+                });
+            });
+
+            // 统计数字滚动动画
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(statNumber => {
+                const targetValue = parseInt(statNumber.textContent);
+                let currentValue = 0;
+                const increment = targetValue / 20;
+                
+                const timer = setInterval(() => {
+                    currentValue += increment;
+                    if (currentValue >= targetValue) {
+                        statNumber.textContent = targetValue;
+                        clearInterval(timer);
+                    } else {
+                        statNumber.textContent = Math.floor(currentValue);
+                    }
+                }, 50);
+            });
+        });
+
+        // 添加CSS动画和样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes badgeGlow {
+                0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+                50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+            }
+            
+            /* 隐私设置滑动开关样式 */
+            .privacy-toggle {
+                display: flex;
+                align-items: center;
+                position: relative;
+            }
+            
+            .toggle-switch {
+                position: relative;
+                display: inline-block;
+                width: 50px;
+                height: 26px;
+                background-color: #ddd;
+                border-radius: 26px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .toggle-switch:hover {
+                background-color: #ccc;
+            }
+            
+            .toggle-switch.active {
+                background-color: #007bff;
+                box-shadow: inset 0 2px 4px rgba(0,123,255,0.2);
+            }
+            
+            .toggle-switch.active:hover {
+                background-color: #0056b3;
+            }
+            
+            .toggle-slider {
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 22px;
+                height: 22px;
+                background-color: white;
+                border-radius: 50%;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            .toggle-switch.active .toggle-slider {
+                transform: translateX(24px);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            }
+            
+            /* 隐私设置项布局 */
+            .privacy-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 0;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            
+            .privacy-item:last-child {
+                border-bottom: none;
+            }
+            
+            .privacy-info h4 {
+                margin: 0 0 5px 0;
+                font-size: 16px;
+                color: #333;
+            }
+            
+            .privacy-info p {
+                margin: 0;
+                font-size: 14px;
+                color: #666;
+                line-height: 1.4;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 角色和出生日期的动态提示
+        const roleSelect = document.getElementById('role-select');
+        const ageHint = document.getElementById('age-hint');
+        const birthDateInput = document.getElementById('birth-date-input');
+        
+        function updateAgeHint() {
+            const role = roleSelect.value;
+            if (role === 'student') {
+                ageHint.textContent = '(学生：5-24岁)';
+                ageHint.style.color = '#28a745';
+            } else if (role === 'teacher' || role === 'parent') {
+                ageHint.textContent = '(老师/家长：20-80岁)';
+                ageHint.style.color = '#007bff';
+            }
+        }
+        
+        function calculateAge(birthDate) {
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            
+            return age;
+        }
+        
+        function updateAgeDisplay() {
+            if (birthDateInput && birthDateInput.value) {
+                const age = calculateAge(birthDateInput.value);
+                const ageDisplay = document.createElement('span');
+                ageDisplay.textContent = ` (当前年龄: ${age}岁)`;
+                ageDisplay.style.color = '#666';
+                ageDisplay.style.fontSize = '0.9em';
+                ageDisplay.id = 'age-display';
+                
+                // 移除之前的年龄显示
+                const oldDisplay = document.getElementById('age-display');
+                if (oldDisplay) {
+                    oldDisplay.remove();
+                }
+                
+                // 添加到出生日期标签后面
+                const label = document.querySelector('label[for="birth-date-input"]');
+                if (label) {
+                    label.appendChild(ageDisplay);
+                }
+            }
+        }
+        
+        // 初始化隐私设置切换开关
+        function initPrivacyToggles() {
+            // 获取所有隐私设置的切换开关
+            const privacyFields = ['show_in_gallery', 'show_age', 'allow_parent_reports'];
+            
+            privacyFields.forEach(fieldName => {
+                const checkbox = document.querySelector(`input[name="${fieldName}"]`);
+                const label = document.querySelector(`label[for="${fieldName}"]`);
+                
+                if (!checkbox || !label) return;
+                
+                // 初始化开关状态
+                updateToggleState(label, checkbox.checked);
+                
+                // 添加点击事件到标签
+                label.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    checkbox.checked = !checkbox.checked;
+                    updateToggleState(this, checkbox.checked);
+                    
+                    // 触发change事件以便表单验证
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+        
+        // 更新切换开关的视觉状态
+        function updateToggleState(toggleElement, isActive) {
+            if (isActive) {
+                toggleElement.classList.add('active');
+            } else {
+                toggleElement.classList.remove('active');
+            }
+        }
+        
+        if (roleSelect && ageHint) {
+            // 初始化提示
+            updateAgeHint();
+            
+            // 角色改变时更新提示
+            roleSelect.addEventListener('change', updateAgeHint);
+        }
+        
+        if (birthDateInput) {
+            // 初始化年龄显示
+            updateAgeDisplay();
+            
+            // 出生日期改变时更新年龄显示
+            birthDateInput.addEventListener('change', updateAgeDisplay);
+        }
+        
+        // 初始化隐私设置切换开关
+        initPrivacyToggles();
+    });
+    </script>
+</body>
+</html>

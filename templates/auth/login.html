@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="auth-body">
+    {% include 'components/auth_header.html' %}
+
+    <!-- 背景装饰 -->
+    <div class="auth-background">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+    </div>
+
+    <div class="auth-wrapper">
+        <!-- 左侧欢迎区域 -->
+        <div class="auth-welcome">
+            <div class="welcome-content">
+                <div class="logo-section">
+                    <i class="fas fa-magic"></i>
+                    <h1>AI创意工坊</h1>
+                </div>
+                
+                <div class="welcome-text">
+                    <h2>欢迎回来！</h2>
+                    <p>继续你的奇妙创作之旅</p>
+                </div>
+
+                <div class="feature-highlights">
+                    <div class="feature-item">
+                        <i class="fas fa-palette"></i>
+                        <span>AI智能上色</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-cube"></i>
+                        <span>3D模型生成</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-video"></i>
+                        <span>动态视频制作</span>
+                    </div>
+                </div>
+
+                <div class="creation-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-trophy"></i>
+                        <span>已有<strong>1000+</strong>小朋友创作了精彩作品</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧登录表单 -->
+        <div class="auth-form-section">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>登录账户</h2>
+                    <p>输入你的用户名和密码</p>
+                </div>
+
+                <!-- 显示消息 -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                <i class="fas fa-info-circle"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="POST" class="login-form">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="input-group">
+                        {{ form.username.label(class="input-label") }}
+                        <div class="input-wrapper">
+                            <i class="fas fa-user input-icon"></i>
+                            {{ form.username(class="form-input", placeholder="输入你的用户名") }}
+                        </div>
+                        {% if form.username.errors %}
+                            <div class="input-errors">
+                                {% for error in form.username.errors %}
+                                    <span class="error-message">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="input-group">
+                        {{ form.password.label(class="input-label") }}
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            {{ form.password(class="form-input", placeholder="输入你的密码") }}
+                            <button type="button" class="password-toggle" onclick="togglePassword()">
+                                <i class="fas fa-eye" id="passwordIcon"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="input-errors">
+                                {% for error in form.password.errors %}
+                                    <span class="error-message">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-options">
+                        <label class="remember-checkbox">
+                            {{ form.remember_me() }}
+                            <span class="checkmark"></span>
+                            <span class="checkbox-text">记住我的登录状态</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-rocket"></i>
+                        <span>开始创作</span>
+                    </button>
+                </form>
+
+                <div class="form-footer">
+                    <p>还没有账户？ <a href="{{ url_for('auth.register') }}" class="register-link">立即注册</a></p>
+                    <p class="help-text">
+                        <i class="fas fa-question-circle"></i>
+                        忘记密码？请联系家长或客服
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 密码显示/隐藏切换
+        function togglePassword() {
+            const passwordField = document.querySelector('input[name="password"]');
+            const passwordIcon = document.getElementById('passwordIcon');
+            
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                passwordIcon.className = 'fas fa-eye-slash';
+            } else {
+                passwordField.type = 'password';
+                passwordIcon.className = 'fas fa-eye';
+            }
+        }
+
+        // 输入框焦点效果
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.form-input');
+            
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    if (!this.value) {
+                        this.parentElement.parentElement.classList.remove('focused');
+                    }
+                });
+                
+                // 如果已有值，保持focused状态
+                if (input.value) {
+                    input.parentElement.parentElement.classList.add('focused');
+                }
+            });
+
+            // 复选框动画
+            const checkbox = document.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.addEventListener('change', function() {
+                    this.parentElement.classList.toggle('checked', this.checked);
+                });
+            }
+
+            // 浮动形状动画
+            const shapes = document.querySelectorAll('.floating-shape');
+            shapes.forEach((shape, index) => {
+                shape.style.animationDelay = `${index * 2}s`;
+            });
+
+            // 导航栏移动端切换
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', function() {
+                    navMenu.classList.toggle('active');
+                    this.classList.toggle('active');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+</body>
+</html>

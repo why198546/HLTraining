@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>等待家长验证 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+
+    <main class="main-content verification-page">
+        <div class="container">
+            <div class="verification-container">
+                <div class="verification-status">
+                    <div class="status-icon pending">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <h1>账户创建成功！</h1>
+                    <p class="status-text">正在等待家长验证...</p>
+                </div>
+
+                <div class="verification-info">
+                    <div class="user-info">
+                        <h3>👋 你好，{{ user.nickname }}！</h3>
+                        <p>你的账户已经创建成功，但需要家长确认后才能开始使用。</p>
+                    </div>
+
+                    <div class="verification-steps">
+                        <h4>验证步骤：</h4>
+                        <div class="steps-list">
+                            <div class="step completed">
+                                <div class="step-icon">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                <div class="step-content">
+                                    <h5>注册账户</h5>
+                                    <p>你已经成功创建了账户</p>
+                                </div>
+                            </div>
+                            
+                            <div class="step active">
+                                <div class="step-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="step-content">
+                                    <h5>家长收到邮件</h5>
+                                    <p>验证邮件已发送到 <strong>{{ user.parent_email }}</strong></p>
+                                </div>
+                            </div>
+                            
+                            <div class="step pending">
+                                <div class="step-icon">
+                                    <i class="fas fa-shield-check"></i>
+                                </div>
+                                <div class="step-content">
+                                    <h5>家长确认验证</h5>
+                                    <p>家长点击邮件中的链接并输入验证码</p>
+                                </div>
+                            </div>
+                            
+                            <div class="step pending">
+                                <div class="step-icon">
+                                    <i class="fas fa-rocket"></i>
+                                </div>
+                                <div class="step-content">
+                                    <h5>开始创作</h5>
+                                    <p>验证完成后就可以开始AI创作之旅了！</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="help-section">
+                        <h4>💡 需要帮助？</h4>
+                        <div class="help-grid">
+                            <div class="help-item">
+                                <i class="fas fa-question-circle"></i>
+                                <h5>没有收到邮件？</h5>
+                                <p>请检查垃圾邮件文件夹，或点击下方按钮重新发送</p>
+                                <a href="{{ url_for('auth.resend_verification', user_id=user.id) }}" 
+                                   class="help-btn">重新发送邮件</a>
+                            </div>
+                            
+                            <div class="help-item">
+                                <i class="fas fa-clock"></i>
+                                <h5>需要多长时间？</h5>
+                                <p>通常在几分钟内就能收到邮件，验证过程只需要1-2分钟</p>
+                            </div>
+                            
+                            <div class="help-item">
+                                <i class="fas fa-shield-alt"></i>
+                                <h5>为什么需要验证？</h5>
+                                <p>这是为了保护你的安全，确保你有家长的同意</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="waiting-activities">
+                        <h4>🎨 等待期间，你可以：</h4>
+                        <div class="activity-grid">
+                            <div class="activity-card">
+                                <i class="fas fa-book"></i>
+                                <h5>阅读使用教程</h5>
+                                <p>了解平台的各种功能</p>
+                                <a href="{{ url_for('tutorial') }}" class="activity-btn">开始阅读</a>
+                            </div>
+                            
+                            <div class="activity-card">
+                                <i class="fas fa-images"></i>
+                                <h5>浏览作品展示</h5>
+                                <p>看看其他小朋友的精彩作品</p>
+                                <a href="{{ url_for('gallery') }}" class="activity-btn">浏览作品</a>
+                            </div>
+                            
+                            <div class="activity-card">
+                                <i class="fas fa-pencil-alt"></i>
+                                <h5>准备创作素材</h5>
+                                <p>画一些简笔画，准备上传</p>
+                                <span class="activity-btn disabled">验证后可用</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 AI创意工坊 - 让每个孩子都成为小小创作家</p>
+        </div>
+    </footer>
+
+    <script>
+        // 自动刷新页面检查验证状态
+        let checkCount = 0;
+        const maxChecks = 30; // 最多检查30次（15分钟）
+        
+        function checkVerificationStatus() {
+            if (checkCount >= maxChecks) {
+                return;
+            }
+            
+            checkCount++;
+            
+            // 这里可以添加AJAX请求检查验证状态
+            // 如果验证成功，自动跳转到登录页面
+            setTimeout(checkVerificationStatus, 30000); // 30秒检查一次
+        }
+        
+        // 页面加载后开始检查
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(checkVerificationStatus, 30000);
+            
+            // 添加动画效果
+            const pendingIcon = document.querySelector('.status-icon.pending i');
+            if (pendingIcon) {
+                setInterval(() => {
+                    pendingIcon.style.transform = 'rotate(180deg)';
+                    setTimeout(() => {
+                        pendingIcon.style.transform = 'rotate(0deg)';
+                    }, 1000);
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>

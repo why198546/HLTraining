@@ -1,5 +1,21 @@
 [
   {
+    "id": "a532ca6c-a901-41cc-abb8-7af32a341359",
+    "title": "ultraman",
+    "artist_name": "why",
+    "artist_age": 10,
+    "category": "characters",
+    "description": "ultraman",
+    "created_at": "2025-10-25T13:33:51.158396",
+    "original_image": null,
+    "generated_image": "gallery/a532ca6c-a901-41cc-abb8-7af32a341359/generated_a532ca6c-a901-41cc-abb8-7af32a341359.png",
+    "model_file": "gallery/a532ca6c-a901-41cc-abb8-7af32a341359/model_a532ca6c-a901-41cc-abb8-7af32a341359.glb",
+    "likes": 0,
+    "views": 0,
+    "has_versions": true,
+    "version_count": 1
+  },
+  {
     "id": "a1725a92-6b65-4b0c-95e0-518154b6fa4f",
     "title": "拉布布",
     "artist_name": "王洪宇",

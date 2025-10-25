@@ -8,25 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header class="header">
-        <nav class="navbar">
-            <div class="nav-brand">
-                <i class="fas fa-magic"></i>
-                <span>AI创意工坊</span>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="{{ url_for('index') }}" class="nav-link">首页</a></li>
-                <li><a href="/create" class="nav-link active">开始创作</a></li>
-                <li><a href="/gallery" class="nav-link">作品展示</a></li>
-                <li><a href="/tutorial" class="nav-link">使用教程</a></li>
-            </ul>
-            <div class="nav-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </nav>
-    </header>
+    {% include 'components/header.html' %}
 
     <main class="main-content create-page">
         <div class="container">
@@ -447,22 +429,31 @@
 
                     <!-- 完成操作 -->
                     <div class="final-actions" style="display: none;" id="final-actions">
-                        <button class="save-artwork-btn" onclick="showSaveArtworkDialog()">
-                            <i class="fas fa-heart"></i>
-                            保存到作品集
-                        </button>
-                        <button class="download-btn" onclick="downloadImage()">
-                            <i class="fas fa-download"></i>
-                            下载图片
-                        </button>
-                        <button class="secondary-btn" onclick="startNewCreation()">
-                            <i class="fas fa-plus"></i>
-                            创建新作品
-                        </button>
-                        <button class="primary-btn" onclick="shareCreation()">
-                            <i class="fas fa-share"></i>
-                            分享我的创作
-                        </button>
+                        <div class="action-buttons-grid">
+                            <!-- 主要操作 -->
+                            <div class="primary-actions">
+                                <button class="save-artwork-btn primary-action" onclick="showSaveArtworkDialog()">
+                                    <i class="fas fa-heart"></i>
+                                    <span>保存到作品集</span>
+                                </button>
+                                <button class="share-btn primary-action" onclick="shareCreation()">
+                                    <i class="fas fa-share-alt"></i>
+                                    <span>分享我的创作</span>
+                                </button>
+                            </div>
+                            
+                            <!-- 辅助操作 -->
+                            <div class="secondary-actions">
+                                <button class="download-btn secondary-action" onclick="downloadImage()">
+                                    <i class="fas fa-download"></i>
+                                    <span>下载图片</span>
+                                </button>
+                                <button class="new-creation-btn secondary-action" onclick="startNewCreation()">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>创建新作品</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

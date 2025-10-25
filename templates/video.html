@@ -8,25 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header class="header">
-        <nav class="navbar">
-            <div class="nav-brand">
-                <i class="fas fa-magic"></i>
-                <span>AI创意工坊</span>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="{{ url_for('index') }}" class="nav-link">首页</a></li>
-                <li><a href="/create" class="nav-link">开始创作</a></li>
-                <li><a href="/gallery" class="nav-link">作品展示</a></li>
-                <li><a href="/tutorial" class="nav-link">使用教程</a></li>
-            </ul>
-            <div class="nav-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </nav>
-    </header>
+    {% include 'components/header.html' %}
 
     <main class="main-content video-page">
         <div class="container">

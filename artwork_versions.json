@@ -46,5 +46,17 @@
       "model": "gallery/a1725a92-6b65-4b0c-95e0-518154b6fa4f/versions/93c30fc3-b501-40c0-ad0b-52eddee47918/model_v93c30fc3-b501-40c0-ad0b-52eddee47918.glb"
     },
     "is_current": true
+  },
+  {
+    "version_id": "498208be-5c92-4bcc-ba19-51dccd39aa6f",
+    "artwork_id": "a532ca6c-a901-41cc-abb8-7af32a341359",
+    "created_at": "2025-10-25T13:33:51.184424",
+    "version_note": "从创作会话保存 - 图片v调整：去除背景，让主体突出，背景变为透明或纯色",
+    "auto_note": "初始创建",
+    "files": {
+      "image": "gallery/a532ca6c-a901-41cc-abb8-7af32a341359/versions/498208be-5c92-4bcc-ba19-51dccd39aa6f/image_v498208be-5c92-4bcc-ba19-51dccd39aa6f.png",
+      "model": "gallery/a532ca6c-a901-41cc-abb8-7af32a341359/versions/498208be-5c92-4bcc-ba19-51dccd39aa6f/model_v498208be-5c92-4bcc-ba19-51dccd39aa6f.glb"
+    },
+    "is_current": true
   }
 ]
