@@ -7,6 +7,13 @@
     <title>我的作品 - AI创意工坊</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Three.js for 3D model viewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/artwork-modal.js') }}"></script>
 </head>
 <body>
     {% include 'components/header.html' %}
@@ -31,7 +38,7 @@
             <div class="artworks-stats">
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon">
+                        <div class="stat-icon artworks">
                             <i class="fas fa-images"></i>
                         </div>
                         <div class="stat-info">
@@ -41,7 +48,7 @@
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-icon">
+                        <div class="stat-icon usage-time">
                             <i class="fas fa-heart"></i>
                         </div>
                         <div class="stat-info">
@@ -51,7 +58,7 @@
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-icon">
+                        <div class="stat-icon sessions">
                             <i class="fas fa-eye"></i>
                         </div>
                         <div class="stat-info">
@@ -61,8 +68,8 @@
                     </div>
                     
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-share"></i>
+                        <div class="stat-icon achievement">
+                            <i class="fas fa-globe-americas"></i>
                         </div>
                         <div class="stat-info">
                             <h3>{{ public_artworks }}</h3>
@@ -116,15 +123,25 @@
             <!-- 作品网格 -->
             <div class="artworks-grid" id="artworks-grid">
                 {% for artwork in artworks.items %}
-                                <!-- 作品卡片 -->
                 <div class="artwork-card"
                      data-artwork-id="{{ artwork.id }}"
+                     data-artwork-title="{{ artwork.title or '未命名作品' }}"
+                     data-artwork-artist="{{ current_user.username }}"
+                     data-artwork-age="{{ current_user.age or '未知' }}"
+                     data-artwork-date="{{ artwork.created_at.strftime('%Y-%m-%d %H:%M') }}"
+                     data-artwork-description="{{ artwork.description or '' }}"
+                     {% set file_urls = artwork.get_file_urls() %}
+                     data-artwork-original="{{ file_urls.original_sketch or '' }}"
+                     data-artwork-generated="{{ file_urls.colored_image or file_urls.figurine_image or '' }}"
+                     data-artwork-model="{{ file_urls.model_3d or '' }}"
+                     data-artwork-likes="{{ artwork.vote_count or 0 }}"
+                     data-artwork-views="{{ artwork.view_count or 0 }}"
                      data-type="{% if artwork.colored_image %}ai-coloring{% elif artwork.model_3d %}3d-model{% elif artwork.video_file %}video{% else %}other{% endif %}" 
                      data-date="{{ artwork.created_at.isoformat() }}"
-                     data-likes="{{ artwork.vote_count or 0 }}"
-                     data-views="{{ artwork.view_count or 0 }}"
                      data-name="{{ artwork.title or '未命名作品' }}"
-                     data-public="{{ 'true' if artwork.is_public else 'false' }}">>
+                     data-public="{{ 'true' if artwork.is_public else 'false' }}"
+                     onclick="showArtworkModal(this)"
+                     style="cursor: pointer;">
                     
                     <div class="artwork-image">
                         {% set file_urls = artwork.get_file_urls() %}
@@ -161,10 +178,7 @@
                         </div>
                         
                         <!-- 悬浮操作按钮 -->
-                        <div class="artwork-actions">
-                            <button class="action-btn view-btn" onclick="viewArtwork('{{ artwork.id }}')">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                        <div class="artwork-actions" onclick="event.stopPropagation();">
                             <button class="action-btn edit-btn" onclick="editArtwork('{{ artwork.id }}')">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -187,7 +201,19 @@
                     </div>
                     
                     <div class="artwork-info">
-                        <h3 class="artwork-title">{{ artwork.title or '未命名作品' }}</h3>
+                        <div class="artwork-header">
+                            <h3 class="artwork-title">{{ artwork.title or '未命名作品' }}</h3>
+                            <div class="artwork-stats-inline">
+                                <span class="stat-item">
+                                    <i class="fas fa-heart"></i>
+                                    {{ artwork.vote_count or 0 }}
+                                </span>
+                                <span class="stat-item">
+                                    <i class="fas fa-eye"></i>
+                                    {{ artwork.view_count or 0 }}
+                                </span>
+                            </div>
+                        </div>
                         <p class="artwork-date">{{ artwork.created_at.strftime('%Y年%m月%d日') }}</p>
                         
                         {% if artwork.is_featured %}
@@ -195,17 +221,6 @@
                                 <i class="fas fa-crown"></i> 推荐作品
                             </div>
                         {% endif %}
-                        
-                        <div class="artwork-stats">
-                            <span class="stat-item">
-                                <i class="fas fa-heart"></i>
-                                {{ artwork.vote_count or 0 }}
-                            </span>
-                            <span class="stat-item">
-                                <i class="fas fa-eye"></i>
-                                {{ artwork.view_count or 0 }}
-                            </span>
-                        </div>
                         
                         {% if artwork.description %}
                         <p class="artwork-description">{{ artwork.description[:50] }}{% if artwork.description|length > 50 %}...{% endif %}</p>
@@ -268,21 +283,95 @@
     </footer>
 
     <!-- 作品详情模态框 -->
-    <div id="artwork-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">作品详情</h3>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+    <div id="artworkModal" class="artwork-modal">
+        <div class="artwork-modal-content">
+            <div class="artwork-modal-header">
+                <button class="artwork-modal-close">&times;</button>
+                <h2 id="modalArtworkTitle">作品标题</h2>
             </div>
-            <div class="modal-body">
-                <div id="modal-content-area">
-                    <!-- 动态加载作品详情 -->
+            <div class="artwork-modal-body">
+                <div class="artwork-detail-showcase" id="modalArtworkShowcase">
+                    <!-- 动态内容 -->
+                </div>
+                <div class="artwork-detail-info" id="modalArtworkInfo">
+                    <!-- 动态内容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D模型查看器 -->
+    <div id="modelOverlay" class="model-overlay" style="display: none;" onclick="closeModelModal()">
+        <div class="model-overlay-backdrop"></div>
+        <div class="model-viewer-container" onclick="event.stopPropagation()">
+            <div class="model-header">
+                <h3 id="modelTitle">3D模型查看器</h3>
+                <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
+            </div>
+            <div id="modelContainer" class="model-container">
+                <!-- Canvas for 3D model -->
+                <canvas id="modelCanvas"></canvas>
+                <!-- 模型信息显示 -->
+                <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
+                    准备加载3D模型...
+                </div>
+                <!-- 模型加载状态 -->
+                <div id="loadingStatus" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 10px; text-align: center; z-index: 20;">
+                    <div class="loading-spinner"></div>
+                    <div>正在加载3D模型...</div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // 保留必要的全局函数，使用统一的模态框系统
+        window.editArtwork = function(artworkId) {
+            window.location.href = `/edit/${artworkId}`;
+        };
+
+        window.shareArtwork = function(artworkId) {
+            const url = `${window.location.origin}/artwork/${artworkId}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: '看看我的AI创作！',
+                    text: '我用AI创意工坊制作了一件超棒的作品！',
+                    url: url
+                });
+            } else {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('作品链接已复制到剪贴板！');
+                });
+            }
+        };
+
+        // 添加点赞功能（使用统一模态框中的函数）
+        window.likeArtwork = function(artworkId) {
+            fetch(`/like-artwork/${artworkId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 更新模态框中的点赞数
+                    const modalLikesElement = document.getElementById(`modal-likes-${artworkId}`);
+                    if (modalLikesElement) {
+                        modalLikesElement.textContent = data.likes;
+                    }
+                    showMessage('点赞成功！', 'success');
+                } else {
+                    showMessage('点赞失败：' + (data.error || data.message), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('点赞失败，请稍后重试', 'error');
+            });
+        };
+
         document.addEventListener('DOMContentLoaded', function() {
             // 筛选功能
             const filterButtons = document.querySelectorAll('.filter-btn');
@@ -290,7 +379,6 @@
             
             filterButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
-                    // 更新按钮状态
                     filterButtons.forEach(b => b.classList.remove('active'));
                     this.classList.add('active');
                     
@@ -312,81 +400,32 @@
             const sortSelect = document.getElementById('sort-select');
             const artworksGrid = document.getElementById('artworks-grid');
             
-            sortSelect.addEventListener('change', function() {
-                const sortBy = this.value;
-                const cards = Array.from(artworkCards);
-                
-                cards.sort((a, b) => {
-                    switch(sortBy) {
-                        case 'newest':
-                            return new Date(b.dataset.date) - new Date(a.dataset.date);
-                        case 'oldest':
-                            return new Date(a.dataset.date) - new Date(b.dataset.date);
-                        case 'most-liked':
-                            return parseInt(b.dataset.likes) - parseInt(a.dataset.likes);
-                        case 'most-viewed':
-                            return parseInt(b.dataset.views) - parseInt(a.dataset.views);
-                        case 'name':
-                            return a.dataset.name.localeCompare(b.dataset.name);
-                        default:
-                            return 0;
-                    }
-                });
-                
-                // 重新排列DOM元素
-                cards.forEach(card => artworksGrid.appendChild(card));
-            });
-            
-            // 懒加载图片
-            const images = document.querySelectorAll('img[loading="lazy"]');
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.src; // 触发加载
-                        observer.unobserve(img);
-                    }
-                });
-            });
-            
-            images.forEach(img => imageObserver.observe(img));
-        });
-        
-        // 作品操作函数
-        function viewArtwork(artworkId) {
-            // 查看作品详情
-            fetch(`/api/artwork/${artworkId}`)
-                .then(response => response.json())
-                .then(data => {
-                    showArtworkModal(data);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('加载作品详情失败');
-                });
-        }
-        
-        function editArtwork(artworkId) {
-            // 编辑作品
-            window.location.href = `/edit/${artworkId}`;
-        }
-        
-        function shareArtwork(artworkId) {
-            // 分享作品
-            const url = `${window.location.origin}/artwork/${artworkId}`;
-            if (navigator.share) {
-                navigator.share({
-                    title: '看看我的AI创作！',
-                    text: '我用AI创意工坊制作了一件超棒的作品！',
-                    url: url
-                });
-            } else {
-                // 复制链接到剪贴板
-                navigator.clipboard.writeText(url).then(() => {
-                    alert('作品链接已复制到剪贴板！');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    const sortBy = this.value;
+                    const cards = Array.from(artworkCards);
+                    
+                    cards.sort((a, b) => {
+                        switch(sortBy) {
+                            case 'newest':
+                                return new Date(b.dataset.date) - new Date(a.dataset.date);
+                            case 'oldest':
+                                return new Date(a.dataset.date) - new Date(b.dataset.date);
+                            case 'most-liked':
+                                return parseInt(b.dataset.likes) - parseInt(a.dataset.likes);
+                            case 'most-viewed':
+                                return parseInt(b.dataset.views) - parseInt(a.dataset.views);
+                            case 'name':
+                                return a.dataset.name.localeCompare(b.dataset.name);
+                            default:
+                                return 0;
+                        }
+                    });
+                    
+                    cards.forEach(card => artworksGrid.appendChild(card));
                 });
             }
-        }
+        });
         
         function deleteArtwork(artworkId) {
             if (confirm('确定要删除这件作品吗？删除后无法恢复。')) {
@@ -427,42 +466,6 @@
                     console.error('Error:', error);
                     showMessage('删除失败，请稍后重试', 'error');
                 });
-            }
-        }
-        
-        function showArtworkModal(artwork) {
-            const modal = document.getElementById('artwork-modal');
-            const modalTitle = document.getElementById('modal-title');
-            const modalContent = document.getElementById('modal-content-area');
-            
-            modalTitle.textContent = artwork.title || '我的作品';
-            modalContent.innerHTML = `
-                <div class="artwork-detail">
-                    <div class="artwork-image-large">
-                        <img src="${artwork.image_url}" alt="${artwork.title}">
-                    </div>
-                    <div class="artwork-info-detail">
-                        <p><strong>创作时间：</strong>${artwork.created_at}</p>
-                        <p><strong>作品类型：</strong>${artwork.artwork_type}</p>
-                        <p><strong>浏览次数：</strong>${artwork.views}</p>
-                        <p><strong>点赞数量：</strong>${artwork.likes}</p>
-                        ${artwork.description ? `<p><strong>作品描述：</strong>${artwork.description}</p>` : ''}
-                    </div>
-                </div>
-            `;
-            
-            modal.style.display = 'block';
-        }
-        
-        function closeModal() {
-            document.getElementById('artwork-modal').style.display = 'none';
-        }
-        
-        // 点击模态框外部关闭
-        window.onclick = function(event) {
-            const modal = document.getElementById('artwork-modal');
-            if (event.target === modal) {
-                closeModal();
             }
         }
         

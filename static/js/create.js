@@ -322,6 +322,7 @@ async function generateImage() {
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
     const expertMode = document.getElementById('expert-mode').checked; // 获取expert模式状态
+    const aspectRatio = document.getElementById('aspect-ratio').value; // 获取高宽比
 
     // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
     if (!prompt && !uploadedImageFile && !originalImagePath) {
@@ -337,6 +338,7 @@ async function generateImage() {
         formData.append('style', style);
         formData.append('color_preference', colorPreference);
         formData.append('expert_mode', expertMode); // 添加expert模式参数
+        formData.append('aspect_ratio', aspectRatio); // 添加高宽比参数
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {

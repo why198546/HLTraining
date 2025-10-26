@@ -71,7 +71,7 @@ class ModelViewer3D {
                 this.startAnimation();
             }
             
-            console.log('3D查看器初始化完成');
+            // 初始化完成
         } catch (error) {
             console.error('3D查看器初始化失败:', error);
         }
@@ -160,7 +160,6 @@ class ModelViewer3D {
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.05;
                 this.controls.autoRotate = this.config.enableAutoRotate;
-                console.log('OrbitControls 创建成功');
             } else {
                 console.warn('OrbitControls 不可用，使用简单鼠标控制');
                 this.addMouseControls();
@@ -251,8 +250,6 @@ class ModelViewer3D {
             format = ext === 'glb' ? 'gltf' : ext;
         }
         
-        console.log(`加载${format.toUpperCase()}模型:`, modelUrl);
-        
         switch (format) {
             case 'gltf':
             case 'glb':
@@ -263,7 +260,6 @@ class ModelViewer3D {
                 break;
             default:
                 console.error('不支持的模型格式:', format);
-                console.log('回退到占位符模型');
                 this.createPlaceholderModel();
         }
     }
@@ -272,8 +268,6 @@ class ModelViewer3D {
      * 加载GLTF/GLB模型
      */
     loadGLTFModel(modelUrl) {
-        console.log('尝试加载真实GLB文件:', modelUrl);
-        
         // 直接使用fetch加载GLB文件，绕过GLTFLoader的依赖问题
         this.loadGLBDirectly(modelUrl);
     }
@@ -282,25 +276,33 @@ class ModelViewer3D {
      * 直接加载GLB文件
      */
     loadGLBDirectly(modelUrl) {
-        console.log('直接加载GLB文件:', modelUrl);
-        
         // 等待GLTFLoader模块加载完成
         const waitForGLTFLoader = () => {
             return new Promise((resolve, reject) => {
                 const checkLoader = () => {
+                    // 检查多种可能的GLTFLoader位置
+                    let GLTFLoaderClass = null;
+                    
                     if (window.THREE && window.THREE.GLTFLoader) {
-                        console.log('GLTFLoader 已加载完成');
-                        resolve(window.THREE.GLTFLoader);
+                        GLTFLoaderClass = window.THREE.GLTFLoader;
+                    } else if (typeof GLTFLoader !== 'undefined') {
+                        GLTFLoaderClass = GLTFLoader;
+                    } else if (window.GLTFLoader) {
+                        GLTFLoaderClass = window.GLTFLoader;
+                    }
+                    
+                    if (GLTFLoaderClass) {
+                        resolve(GLTFLoaderClass);
                     } else {
                         setTimeout(checkLoader, 100);  // 每100ms检查一次
                     }
                 };
                 checkLoader();
                 
-                // 5秒后超时
+                // 10秒后超时
                 setTimeout(() => {
-                    reject(new Error('GLTFLoader 加载超时'));
-                }, 5000);
+                    reject(new Error('GLTFLoader 加载超时 - 请检查Three.js CDN连接'));
+                }, 10000);
             });
         };
         
@@ -314,15 +316,11 @@ class ModelViewer3D {
             waitForGLTFLoader()
         ])
         .then(([data, GLTFLoader]) => {
-            console.log('GLB文件加载成功，大小:', data.byteLength, '字节');
-            console.log('GLTFLoader 准备就绪，开始解析GLB');
-            
             const loader = new GLTFLoader();
             
             // 直接解析GLB数据
             loader.parse(data, '', 
                 (gltf) => {
-                    console.log('GLB文件解析成功!');
                     this.currentModel = gltf.scene;
                     this.addModelToScene();
                     
@@ -402,7 +400,11 @@ class ModelViewer3D {
         this.currentModel.position.sub(center.multiplyScalar(scale));
         
         this.scene.add(this.currentModel);
-        console.log('模型添加到场景成功');
+        
+        // 调用加载完成回调
+        if (this.config.onModelLoaded) {
+            this.config.onModelLoaded(this.currentModel);
+        }
     }
     
     /**

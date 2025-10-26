@@ -8,6 +8,7 @@ from flask_login import UserMixin
 from datetime import datetime, date
 from werkzeug.security import generate_password_hash, check_password_hash
 import uuid
+import os
 
 db = SQLAlchemy()
 
@@ -180,14 +181,30 @@ class Artwork(db.Model):
         self.user_id = user_id
     
     def get_file_urls(self):
-        """获取所有文件的URL"""
-        base_url = f"/static/creation_sessions/{self.session_id}/"
+        """生成文件URL，智能检测文件位置"""
+        def get_file_url(filename):
+            if not filename:
+                return None
+            
+            # 优先检查 static/creation_sessions 目录
+            static_path = f"static/creation_sessions/{self.session_id}/{filename}"
+            if os.path.exists(static_path):
+                return f"/static/creation_sessions/{self.session_id}/{filename}"
+            
+            # 然后检查 creation_sessions 目录
+            creation_path = f"creation_sessions/{self.session_id}/{filename}"
+            if os.path.exists(creation_path):
+                return f"/creation_sessions/{self.session_id}/{filename}"
+            
+            # 如果都不存在，返回默认路径
+            return f"/static/creation_sessions/{self.session_id}/{filename}"
+        
         return {
-            'original_sketch': f"{base_url}{self.original_sketch}" if self.original_sketch else None,
-            'colored_image': f"{base_url}{self.colored_image}" if self.colored_image else None,
-            'figurine_image': f"{base_url}{self.figurine_image}" if self.figurine_image else None,
-            'model_3d': f"{base_url}{self.model_3d}" if self.model_3d else None,
-            'video_file': f"{base_url}{self.video_file}" if self.video_file else None
+            'original_sketch': get_file_url(self.original_sketch),
+            'colored_image': get_file_url(self.colored_image),
+            'figurine_image': get_file_url(self.figurine_image),
+            'model_3d': get_file_url(self.model_3d),
+            'video_file': get_file_url(self.video_file)
         }
     
     def to_dict(self):

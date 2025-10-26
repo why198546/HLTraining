@@ -72,10 +72,15 @@
                 <div class="gallery-grid">
                     {% if latest_artworks %}
                         {% for artwork in latest_artworks %}
+                        {% set file_urls = artwork.get_file_urls() %}
                         <div class="gallery-item">
                             <div class="gallery-image">
-                                {% if artwork.generated_image %}
-                                <img src="{{ url_for('static', filename=artwork.generated_image) }}" 
+                                {% if file_urls.colored_image %}
+                                <img src="{{ file_urls.colored_image }}" 
+                                     alt="{{ artwork.title }}"
+                                     loading="lazy">
+                                {% elif file_urls.figurine_image %}
+                                <img src="{{ file_urls.figurine_image }}" 
                                      alt="{{ artwork.title }}"
                                      loading="lazy">
                                 {% else %}
@@ -87,7 +92,7 @@
                             </div>
                             <div class="gallery-info">
                                 <h4>{{ artwork.title }}</h4>
-                                <p>{{ artwork.artist_name }}，{{ artwork.artist_age }}岁</p>
+                                <p>{{ artwork.author.nickname }}，{{ artwork.author.age }}岁</p>
                             </div>
                         </div>
                         {% endfor %}

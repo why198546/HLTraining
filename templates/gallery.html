@@ -4,26 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>作品展示 - AI创意工坊</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Three.js和GLTFLoader -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
-        }
-    }
-    </script>
-    <script type="module">
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        
-        // 将GLTFLoader和OrbitControls添加到全局THREE对象
-        window.THREE = window.THREE || {};
-        window.THREE.GLTFLoader = GLTFLoader;
-        window.THREE.OrbitControls = OrbitControls;
+    
+    <!-- Three.js - 使用compatible版本和正确的加载方式 -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // 确保模块在全局命名空间中可用
+        window.addEventListener('load', function() {
+            if (typeof THREE !== 'undefined') {
+                // 手动设置全局变量以确保兼容性
+                if (typeof GLTFLoader === 'undefined') {
+                    if (typeof THREE.GLTFLoader !== 'undefined') {
+                        window.GLTFLoader = THREE.GLTFLoader;
+                    }
+                }
+                
+                if (typeof OrbitControls === 'undefined') {
+                    if (typeof THREE.OrbitControls !== 'undefined') {
+                        window.OrbitControls = THREE.OrbitControls;
+                    }
+                }
+            }
+        });
     </script>
 </head>
 <body>
@@ -44,10 +49,21 @@
                 {% if artworks %}
                     <div class="gallery-grid" id="galleryGrid">
                         {% for artwork in artworks %}
-                            <div class="artwork-item" data-category="{{ artwork.category or 'other' }}">
+                            {% set file_urls = artwork.get_file_urls() %}
+                            <div class="artwork-item" data-category="{{ artwork.category or 'other' }}" 
+                                 data-artwork-id="{{ artwork.id }}"
+                                 data-artwork-title="{{ artwork.title }}"
+                                 data-artwork-author="{{ artwork.author.nickname }}"
+                                 data-artwork-age="{{ artwork.author.age }}"
+                                 data-artwork-description="{{ artwork.description or '暂无描述' }}"
+                                 data-artwork-original="{{ file_urls.original_sketch or '' }}"
+                                 data-artwork-generated="{{ file_urls.colored_image or file_urls.figurine_image or '' }}"
+                                 data-artwork-model="{{ file_urls.model_3d or '' }}"
+                                 data-artwork-likes="{{ artwork.like_count or 0 }}"
+                                 data-artwork-views="{{ artwork.view_count or 0 }}"
+                                 data-artwork-date="{{ artwork.created_at.strftime('%Y-%m-%d') if artwork.created_at else '' }}">
                                 <div class="artwork-card">
                                     <div class="artwork-image">
-                                        {% set file_urls = artwork.get_file_urls() %}
                                         {% if file_urls.colored_image %}
                                             <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" loading="lazy">
                                         {% elif file_urls.figurine_image %}
@@ -97,11 +113,11 @@
                                             
                                             {% if current_user.is_authenticated and current_user.id != artwork.user_id %}
                                                 <div class="vote-buttons">
-                                                    <button class="vote-btn" onclick="voteArtwork({{ artwork.id }}, 'like')" 
+                                                    <button class="vote-btn" data-artwork-id="{{ artwork.id }}" data-vote-type="like" 
                                                             title="喜欢">
                                                         <i class="fas fa-heart"></i>
                                                     </button>
-                                                    <button class="vote-btn" onclick="voteArtwork({{ artwork.id }}, 'wow')" 
+                                                    <button class="vote-btn" data-artwork-id="{{ artwork.id }}" data-vote-type="wow" 
                                                             title="惊艳">
                                                         <i class="fas fa-star"></i>
                                                     </button>
@@ -118,246 +134,12 @@
                         <i class="fas fa-palette"></i>
                         <h2>暂无推荐作品</h2>
                         <p>快去创作并设置你的推荐作品吧！</p>
-                        {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('create_page') }}" class="btn-primary">
-                                <i class="fas fa-plus"></i> 开始创作
-                            </a>
-                        {% endif %}
+                        <button class="btn-primary" onclick="window.location.href='{{ url_for('create') }}'">
+                            <i class="fas fa-plus"></i>
+                            开始创作
+                        </button>
                     </div>
                 {% endif %}
-                    <!-- 用户保存的作品 -->
-                    {% if artworks %}
-                        {% for artwork in artworks %}
-                        {% set file_urls = artwork.get_file_urls() %}
-                        <div class="gallery-item user-artwork" data-category="{{ artwork.style_type or 'other' }}" 
-                             data-artwork-id="{{ artwork.id }}"
-                             data-artwork-title="{{ artwork.title }}"
-                             data-artwork-artist="{{ artwork.author.nickname }}"
-                             data-artwork-age="{{ artwork.author.age }}"
-                             data-artwork-date="{{ artwork.created_at.strftime('%Y-%m-%d') }}"
-                             data-artwork-description="{{ artwork.description or '' }}"
-                             data-artwork-original="{{ file_urls.original_sketch or '' }}"
-                             data-artwork-generated="{{ file_urls.colored_image or file_urls.figurine_image or '' }}"
-                             data-artwork-model="{{ file_urls.model_3d or '' }}"
-                             data-artwork-likes="{{ artwork.vote_count or 0 }}"
-                             data-artwork-views="{{ artwork.view_count or 0 }}"
-                             onclick="showArtworkModal(this)">                            <!-- 卡片预览图 -->
-                            <div class="artwork-preview-image">
-                                {% if file_urls.colored_image %}
-                                    <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" onerror="this.src='/static/images/placeholder.png'">
-                                {% elif file_urls.figurine_image %}
-                                    <img src="{{ file_urls.figurine_image }}" alt="{{ artwork.title }}" onerror="this.src='/static/images/placeholder.png'">
-                                {% elif file_urls.original_sketch %}
-                                    <img src="{{ file_urls.original_sketch }}" alt="{{ artwork.title }}" onerror="this.src='/static/images/placeholder.png'">
-                                {% else %}
-                                    <img src="/static/images/placeholder.png" alt="{{ artwork.title }}">
-                                {% endif %}
-                                {% if file_urls.model_3d %}
-                                <div class="model-badge">
-                                    <i class="fas fa-cube"></i>
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="artwork-info">
-                                <h3>{{ artwork.title }}</h3>
-                                <p class="artist-info">
-                                    <i class="fas fa-user-circle"></i>
-                                    {{ artwork.author.nickname }}，{{ artwork.author.age }}岁
-                                </p>
-                                <p class="creation-date">
-                                    <i class="fas fa-calendar"></i>
-                                    {{ artwork.created_at.strftime('%Y-%m-%d') }}
-                                </p>
-                                {% if artwork.description %}
-                                <p class="artwork-description">{{ artwork.description }}</p>
-                                {% endif %}
-                                <div class="artwork-stats">
-                                    <span class="likes" onclick="event.stopPropagation(); likeArtwork('{{ artwork.id }}')">
-                                        <i class="fas fa-heart"></i>
-                                        <span id="likes-{{ artwork.id }}">{{ artwork.vote_count or 0 }}</span>个赞
-                                    </span>
-                                    <span class="views">
-                                        <i class="fas fa-eye"></i>
-                                        {{ artwork.view_count or 0 }}次浏览
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% endif %}
-                    
-                    <!-- 示例作品 -->
-                    <div class="gallery-item" data-category="animals" 
-                         data-artwork-id="sample-cat"
-                         data-artwork-title="可爱小猫"
-                         data-artwork-artist="小明"
-                         data-artwork-age="10"
-                         data-artwork-date="2024年3月15日"
-                         data-artwork-description="我画了一只超级可爱的小猫咪，它有大大的眼睛和长长的尾巴！"
-                         data-artwork-original="images/sample/cat_sketch.png"
-                         data-artwork-generated="images/sample/cat_colored.png"
-                         data-artwork-model=""
-                         data-artwork-likes="42"
-                         data-artwork-views="128"
-                         onclick="showArtworkModal(this)">
-                        
-                        <!-- 卡片预览图 -->
-                        <div class="artwork-preview-image">
-                            <img src="{{ url_for('static', filename='images/sample/cat_colored.png') }}" alt="可爱小猫" class="placeholder-img">
-                        </div>
-                        <div class="artwork-info">
-                            <h3>可爱小猫</h3>
-                            <p class="artist-info">
-                                <i class="fas fa-user-circle"></i>
-                                小明，10岁
-                            </p>
-                            <p class="creation-date">
-                                <i class="fas fa-calendar"></i>
-                                2024年3月15日
-                            </p>
-                            <div class="artwork-stats">
-                                <span class="likes">
-                                    <i class="fas fa-heart"></i>
-                                    42个赞
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    128次浏览
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item" data-category="characters"
-                         data-artwork-id="sample-superhero"
-                         data-artwork-title="超级英雄"
-                         data-artwork-artist="小红"
-                         data-artwork-age="12"
-                         data-artwork-date="2024年3月14日"
-                         data-artwork-description="我设计了一个拯救世界的超级英雄，他有神奇的力量和酷炫的斗篷！"
-                         data-artwork-original="images/sample/superhero_sketch.png"
-                         data-artwork-generated="images/sample/superhero_colored.png"
-                         data-artwork-model=""
-                         data-artwork-likes="67"
-                         data-artwork-views="203"
-                         onclick="showArtworkModal(this)">
-                        
-                        <!-- 卡片预览图 -->
-                        <div class="artwork-preview-image">
-                            <img src="{{ url_for('static', filename='images/sample/superhero_colored.png') }}" alt="超级英雄" class="placeholder-img">
-                        </div>
-                        <div class="artwork-info">
-                            <h3>超级英雄</h3>
-                            <p class="artist-info">
-                                <i class="fas fa-user-circle"></i>
-                                小红，12岁
-                            </p>
-                            <p class="creation-date">
-                                <i class="fas fa-calendar"></i>
-                                2024年3月14日
-                            </p>
-                            <div class="artwork-stats">
-                                <span class="likes">
-                                    <i class="fas fa-heart"></i>
-                                    67个赞
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    203次浏览
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item" data-category="nature"
-                         data-artwork-id="sample-flower"
-                         data-artwork-title="美丽花朵"
-                         data-artwork-artist="小丽"
-                         data-artwork-age="11"
-                         data-artwork-date="2024年3月13日"
-                         data-artwork-description="春天来了，我画了一朵盛开的花朵，颜色好漂亮！"
-                         data-artwork-original="images/sample/flower_sketch.png"
-                         data-artwork-generated="images/sample/flower_colored.png"
-                         data-artwork-model=""
-                         data-artwork-likes="35"
-                         data-artwork-views="96"
-                         onclick="showArtworkModal(this)">
-                        
-                        <!-- 卡片预览图 -->
-                        <div class="artwork-preview-image">
-                            <img src="{{ url_for('static', filename='images/sample/flower_colored.png') }}" alt="美丽花朵" class="placeholder-img">
-                        </div>
-                        <div class="artwork-info">
-                            <h3>美丽花朵</h3>
-                            <p class="artist-info">
-                                <i class="fas fa-user-circle"></i>
-                                小华，11岁
-                            </p>
-                            <p class="creation-date">
-                                <i class="fas fa-calendar"></i>
-                                2024年3月13日
-                            </p>
-                            <div class="artwork-stats">
-                                <span class="likes">
-                                    <i class="fas fa-heart"></i>
-                                    35个赞
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    89次浏览
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="gallery-item" data-category="objects"
-                         data-artwork-id="sample-robot"
-                         data-artwork-title="未来机器人"
-                         data-artwork-artist="小刚"
-                         data-artwork-age="13"
-                         data-artwork-date="2024年3月12日"
-                         data-artwork-description="我画了一个来自未来的机器人，它很聪明也很友善，可以帮助人类做很多事情！"
-                         data-artwork-original="images/sample/robot_sketch.png"
-                         data-artwork-generated="images/sample/robot_colored.png"
-                         data-artwork-model="models/sample/robot.obj"
-                         data-artwork-likes="58"
-                         data-artwork-views="156"
-                         onclick="showArtworkModal(this)">
-                        
-                        <!-- 卡片预览图 -->
-                        <div class="artwork-preview-image">
-                            <img src="{{ url_for('static', filename='images/sample/robot_colored.png') }}" alt="未来机器人" class="placeholder-img">
-                        </div>
-                        <div class="artwork-info">
-                            <h3>未来机器人</h3>
-                            <p class="artist-info">
-                                <i class="fas fa-user-circle"></i>
-                                小刚，13岁
-                            </p>
-                            <p class="creation-date">
-                                <i class="fas fa-calendar"></i>
-                                2024年3月12日
-                            </p>
-                            <div class="artwork-stats">
-                                <span class="likes">
-                                    <i class="fas fa-heart"></i>
-                                    58个赞
-                                </span>
-                                <span class="views">
-                                    <i class="fas fa-eye"></i>
-                                    156次浏览
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="gallery-actions">
-                    <button class="load-more-btn" id="loadMoreBtn">
-                        <i class="fas fa-plus"></i>
-                        加载更多作品
-                    </button>
-                </div>
             </div>
         </section>
 
@@ -407,7 +189,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 AI创意工坊. 专为10-14岁儿童设计.</p>
+                <p>&copy; 2024 AI创意工坊. 保留所有权利.</p>
             </div>
         </div>
     </footer>
@@ -416,7 +198,7 @@
     <div id="artworkModal" class="artwork-modal">
         <div class="artwork-modal-content">
             <div class="artwork-modal-header">
-                <button class="artwork-modal-close" onclick="closeArtworkModal()">&times;</button>
+                <button class="artwork-modal-close">&times;</button>
                 <h2 id="modalArtworkTitle">作品标题</h2>
             </div>
             <div class="artwork-modal-body">
@@ -430,170 +212,32 @@
         </div>
     </div>
 
-    <!-- 3D模型叠加层 -->
-    <div id="modelOverlay" class="model-overlay">
-        <div class="model-overlay-backdrop" onclick="closeModelOverlay()"></div>
-        <div class="model-overlay-content">
-            <div class="model-viewer-container">
-                <!-- 3D模型canvas -->
-                <canvas id="modelCanvas" class="model-canvas"></canvas>
-                
-                <!-- 加载状态 -->
-                <div id="modelLoading" class="model-loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <h3 id="modelTitle">3D模型查看器</h3>
-                    <p>模型正在加载中...</p>
-                </div>
-                
-                <!-- 模型控制面板 -->
-                <div class="model-controls-panel">
-                    <!-- 显示控制 -->
-                    <div class="controls-section">
-                        <h4><i class="fas fa-eye"></i> 显示控制</h4>
-                        <div class="model-controls">
-                            <button class="model-btn" onclick="rotateModel()">
-                                <i class="fas fa-redo"></i> 旋转
-                            </button>
-                            <button class="model-btn" onclick="resetView()">
-                                <i class="fas fa-home"></i> 重置
-                            </button>
-                            <button class="model-btn" onclick="toggleWireframe()">
-                                <i class="fas fa-border-none"></i> 线框
-                            </button>
-                            <button class="model-btn" onclick="togglePointCloud()">
-                                <i class="fas fa-braille"></i> 点云
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 材质设置 -->
-                    <div class="controls-section">
-                        <h4><i class="fas fa-palette"></i> 材质设置</h4>
-                        <div class="model-controls">
-                            <button class="model-btn" onclick="switchMaterial('original')">
-                                <i class="fas fa-gem"></i> 原始
-                            </button>
-                            <button class="model-btn" onclick="switchMaterial('lambert')">
-                                <i class="fas fa-circle"></i> 朗伯
-                            </button>
-                            <button class="model-btn" onclick="switchMaterial('phong')">
-                                <i class="fas fa-sun"></i> 冯氏
-                            </button>
-                            <button class="model-btn" onclick="switchMaterial('standard')">
-                                <i class="fas fa-star"></i> 标准
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 环境设置 -->
-                    <div class="controls-section">
-                        <h4><i class="fas fa-globe"></i> 环境设置</h4>
-                        <div class="model-controls">
-                            <button class="model-btn" onclick="toggleBackground()">
-                                <i class="fas fa-image"></i> 背景
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 视图控制 -->
-                    <div class="controls-section">
-                        <div class="model-controls">
-                            <button class="model-btn" id="galleryFullscreenBtn" onclick="toggleGalleryFullscreen()">
-                                <i class="fas fa-expand"></i> 全屏
-                            </button>
-                            <button class="model-btn close-btn" onclick="closeModelOverlay()">
-                                <i class="fas fa-times"></i> 关闭
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
+    <!-- 3D模型查看器 -->
+    <div id="modelOverlay" class="model-overlay" onclick="closeModelModal()">
+        <div class="model-overlay-backdrop"></div>
+        <div class="model-viewer-container" onclick="event.stopPropagation()">
+            <div class="model-header">
+                <h3 id="modelTitle">3D模型查看器</h3>
+                <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
+            </div>
+            <div id="modelContainer" class="model-container">
+                <!-- Canvas for 3D model -->
+                <canvas id="modelCanvas"></canvas>
                 <!-- 模型信息显示 -->
                 <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
                     准备加载3D模型...
+                </div>
+                <!-- 模型加载状态 -->
+                <div id="modelLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; display: none;">
+                    <p>加载中...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 投票功能JavaScript -->
-    <script>
-        async function voteArtwork(artworkId, voteType) {
-            try {
-                const response = await fetch(`/vote-artwork/${artworkId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ vote_type: voteType })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // 更新投票数显示
-                    const voteBtn = event.target.closest('.vote-btn');
-                    if (voteBtn) {
-                        voteBtn.classList.add('voted');
-                        voteBtn.disabled = true;
-                    }
-                    
-                    // 更新统计数据
-                    const artworkCard = voteBtn.closest('.artwork-card');
-                    const heartStat = artworkCard.querySelector('.stat-item i.fa-heart').parentElement;
-                    heartStat.innerHTML = `<i class="fas fa-heart"></i> ${result.vote_count}`;
-                    
-                    // 显示成功消息
-                    showMessage(result.message, 'success');
-                } else {
-                    showMessage(result.error, 'error');
-                }
-            } catch (error) {
-                console.error('投票失败:', error);
-                showMessage('投票失败，请稍后重试', 'error');
-            }
-        }
-        
-        function showMessage(message, type) {
-            // 创建消息提示
-            const toast = document.createElement('div');
-            toast.className = `message-toast ${type}`;
-            toast.textContent = message;
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'success' ? '#4caf50' : '#f44336'};
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                z-index: 1000;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // 显示动画
-            setTimeout(() => {
-                toast.style.transform = 'translateX(0)';
-            }, 100);
-            
-            // 自动隐藏
-            setTimeout(() => {
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => {
-                    if (document.body.contains(toast)) {
-                        document.body.removeChild(toast);
-                    }
-                }, 300);
-            }, 3000);
-        }
-    </script>
-
     <!-- 3D模型查看器模块 -->
     <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/artwork-modal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
 </body>
 </html>

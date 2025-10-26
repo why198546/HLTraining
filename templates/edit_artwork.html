@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <title>编辑作品 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="header-section">
+                <h1 class="page-title">编辑作品</h1>
+                <p class="page-subtitle">修改您的作品信息</p>
+            </div>
+
+            <div class="edit-artwork-container">
+                <div class="artwork-preview">
+                    <!-- 作品类型标签 -->
+                    <div class="preview-section type-section">
+                        <span class="artwork-type-badge">
+                            {% if artwork.model_3d %}
+                                <i class="fas fa-cube"></i> 3D模型
+                            {% elif artwork.colored_image %}
+                                <i class="fas fa-magic"></i> AI上色
+                            {% elif artwork.video_file %}
+                                <i class="fas fa-play-circle"></i> 视频作品
+                            {% else %}
+                                <i class="fas fa-brush"></i> 手绘
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <!-- 作品预览图 -->
+                    <div class="preview-section">
+                        <div class="preview-image">
+                            {% if file_urls.colored_image %}
+                                <img src="{{ file_urls.colored_image }}" 
+                                     alt="{{ artwork.title }}" class="artwork-image">
+                                <div class="preview-badge">AI上色</div>
+                            {% elif file_urls.figurine_image %}
+                                <img src="{{ file_urls.figurine_image }}" 
+                                     alt="{{ artwork.title }}" class="artwork-image">
+                                <div class="preview-badge">手办风格</div>
+                            {% elif file_urls.original_sketch %}
+                                <img src="{{ file_urls.original_sketch }}" 
+                                     alt="{{ artwork.title }}" class="artwork-image">
+                                <div class="preview-badge">原始手绘</div>
+                            {% else %}
+                                <div class="image-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>暂无图片预览</span>
+                                    <small>作品图片将在这里显示</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- 作品信息 -->
+                    <div class="preview-section">
+                        <div class="section-title">作品信息</div>
+                        <ul class="info-list">
+                            <li class="info-item">
+                                <i class="fas fa-calendar-alt"></i>
+                                <div class="creation-time">
+                                    <span class="creation-date">{{ artwork.created_at.strftime('%Y年%m月%d日') }}</span>
+                                    <span class="creation-hour">{{ artwork.created_at.strftime('%H:%M') }}</span>
+                                </div>
+                            </li>
+                            
+                            {% if artwork.model_3d %}
+                                <li class="info-item">
+                                    <i class="fas fa-cube"></i>
+                                    <span>包含3D模型文件</span>
+                                </li>
+                            {% endif %}
+                            
+                            {% if artwork.video_file %}
+                                <li class="info-item">
+                                    <i class="fas fa-video"></i>
+                                    <span>包含视频文件</span>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <!-- 公开状态 -->
+                    <div class="preview-section">
+                        <div class="info-item">
+                            <i class="fas fa-{{ 'globe-americas' if artwork.is_public else 'lock' }}"></i>
+                            <span class="status-indicator {{ 'status-public' if artwork.is_public else 'status-private' }}">
+                                {{ '公开展示' if artwork.is_public else '私密作品' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="edit-form">
+                    <form method="POST" action="{{ url_for('update_artwork', artwork_id=artwork.id) }}">
+                        <div class="form-group">
+                            <label for="title">作品标题 <span class="required">*</span></label>
+                            <input type="text" id="title" name="title" 
+                                   value="{{ artwork.title }}" 
+                                   placeholder="给您的作品起个响亮的名字" 
+                                   required maxlength="100">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">作品描述</label>
+                            <textarea id="description" name="description" 
+                                      placeholder="分享一下您的创作灵感和故事（可选）" 
+                                      rows="4" maxlength="500">{{ artwork.description or '' }}</textarea>
+                            <small class="form-hint">最多500个字符，让其他人更了解您的作品</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_public" 
+                                       {% if artwork.is_public %}checked{% endif %}>
+                                <span class="checkbox-custom"></span>
+                                <div class="checkbox-text">
+                                    <strong>公开展示这个作品</strong>
+                                    <small class="form-hint">公开的作品会在作品展示页面中展示给所有用户，让更多人欣赏您的创意</small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                保存修改
+                            </button>
+                            <a href="{{ url_for('auth.my_artworks') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i>
+                                取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<style>
+.edit-artwork-container {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: start;
+    min-height: calc(100vh - 200px);
+}
+
+.artwork-preview {
+    background: white;
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #e1e5e9;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: fit-content;
+}
+
+.preview-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.preview-section:last-child {
+    border-bottom: none;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.artwork-type-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.artwork-type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #f0f6ff;
+    color: #0969da;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.preview-image {
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f8f9fa;
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e9ecef;
+    margin-bottom: 0;
+}
+
+.artwork-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.preview-image:hover .artwork-image {
+    transform: scale(1.02);
+}
+
+.image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    color: #8b949e;
+    font-size: 0.9rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.image-placeholder i {
+    font-size: 2.5rem;
+    opacity: 0.6;
+    color: #d0d7de;
+}
+
+.preview-badge {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    font-size: 0.9rem;
+    color: #24292f;
+    border-bottom: 1px solid #f6f8fa;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-item i {
+    color: #656d76;
+    width: 18px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.info-item .fa-calendar-alt {
+    color: #0969da;
+}
+
+.info-item .fa-cube {
+    color: #8250df;
+}
+
+.info-item .fa-video {
+    color: #cf222e;
+}
+
+.info-item .fa-globe-americas {
+    color: #1a7f37;
+}
+
+.info-item .fa-lock {
+    color: #bf8700;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.status-public {
+    background: #f0fff4;
+    color: #1a7f37;
+    border: 1px solid #a3e635;
+}
+
+.status-private {
+    background: #fef7f0;
+    color: #bf8700;
+    border: 1px solid #ffcf40;
+}
+
+.creation-time {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.creation-date {
+    font-weight: 500;
+}
+
+.creation-hour {
+    font-size: 0.8rem;
+    color: #656d76;
+}
+
+.edit-form {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #e1e5e9;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: #333;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.required {
+    color: #e74c3c;
+    margin-left: 2px;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid #e1e5e9;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #fafbfc;
+    box-sizing: border-box;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.checkbox-label:hover {
+    background: #e3f2fd;
+    border-color: #007bff;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+    background: #007bff;
+    border-color: #007bff;
+    transform: scale(1.1);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+    content: '✓';
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.checkbox-text {
+    flex: 1;
+}
+
+.checkbox-text strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: #333;
+}
+
+.form-hint {
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+    display: block;
+    line-height: 1.4;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e1e5e9;
+}
+
+.btn {
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #e1e5e9;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+    border-color: #6c757d;
+    color: #495057;
+    transform: translateY(-1px);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .edit-artwork-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-top: 1rem;
+        max-width: 100%;
+        padding: 0 1rem;
+        min-height: auto;
+    }
+    
+    .artwork-preview {
+        order: 2;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    .edit-form {
+        order: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .edit-artwork-container {
+        gap: 1.5rem;
+        padding: 0 0.5rem;
+        grid-template-columns: 1fr;
+    }
+    
+    .artwork-preview {
+        border-radius: 12px;
+        max-width: 100%;
+        margin: 0;
+    }
+    
+    .edit-form {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .preview-section {
+        padding: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        text-align: center;
+        justify-content: center;
+    }
+    
+    .info-item {
+        padding: 0.75rem 0;
+        font-size: 0.85rem;
+    }
+}
+
+/* 加载动画 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.artwork-preview {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.edit-form {
+    animation: fadeInUp 0.8s ease-out;
+    animation-delay: 0.2s;
+}
+
+.preview-section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.preview-section:nth-child(1) { animation-delay: 0.1s; }
+.preview-section:nth-child(2) { animation-delay: 0.2s; }
+.preview-section:nth-child(3) { animation-delay: 0.3s; }
+.preview-section:nth-child(4) { animation-delay: 0.4s; }
+
+/* 聚焦效果 */
+.artwork-preview:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+.preview-image:hover {
+    transform: scale(1.01);
+    transition: transform 0.3s ease;
+}
+
+.info-item:hover {
+    background: #f6f8fa;
+    transition: background 0.2s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const titleInput = document.getElementById('title');
+    const descriptionTextarea = document.getElementById('description');
+    const saveButton = document.querySelector('.btn-primary');
+    
+    // 字符计数器
+    function updateCharCount(element, maxLength, target) {
+        const currentLength = element.value.length;
+        const remaining = maxLength - currentLength;
+        const hint = element.parentNode.querySelector('.form-hint');
+        
+        if (remaining < 20) {
+            hint.style.color = remaining < 0 ? '#e74c3c' : '#f39c12';
+        } else {
+            hint.style.color = '#666';
+        }
+        
+        hint.textContent = hint.textContent.replace(/\d+/, remaining);
+    }
+    
+    // 标题字符计数
+    titleInput.addEventListener('input', function() {
+        const hint = this.parentNode.querySelector('.form-hint') || document.createElement('small');
+        if (!this.parentNode.querySelector('.form-hint')) {
+            hint.className = 'form-hint';
+            hint.textContent = `还可输入 ${100 - this.value.length} 个字符`;
+            this.parentNode.appendChild(hint);
+        } else {
+            hint.textContent = `还可输入 ${100 - this.value.length} 个字符`;
+        }
+        
+        if (this.value.length > 80) {
+            hint.style.color = this.value.length >= 100 ? '#e74c3c' : '#f39c12';
+        } else {
+            hint.style.color = '#666';
+        }
+    });
+    
+    // 描述字符计数
+    descriptionTextarea.addEventListener('input', function() {
+        const hint = this.parentNode.querySelector('.form-hint');
+        const remaining = 500 - this.value.length;
+        hint.textContent = `最多500个字符，还可输入 ${remaining} 个字符`;
+        
+        if (remaining < 50) {
+            hint.style.color = remaining < 0 ? '#e74c3c' : '#f39c12';
+        } else {
+            hint.style.color = '#666';
+        }
+    });
+    
+    // 表单提交验证
+    form.addEventListener('submit', function(e) {
+        const title = titleInput.value.trim();
+        
+        if (!title) {
+            e.preventDefault();
+            titleInput.focus();
+            titleInput.style.borderColor = '#e74c3c';
+            
+            // 显示错误提示
+            let errorMsg = titleInput.parentNode.querySelector('.error-msg');
+            if (!errorMsg) {
+                errorMsg = document.createElement('small');
+                errorMsg.className = 'error-msg';
+                errorMsg.style.color = '#e74c3c';
+                errorMsg.style.display = 'block';
+                errorMsg.style.marginTop = '0.5rem';
+                titleInput.parentNode.appendChild(errorMsg);
+            }
+            errorMsg.textContent = '请输入作品标题';
+            return;
+        }
+        
+        if (title.length > 100) {
+            e.preventDefault();
+            titleInput.focus();
+            return;
+        }
+        
+        if (descriptionTextarea.value.length > 500) {
+            e.preventDefault();
+            descriptionTextarea.focus();
+            return;
+        }
+        
+        // 提交动画
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+        saveButton.disabled = true;
+    });
+    
+    // 输入时清除错误状态
+    titleInput.addEventListener('input', function() {
+        this.style.borderColor = '';
+        const errorMsg = this.parentNode.querySelector('.error-msg');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
+    });
+    
+    // 自动聚焦标题输入框
+    titleInput.focus();
+    titleInput.setSelectionRange(titleInput.value.length, titleInput.value.length);
+});
+</script>
+</body>
+</html>

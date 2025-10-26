@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 import os
 import uuid
 from werkzeug.utils import secure_filename
@@ -56,7 +56,7 @@ with app.app_context():
         db.create_all()
         print("数据库表创建成功")
     except Exception as e:
-        print(f"数据库初始化错误: {e}")
+        print(f"数据库创建失败: {e}")
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
@@ -147,6 +147,7 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
             
             artwork.status = 'completed'
             artwork.description = prompt or "AI生成的精美作品"
+            artwork.is_public = True  # 默认设为公开
             
             # 设置文件路径
             if generated_image_path:
@@ -171,8 +172,13 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
 def index():
     """主页"""
     # 获取最新的4个作品用于首页展示
-    gallery_manager = GalleryManager()
-    latest_artworks = gallery_manager.get_latest_artworks(limit=4)
+    from models import Artwork, User
+    from sqlalchemy import desc
+    
+    latest_artworks = Artwork.query.filter_by(
+        is_public=True
+    ).join(User).order_by(desc(Artwork.created_at)).limit(4).all()
+    
     return render_template('index.html', latest_artworks=latest_artworks)
 
 @app.route('/create')
@@ -181,14 +187,107 @@ def create():
     """创作页面"""
     return render_template('create.html')
 
+@app.route('/edit/<int:artwork_id>')
+@login_required
+def edit_artwork(artwork_id):
+    """编辑作品页面"""
+    from models import Artwork
+    
+    # 获取作品并检查权限
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    # 确保只有作品所有者可以编辑
+    if artwork.user_id != current_user.id:
+        flash('您没有权限编辑这个作品', 'error')
+        return redirect(url_for('auth.my_artworks'))
+    
+    # 获取文件URLs
+    file_urls = artwork.get_file_urls()
+    
+    # 渲染编辑页面，传递作品数据和文件URLs
+    return render_template('edit_artwork.html', artwork=artwork, file_urls=file_urls)
+
+@app.route('/edit/<int:artwork_id>', methods=['POST'])
+@login_required
+def update_artwork(artwork_id):
+    """更新作品信息"""
+    from models import Artwork, db
+    
+    # 获取作品并检查权限
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    if artwork.user_id != current_user.id:
+        flash('您没有权限编辑这个作品', 'error')
+        return redirect(url_for('auth.my_artworks'))
+    
+    # 获取表单数据
+    title = request.form.get('title', '').strip()
+    description = request.form.get('description', '').strip()
+    is_public = request.form.get('is_public') == 'on'
+    
+    # 验证数据
+    if not title:
+        flash('作品标题不能为空', 'error')
+        file_urls = artwork.get_file_urls()
+        return render_template('edit_artwork.html', artwork=artwork, file_urls=file_urls)
+    
+    if len(title) > 100:
+        flash('作品标题最多100个字符', 'error')
+        file_urls = artwork.get_file_urls()
+        return render_template('edit_artwork.html', artwork=artwork, file_urls=file_urls)
+    
+    if len(description) > 500:
+        flash('作品描述最多500个字符', 'error')
+        file_urls = artwork.get_file_urls()
+        return render_template('edit_artwork.html', artwork=artwork, file_urls=file_urls)
+    
+    # 记录原始状态用于比较
+    original_title = artwork.title
+    original_description = artwork.description
+    original_is_public = artwork.is_public
+    
+    # 更新作品信息
+    artwork.title = title
+    artwork.description = description if description else None
+    artwork.is_public = is_public
+    
+    try:
+        db.session.commit()
+        
+        # 生成更详细的成功消息
+        changes = []
+        if original_title != title:
+            changes.append('标题')
+        if original_description != description:
+            changes.append('描述')
+        if original_is_public != is_public:
+            changes.append('公开状态')
+        
+        if changes:
+            change_text = '、'.join(changes)
+            flash(f'作品{change_text}已更新成功！', 'success')
+        else:
+            flash('作品信息保存成功', 'success')
+            
+        return redirect(url_for('auth.my_artworks'))
+    except Exception as e:
+        db.session.rollback()
+        print(f"Update artwork error: {e}")
+        flash('更新失败，请重试', 'error')
+        file_urls = artwork.get_file_urls()
+        return render_template('edit_artwork.html', artwork=artwork, file_urls=file_urls)
+
 @app.route('/gallery')
 def gallery():
     """显示作品画廊"""
-    # 获取所有推荐的作品
+    from models import Artwork, User
+    from sqlalchemy import desc
+    
+    # 获取所有公开的作品，按创建时间降序排列
     artworks = Artwork.query.filter_by(
-        is_featured=True, 
         is_public=True
-    ).order_by(Artwork.vote_count.desc(), Artwork.created_at.desc()).all()
+    ).join(User).order_by(desc(Artwork.created_at)).all()
+    
     return render_template('gallery.html', artworks=artworks)
 
 @app.route('/tutorial')
@@ -346,6 +445,7 @@ def generate_image():
         style = request.form.get('style', 'cute')
         color_preference = request.form.get('color_preference', 'colorful')
         expert_mode = request.form.get('expert_mode', 'false').lower() == 'true'
+        aspect_ratio = request.form.get('aspect_ratio', '1:1')  # 新增高宽比参数
         uploaded_file = request.files.get('sketch')
         original_image_path = request.form.get('original_image_path', '').strip()
         session_id = request.form.get('session_id')
@@ -354,7 +454,7 @@ def generate_image():
         if not prompt and not uploaded_file and not original_image_path:
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
-        print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}, Expert模式: {expert_mode}")
+        print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}, Expert模式: {expert_mode}, 高宽比: {aspect_ratio}")
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
@@ -386,17 +486,17 @@ def generate_image():
         if sketch_path and prompt:
             # 图片+文字模式
             generated_image_path = nano_banana.generate_image_from_sketch_and_text(
-                sketch_path, prompt, style=style, color_preference=color_preference, expert_mode=expert_mode
+                sketch_path, prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
             )
         elif sketch_path:
             # 纯图片模式
             generated_image_path = nano_banana.generate_image_from_sketch(
-                sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode
+                sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
             )
         else:
             # 纯文字模式
             generated_image_path = nano_banana.generate_image_from_text(
-                prompt, style=style, color_preference=color_preference, expert_mode=expert_mode
+                prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
             )
         
         print(f"✅ 图片生成完成: {generated_image_path}")
@@ -642,6 +742,7 @@ def save_artwork():
             
             artwork.description = data.get('description', '')
             artwork.status = 'completed'
+            artwork.is_public = True  # 默认设为公开
             
             # 设置文件路径（只保存文件名，路径由session_id构建）
             session_folder = f"creation_sessions/{session_id}"
@@ -700,14 +801,18 @@ def like_artwork(artwork_id):
 
 # ===================== 视频生成相关路由 =====================
 
-@app.route('/api/convert-image-for-video', methods=['POST'])
-def convert_image_for_video():
-    """将图片转换为视频所需的宽高比"""
+@app.route('/test-3d')
+def test_3d():
+    """3D测试页面"""
+    return send_from_directory('.', 'test_3d.html')
+
+@app.route('/api/get-image-info', methods=['POST'])
+def get_image_info():
+    """获取图片信息和推荐框选区域"""
     try:
         data = request.get_json()
         image_path = data.get('image_path')
-        aspect_ratio = data.get('aspect_ratio', '16:9')
-        padding_mode = data.get('padding_mode', 'blur')
+        use_expanded = data.get('use_expanded', False)  # 是否使用扩展图片模式
         
         if not image_path:
             return jsonify({'success': False, 'error': '缺少图片路径'}), 400
@@ -720,29 +825,20 @@ def convert_image_for_video():
         else:
             image_path = os.path.join('uploads', image_path)
         
-        print(f"🎬 转换图片用于视频: {image_path}")
-        print(f"📐 目标宽高比: {aspect_ratio}, 填充模式: {padding_mode}")
+        print(f"📐 获取图片信息: {image_path} (扩展模式: {use_expanded})")
         
-        # 调用转换函数
+        # 获取图片信息
         nano_banana = NanoBananaAPI()
-        converted_path = nano_banana.convert_image_for_video(
-            image_path, 
-            aspect_ratio=aspect_ratio, 
-            padding_mode=padding_mode
-        )
+        info = nano_banana.get_image_info(image_path, use_expanded=use_expanded)
         
-        # 返回相对路径
-        relative_path = converted_path.replace('uploads/', '/uploads/')
-        
-        return jsonify({
-            'success': True,
-            'converted_image_url': relative_path
-        })
-        
+        if info['success']:
+            print(f"✅ 图片信息获取成功: {info['width']}x{info['height']}")
+            return jsonify(info)
+        else:
+            return jsonify({'success': False, 'error': info['error']}), 500
+            
     except Exception as e:
-        print(f"❌ 图片转换错误: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"❌ 获取图片信息失败: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate-video', methods=['POST'])
@@ -865,6 +961,12 @@ def internal_error(e):
 @app.route('/static/creation_sessions/<path:filename>')
 def serve_creation_sessions(filename):
     """提供creation_sessions文件夹中的静态文件"""
+    from flask import send_from_directory
+    return send_from_directory('static/creation_sessions', filename)
+
+@app.route('/creation_sessions/<path:filename>')
+def serve_creation_sessions_direct(filename):
+    """提供creation_sessions文件夹中的静态文件（直接路径）"""
     from flask import send_from_directory
     return send_from_directory('creation_sessions', filename)
 
@@ -1020,18 +1122,18 @@ def get_artwork_api(artwork_id):
             'title': artwork.title or '未命名作品',
             'description': artwork.description,
             'created_at': artwork.created_at.strftime('%Y年%m月%d日 %H:%M'),
-            'artwork_type': '3D模型' if file_urls.model_3d else 'AI上色' if file_urls.colored_image else '手绘作品',
-            'image_url': file_urls.colored_image or file_urls.figurine_image or file_urls.original_sketch or '/static/images/placeholder.png',
+            'artwork_type': '3D模型' if file_urls['model_3d'] else 'AI上色' if file_urls['colored_image'] else '手绘作品',
+            'image_url': file_urls['colored_image'] or file_urls['figurine_image'] or file_urls['original_sketch'] or '/static/images/placeholder.png',
             'views': artwork.view_count or 0,
             'likes': artwork.vote_count or 0,
             'is_featured': artwork.is_featured,
             'is_public': artwork.is_public,
             'files': {
-                'original_sketch': file_urls.original_sketch,
-                'colored_image': file_urls.colored_image,
-                'figurine_image': file_urls.figurine_image,
-                'model_3d': file_urls.model_3d,
-                'video_file': file_urls.video_file
+                'original_sketch': file_urls['original_sketch'],
+                'colored_image': file_urls['colored_image'],
+                'figurine_image': file_urls['figurine_image'],
+                'model_3d': file_urls['model_3d'],
+                'video_file': file_urls['video_file']
             }
         }
         

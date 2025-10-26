@@ -18,7 +18,7 @@ function initializeGallery() {
 
 function setupFilterButtons() {
     const filterButtons = document.querySelectorAll('.filter-btn');
-    const galleryItems = document.querySelectorAll('.gallery-item');
+    const artworkItems = document.querySelectorAll('.artwork-item');
     
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -31,7 +31,7 @@ function setupFilterButtons() {
             const filter = this.getAttribute('data-filter');
             
             // 筛选作品
-            galleryItems.forEach(item => {
+            artworkItems.forEach(item => {
                 if (filter === 'all' || item.getAttribute('data-category') === filter) {
                     item.style.display = 'block';
                     item.classList.add('fade-in');
@@ -47,6 +47,11 @@ function setupFilterButtons() {
 function setupLoadMoreButton() {
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     
+    // 如果页面中没有加载更多按钮，则跳过设置
+    if (!loadMoreBtn) {
+        return;
+    }
+    
     loadMoreBtn.addEventListener('click', function() {
         // 模拟加载更多作品
         loadMoreArtworks();
@@ -56,6 +61,11 @@ function setupLoadMoreButton() {
 function loadMoreArtworks() {
     const galleryGrid = document.getElementById('galleryGrid');
     const loadMoreBtn = document.getElementById('loadMoreBtn');
+    
+    // 如果按钮不存在，则退出
+    if (!loadMoreBtn || !galleryGrid) {
+        return;
+    }
     
     // 显示加载状态
     loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在加载...';
@@ -168,11 +178,16 @@ function createArtworkElement(data) {
 function setupArtworkInteractions() {
     const galleryGrid = document.getElementById('galleryGrid');
     
+    if (!galleryGrid) {
+        console.error('Gallery grid not found!');
+        return;
+    }
+    
     // 使用事件委托处理作品卡片点击
     galleryGrid.addEventListener('click', function(e) {
-        const galleryItem = e.target.closest('.gallery-item');
-        if (galleryItem) {
-            showArtworkModal(galleryItem);
+        const artworkItem = e.target.closest('.artwork-item');
+        if (artworkItem) {
+            showArtworkModal(artworkItem);
         }
     });
     
@@ -183,90 +198,6 @@ function setupArtworkInteractions() {
             handleLike(e.target.closest('.likes'));
         }
     });
-}
-
-function showArtworkModal(galleryItem) {
-    // 创建模态框
-    const modal = document.createElement('div');
-    modal.className = 'artwork-modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>${galleryItem.querySelector('h3').textContent}</h2>
-                <button class="close-modal">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-showcase">
-                    ${galleryItem.querySelector('.artwork-showcase').innerHTML}
-                </div>
-                <div class="modal-info">
-                    ${galleryItem.querySelector('.artwork-info').innerHTML}
-                    <div class="modal-actions">
-                        <button class="action-btn share-btn">
-                            <i class="fas fa-share"></i>
-                            分享作品
-                        </button>
-                        <button class="action-btn download-btn">
-                            <i class="fas fa-download"></i>
-                            下载图片
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // 添加模态框样式
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // 触发动画
-    setTimeout(() => {
-        modal.style.opacity = '1';
-    }, 10);
-    
-    // 设置关闭事件
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-        closeModal(modal);
-    });
-    
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            closeModal(modal);
-        }
-    });
-    
-    // 设置操作按钮事件
-    modal.querySelector('.share-btn').addEventListener('click', () => {
-        shareArtwork(galleryItem);
-    });
-    
-    modal.querySelector('.download-btn').addEventListener('click', () => {
-        downloadArtwork(galleryItem);
-    });
-}
-
-function closeModal(modal) {
-    modal.style.opacity = '0';
-    setTimeout(() => {
-        document.body.removeChild(modal);
-    }, 300);
 }
 
 function handleLike(likeElement) {
@@ -742,7 +673,14 @@ async function likeArtwork(artworkId) {
 // 作品详情模态框功能
 function showArtworkModal(element) {
     // 阻止事件冒泡，防止意外触发
-    event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    if (!element) {
+        console.error('Element is null or undefined');
+        return;
+    }
     
     const artworkData = {
         id: element.dataset.artworkId,
@@ -759,10 +697,17 @@ function showArtworkModal(element) {
     };
     
     // 设置模态框标题
-    document.getElementById('modalArtworkTitle').textContent = artworkData.title;
+    const modalTitle = document.getElementById('modalArtworkTitle');
+    if (modalTitle) {
+        modalTitle.textContent = artworkData.title;
+    }
     
     // 构建作品展示区域
     const showcase = document.getElementById('modalArtworkShowcase');
+    if (!showcase) {
+        console.error('Modal showcase element not found');
+        return;
+    }
     showcase.innerHTML = '';
     
     // 原始简笔画
@@ -771,7 +716,7 @@ function showArtworkModal(element) {
         originalStep.className = 'artwork-detail-step';
         originalStep.innerHTML = `
             <h4>原始简笔画</h4>
-            <img src="/static/${artworkData.originalImage}" alt="原始简笔画" 
+            <img src="${artworkData.originalImage}" alt="原始简笔画" 
                  onclick="showImageModal(this.src, '原始简笔画')" 
                  style="cursor: pointer;" 
                  title="点击查看大图"
@@ -799,7 +744,7 @@ function showArtworkModal(element) {
         generatedStep.className = 'artwork-detail-step';
         generatedStep.innerHTML = `
             <h4>AI生成效果</h4>
-            <img src="/static/${artworkData.generatedImage}" alt="AI生成效果" 
+            <img src="${artworkData.generatedImage}" alt="AI生成效果" 
                  onclick="showImageModal(this.src, 'AI生成效果')" 
                  style="cursor: pointer;" 
                  title="点击查看大图"
@@ -828,6 +773,10 @@ function showArtworkModal(element) {
     
     // 设置作品信息
     const info = document.getElementById('modalArtworkInfo');
+    if (!info) {
+        console.error('Modal info element not found');
+        return;
+    }
     info.innerHTML = `
         <div class="modal-artwork-info">
             <p class="modal-artist-info">
@@ -859,13 +808,29 @@ function showArtworkModal(element) {
     
     // 显示模态框
     const modal = document.getElementById('artworkModal');
+    if (!modal) {
+        console.error('Artwork modal element not found');
+        return;
+    }
+    
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // 防止背景滚动
+    
+    // 添加显示类来触发CSS动画
+    modal.classList.add('show');
+    
+    // 保存当前滚动位置并固定页面
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     
     // 添加动画效果
     setTimeout(() => {
-        modal.querySelector('.artwork-modal-content').style.transform = 'scale(1)';
-        modal.querySelector('.artwork-modal-content').style.opacity = '1';
+        const modalContent = modal.querySelector('.artwork-modal-content');
+        if (modalContent) {
+            modalContent.style.transform = 'scale(1)';
+            modalContent.style.opacity = '1';
+        }
     }, 10);
 }
 
@@ -873,13 +838,22 @@ function closeArtworkModal() {
     const modal = document.getElementById('artworkModal');
     const content = modal.querySelector('.artwork-modal-content');
     
+    // 移除显示类
+    modal.classList.remove('show');
+    
     // 添加关闭动画
     content.style.transform = 'scale(0.9)';
     content.style.opacity = '0';
     
     setTimeout(() => {
         modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // 恢复背景滚动
+        
+        // 恢复页面滚动位置
+        const scrollY = document.body.style.top;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
         
         // 重置模态框状态
         content.classList.remove('enlarged-mode');
@@ -964,8 +938,6 @@ let modelViewer = null;
 function showModelModal(modelSrc, title) {
     event.stopPropagation();
     
-    console.log('显示3D模型:', modelSrc, title);
-    
     const modelOverlay = document.getElementById('modelOverlay');
     const modelTitle = document.getElementById('modelTitle');
     const modelInfo = document.getElementById('modelInfo');
@@ -973,7 +945,7 @@ function showModelModal(modelSrc, title) {
     if (modelOverlay && modelTitle) {
         modelTitle.textContent = title;
         if (modelInfo) {
-            modelInfo.textContent = `准备显示3D模型`;
+            modelInfo.textContent = `正在加载3D模型...`;
         }
         
         modelOverlay.classList.add('visible');
@@ -988,29 +960,41 @@ function showModelModal(modelSrc, title) {
             return;
         }
         
-        console.log('Three.js 已加载，开始初始化3D场景');
-        
         // 直接初始化3D场景
         setTimeout(() => {
             initializeModelViewer();
             // 检查是否有实际的模型文件，如果没有或加载失败就显示占位符
             if (modelViewer) {
                 if (modelSrc && modelSrc.trim() !== '' && modelSrc !== 'null') {
-                    const modelUrl = `/static/${modelSrc}`;
-                    modelViewer.loadModel(modelUrl);
+                    // modelSrc 已经是完整的URL路径，不需要再添加 /static/
+                    modelViewer.loadModel(modelSrc);
                 } else {
                     // 直接创建占位符模型，不依赖于外部文件
                     modelViewer.createPlaceholderModel();
                 }
             }
         }, 100);
+    } else {
+        console.error('Model overlay elements not found');
+    }
+}
+
+// 关闭3D模型模态框
+function closeModelModal() {
+    const modelOverlay = document.getElementById('modelOverlay');
+    if (modelOverlay) {
+        modelOverlay.classList.remove('visible');
+        
+        // 销毁3D查看器实例
+        if (modelViewer) {
+            modelViewer.dispose();
+            modelViewer = null;
+        }
     }
 }
 
 // 初始化3D模型查看器
 function initializeModelViewer() {
-    console.log('初始化ModelViewer3D');
-    
     // 确保通用模块已加载
     if (typeof ModelViewer3D === 'undefined') {
         console.error('ModelViewer3D 模块未加载');
@@ -1040,7 +1024,6 @@ function initializeModelViewer() {
         enableAutoRotate: false,
         enableAnimation: true,
         onModelLoaded: (model) => {
-            console.log('模型加载完成:', model);
             const loading = document.getElementById('modelLoading');
             if (loading) {
                 loading.classList.add('hidden');
@@ -1062,7 +1045,8 @@ function initializeModelViewer() {
         }
     });
     
-    console.log('ModelViewer3D 初始化完成');
+    // 初始化3D查看器
+    modelViewer.init();
 }
 
 
@@ -1261,12 +1245,36 @@ function setImageMode(img, mode) {
 document.addEventListener('DOMContentLoaded', function() {
     const artworkModal = document.getElementById('artworkModal');
     if (artworkModal) {
+        // 点击背景关闭
         artworkModal.addEventListener('click', function(event) {
             if (event.target === artworkModal) {
                 closeArtworkModal();
             }
         });
+        
+        // 点击关闭按钮关闭
+        const closeBtn = artworkModal.querySelector('.artwork-modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                closeArtworkModal();
+            });
+        }
     }
+    
+    // ESC键关闭模态框
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('artworkModal');
+            const modelOverlay = document.getElementById('modelOverlay');
+            
+            if (modal && modal.style.display !== 'none') {
+                closeArtworkModal();
+            } else if (modelOverlay && modelOverlay.classList.contains('visible')) {
+                closeModelModal();
+            }
+        }
+    });
 });
 // 切换Gallery 3D模型全屏
 function toggleGalleryFullscreen() {
