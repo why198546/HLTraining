@@ -67,6 +67,22 @@
                             <option value="720p" selected>720p</option>
                             <option value="1080p">1080p</option>
                         </select>
+                        <div class="input-hint">
+                            <i class="fas fa-clock"></i>
+                            <span id="quality-time-hint">720p预估时间更短</span>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label for="video-model">AI模型：</label>
+                        <select id="video-model" class="config-select">
+                            <option value="veo-3.1-generate-preview">Veo 3.1 标准版</option>
+                            <option value="veo-3.1-fast-generate-preview" selected>Veo 3.1 快速版</option>
+                        </select>
+                        <div class="input-hint">
+                            <i class="fas fa-info-circle"></i>
+                            <span id="model-hint">标准版质量更高，快速版生成更快</span>
+                        </div>
                     </div>
 
                     <div class="option-group">
@@ -79,23 +95,15 @@
                     </div>
                 </div>
 
+                <!-- 预估时间显示 -->
+                <div class="time-estimate-section">
+                </div>
+
                 <button id="generate-video-btn" class="generate-video-btn">
                     <i class="fas fa-wand-magic-sparkles"></i>
-                    生成视频
+                    <span id="btn-text">生成视频</span>
+                    <span id="btn-estimate" class="btn-estimate"></span>
                 </button>
-            </div>
-
-            <!-- 视频生成状态 -->
-            <div id="video-generation-status" class="generation-status" style="display: none;">
-                <div class="status-card">
-                    <div class="loading-spinner"></div>
-                    <h3>正在生成视频...</h3>
-                    <p id="status-message">初始化中...</p>
-                    <div class="progress-bar">
-                        <div id="progress-fill" class="progress-fill"></div>
-                    </div>
-                    <span id="progress-text" class="progress-text">0%</span>
-                </div>
             </div>
 
             <!-- 生成结果 -->

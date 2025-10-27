@@ -841,22 +841,73 @@ def get_image_info():
         print(f"❌ 获取图片信息失败: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/translate-prompt', methods=['POST'])
+def translate_prompt_api():
+    """翻译prompt并返回预览信息"""
+    try:
+        from api.prompt_translator import translate_prompt
+        
+        data = request.get_json()
+        original_prompt = data.get('prompt', '').strip()
+        
+        if not original_prompt:
+            return jsonify({'success': False, 'error': '提示词不能为空'}), 400
+        
+        print(f"🌐 翻译prompt: {original_prompt}")
+        
+        # 翻译prompt
+        translated_prompt = translate_prompt(original_prompt)
+        
+        print(f"✅ 翻译完成: {translated_prompt}")
+        
+        # 添加详细的对话检查日志
+        if "saying in Chinese:" in translated_prompt:
+            print("🗣️ 检测到对话保护：找到 'saying in Chinese:' 标记")
+            # 提取并检查对话内容
+            import re
+            chinese_content = re.search(r'saying in Chinese:\s*["""\'\'](.*?)["""\'\'"]', translated_prompt)
+            if chinese_content:
+                dialogue_text = chinese_content.group(1)
+                print(f"🔍 保护的对话内容: '{dialogue_text}'")
+                # 检查是否包含中文
+                if re.search(r'[\u4e00-\u9fff]', dialogue_text):
+                    print("✅ 对话内容确实保持中文")
+                else:
+                    print("❌ 对话内容没有中文")
+            else:
+                print("⚠️ 没有找到对话内容")
+        else:
+            print("❌ 没有检测到对话保护标记")
+        
+        return jsonify({
+            'success': True,
+            'original_prompt': original_prompt,
+            'translated_prompt': translated_prompt
+        })
+        
+    except Exception as e:
+        print(f"❌ prompt翻译失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/generate-video', methods=['POST'])
 def generate_video():
     """生成视频"""
     try:
         from api.veo31 import get_veo_api
         
+        from api.prompt_translator import translate_prompt
+        
         data = request.get_json()
         session_id = data.get('session_id')
         image_url = data.get('image_url')
-        prompt = data.get('prompt')
+        original_prompt = data.get('prompt')
         duration = data.get('duration', 8)
         aspect_ratio = data.get('aspect_ratio', '16:9')
         quality = data.get('quality', '720p')
         motion_intensity = data.get('motion_intensity', 'medium')
+        model = data.get('model', 'veo-3.1-fast-generate-preview')  # 默认使用快速版模型
         
-        if not session_id or not image_url or not prompt:
+        if not session_id or not image_url or not original_prompt:
             return jsonify({
                 'success': False,
                 'error': '缺少必需参数'
@@ -865,22 +916,62 @@ def generate_video():
         print(f"\n🎬 收到视频生成请求:")
         print(f"   Session ID: {session_id}")
         print(f"   Image URL: {image_url}")
-        print(f"   Prompt: {prompt}")
+        print(f"   原始提示词: {original_prompt}")
         print(f"   Duration: {duration}s")
         print(f"   Aspect Ratio: {aspect_ratio}")
         print(f"   Quality: {quality}")
         print(f"   Motion: {motion_intensity}")
+        print(f"   Model: {model}")
         
-        # 调用Veo API
+        # 直接翻译中文提示词为英文
+        print(f"🌐 开始翻译prompt: {original_prompt}")
+        english_prompt = translate_prompt(original_prompt)
+        print(f"✅ 翻译完成: {english_prompt}")
+        
+        # 添加详细的对话检查日志
+        if "saying in Chinese:" in english_prompt:
+            print("🗣️ 检测到对话保护：找到 'saying in Chinese:' 标记")
+            # 提取并检查对话内容
+            import re
+            chinese_content = re.search(r'saying in Chinese:\s*["""\'\'](.*?)["""\'\'"]', english_prompt)
+            if chinese_content:
+                dialogue_text = chinese_content.group(1)
+                print(f"🔍 保护的对话内容: '{dialogue_text}'")
+                # 检查是否包含中文
+                if re.search(r'[\u4e00-\u9fff]', dialogue_text):
+                    print("✅ 对话内容确实保持中文")
+                else:
+                    print("❌ 对话内容没有中文")
+            else:
+                print("⚠️ 没有找到对话内容")
+        else:
+            print("❌ 没有检测到对话保护标记")
+        
+        # 调用Veo API，使用英文提示词
         veo_api = get_veo_api()
-        result = veo_api.generate_video(
-            image_url=image_url,
-            prompt=prompt,
-            duration=duration,
-            aspect_ratio=aspect_ratio,
-            quality=quality,
-            motion_intensity=motion_intensity
-        )
+        try:
+            result = veo_api.generate_video(
+                image_url=image_url,
+                prompt=english_prompt,  # 使用翻译后的英文提示词
+                duration=duration,
+                aspect_ratio=aspect_ratio,
+                quality=quality,
+                motion_intensity=motion_intensity,
+                model=model  # 传递模型参数
+            )
+        except Exception as api_error:
+            error_str = str(api_error)
+            print(f"❌ Veo API错误: {error_str}")
+            
+            # 检查是否是配额限制错误
+            if "RESOURCE_EXHAUSTED" in error_str or "quota" in error_str.lower():
+                return jsonify({
+                    'success': False,
+                    'error': 'API配额已用完，请稍后再试。当前Veo模型使用量较高，建议等待配额重置。',
+                    'error_type': 'quota_exceeded'
+                }), 429
+            else:
+                raise api_error  # 重新抛出其他类型的错误
         
         return jsonify({
             'success': True,
@@ -903,16 +994,30 @@ def video_status(task_id):
     try:
         from api.veo31 import get_veo_api
         
+        print(f"🔍 检查任务状态: {task_id}")
+        
         veo_api = get_veo_api()
         status_result = veo_api.check_status(task_id)
+        
+        print(f"📊 状态结果: {status_result}")
+        
+        # 确保返回success字段
+        if 'success' not in status_result:
+            status_result['success'] = status_result.get('status') != 'failed'
         
         return jsonify(status_result)
         
     except Exception as e:
-        print(f"❌ 状态检查错误: {str(e)}")
+        error_msg = str(e)
+        print(f"❌ 状态检查错误: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
         return jsonify({
+            'success': False,
             'status': 'failed',
-            'error': str(e)
+            'error': error_msg,
+            'message': f'状态检查失败: {error_msg}'
         }), 500
 
 @app.route('/api/save-video', methods=['POST'])

@@ -484,8 +484,8 @@ function generateVideo() {
     // 构建视频生成页面的URL参数
     const params = new URLSearchParams({
         session_id: sessionId,
-        image_url: generatedImageUrl
-        // 不传递图片生成的prompt，让用户在视频页面重新输入视频相关的动作描述
+        image_url: generatedImageUrl,
+        prompt: document.getElementById('prompt-input').value || ''
     });
 
     // 跳转到视频生成页面
@@ -1573,4 +1573,201 @@ function updateImageGenerationSuccess(result) {
     if (finalActions) {
         finalActions.style.display = 'flex';
     }
+}
+
+/**
+ * 显示视频生成配置对话框
+ */
+async function showVideoConfigModal(sessionId) {
+    console.log('=== showVideoConfigModal 被调用 ===');
+    console.log('sessionId:', sessionId);
+    
+    // 获取当前的提示词
+    const currentPrompt = document.getElementById('creation-prompt').value.trim() || '角色微笑并挥手，背景温馨美好';
+    console.log('当前提示词:', currentPrompt);
+    
+    // 创建对话框HTML
+    const modalHTML = `
+        <div id="video-config-modal" class="modal-overlay">
+            <div class="modal-content video-config-modal">
+                <div class="modal-header">
+                    <h3><i class="fas fa-video"></i> 视频生成配置</h3>
+                    <button class="modal-close" onclick="closeVideoConfigModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- 原始提示词 -->
+                    <div class="config-section">
+                        <label>原始提示词：</label>
+                        <textarea id="modal-original-prompt" rows="3" readonly>${currentPrompt}</textarea>
+                    </div>
+                    
+                    <!-- 翻译后的提示词 -->
+                    <div class="config-section">
+                        <label>翻译后的提示词：</label>
+                        <div class="translation-status">
+                            <i class="fas fa-spinner fa-spin"></i> 正在翻译...
+                        </div>
+                        <textarea id="modal-translated-prompt" rows="3" style="display: none;"></textarea>
+                    </div>
+                    
+                    <!-- 视频配置 -->
+                    <div class="config-grid">
+                        <div class="config-group">
+                            <label for="modal-duration">时长：</label>
+                            <select id="modal-duration">
+                                <option value="4">4秒</option>
+                                <option value="8" selected>8秒</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="modal-aspect-ratio">宽高比：</label>
+                            <select id="modal-aspect-ratio">
+                                <option value="16:9" selected>16:9 (横屏)</option>
+                                <option value="9:16">9:16 (竖屏)</option>
+                                <option value="1:1">1:1 (方形)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="modal-quality">分辨率：</label>
+                            <select id="modal-quality">
+                                <option value="720p" selected>720p</option>
+                                <option value="1080p">1080p</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group">
+                            <label for="modal-motion-intensity">运动强度：</label>
+                            <select id="modal-motion-intensity">
+                                <option value="low">低</option>
+                                <option value="medium" selected>中</option>
+                                <option value="high">高</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-group full-width">
+                            <label for="modal-model">AI模型：</label>
+                            <select id="modal-model">
+                                <option value="veo-3.1-fast-generate-preview" selected>Veo 3.1 快速版</option>
+                                <option value="veo-3.1-generate-preview">Veo 3.1 标准版</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeVideoConfigModal()">取消</button>
+                    <button class="btn btn-primary" id="confirm-video-generation" disabled>
+                        <i class="fas fa-play"></i> 确认生成视频
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 添加到页面
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 异步翻译提示词
+    try {
+        const response = await fetch('/api/translate-prompt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                prompt: currentPrompt
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 显示翻译结果
+            document.querySelector('.translation-status').style.display = 'none';
+            const translatedTextarea = document.getElementById('modal-translated-prompt');
+            translatedTextarea.value = data.translated_prompt;
+            translatedTextarea.style.display = 'block';
+            
+            // 启用确认按钮
+            document.getElementById('confirm-video-generation').disabled = false;
+            
+            console.log('✅ prompt翻译完成:', data.translated_prompt);
+        } else {
+            throw new Error(data.error || '翻译失败');
+        }
+    } catch (error) {
+        console.error('❌ prompt翻译失败:', error);
+        document.querySelector('.translation-status').innerHTML = 
+            '<i class="fas fa-exclamation-triangle"></i> 翻译失败，将使用原始提示词';
+        
+        // 使用原始提示词
+        const translatedTextarea = document.getElementById('modal-translated-prompt');
+        translatedTextarea.value = currentPrompt;
+        translatedTextarea.style.display = 'block';
+        
+        // 启用确认按钮
+        document.getElementById('confirm-video-generation').disabled = false;
+    }
+    
+    // 绑定确认按钮事件
+    document.getElementById('confirm-video-generation').onclick = function() {
+        confirmVideoGeneration(sessionId);
+    };
+}
+
+/**
+ * 关闭视频配置对话框
+ */
+function closeVideoConfigModal() {
+    const modal = document.getElementById('video-config-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+/**
+ * 确认生成视频
+ */
+function confirmVideoGeneration(sessionId) {
+    // 获取配置
+    const translatedPrompt = document.getElementById('modal-translated-prompt').value;
+    const duration = document.getElementById('modal-duration').value;
+    const aspectRatio = document.getElementById('modal-aspect-ratio').value;
+    const quality = document.getElementById('modal-quality').value;
+    const motionIntensity = document.getElementById('modal-motion-intensity').value;
+    const model = document.getElementById('modal-model').value;
+    
+    console.log('🎬 确认视频生成配置:');
+    console.log('  翻译后提示词:', translatedPrompt);
+    console.log('  时长:', duration);
+    console.log('  宽高比:', aspectRatio);
+    console.log('  分辨率:', quality);
+    console.log('  运动强度:', motionIntensity);
+    console.log('  模型:', model);
+    
+    // 关闭对话框
+    closeVideoConfigModal();
+    
+    // 构建跳转URL，包含所有配置参数
+    const params = new URLSearchParams({
+        session_id: sessionId,
+        image_url: generatedImageUrl,
+        prompt: translatedPrompt,
+        duration: duration,
+        aspect_ratio: aspectRatio,
+        quality: quality,
+        motion_intensity: motionIntensity,
+        model: model
+    });
+    
+    const targetUrl = `/video?${params.toString()}`;
+    console.log('跳转到视频生成页面:', targetUrl);
+    
+    // 跳转到视频生成页面
+    window.location.href = targetUrl;
 }

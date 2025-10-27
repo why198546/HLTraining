@@ -35,7 +35,8 @@ class Veo31API:
         duration: int = 8,
         aspect_ratio: str = "16:9",
         quality: str = "720p",
-        motion_intensity: str = "medium"
+        motion_intensity: str = "medium",
+        model: str = "veo-3.1-fast-generate-preview"  # 默认使用快速版
     ) -> Dict:
         """
         生成视频（Image-to-Video）
@@ -47,6 +48,7 @@ class Veo31API:
             aspect_ratio: 宽高比 (16:9 或 9:16)
             quality: 分辨率 (720p 或 1080p)
             motion_intensity: 运动强度 (low/medium/high) - 仅作为提示词参考
+            model: AI模型名称 (veo-3.1-generate-preview 或 veo-3.1-fast-generate-preview)
             
         Returns:
             包含operation_name的字典
@@ -58,16 +60,24 @@ class Veo31API:
             print(f"   时长: {duration}秒")
             print(f"   宽高比: {aspect_ratio}")
             print(f"   分辨率: {quality}")
+            print(f"   AI模型: {model}")  # 新增模型日志
             
             # 读取图片并通过Nano Banana重新生成以获得正确的图片对象
             if image_url.startswith('/'):
-                # 本地文件路径
+                # 本地文件路径，移除开头的斜杠
                 image_path = image_url.lstrip('/')
-                if not os.path.exists(image_path):
-                    # 尝试添加当前目录
-                    image_path = os.path.join(os.getcwd(), image_url.lstrip('/'))
                 
+                # 如果不存在，尝试添加当前目录
                 if not os.path.exists(image_path):
+                    image_path = os.path.join(os.getcwd(), image_path)
+                
+                # 最终检查文件是否存在
+                if not os.path.exists(image_path):
+                    print(f"   ❌ 尝试的路径:")
+                    print(f"      - {image_url.lstrip('/')}")
+                    print(f"      - {os.path.join(os.getcwd(), image_url.lstrip('/'))}")
+                    print(f"   💡 当前工作目录: {os.getcwd()}")
+                    print(f"   📂 uploads目录内容: {os.listdir('uploads') if os.path.exists('uploads') else '目录不存在'}")
                     raise FileNotFoundError(f"图片文件不存在: {image_url}")
                 
                 print(f"   📖 读取图片文件: {image_path}")
@@ -162,10 +172,11 @@ class Veo31API:
                 mime_type=image_data.mime_type
             )
             
+            print(f"   🤖 使用AI模型: {model}")
             print(f"   📦 Image对象已创建 (mime: {image_data.mime_type}, size: {len(image_data.data)} bytes)")
             
             operation = self.client.models.generate_videos(
-                model="veo-3.1-generate-preview",
+                model=model,  # 使用动态模型参数
                 prompt=enhanced_prompt,
                 image=image_obj,
                 config=types.GenerateVideosConfig(
@@ -204,25 +215,35 @@ class Veo31API:
             包含状态信息的字典
         """
         try:
+            print(f"🔍 检查任务状态: {task_id}")
+            
             # 获取或刷新操作状态
             if task_id in self.operations:
                 operation = self.operations[task_id]
+                print(f"   📋 从缓存获取操作")
             else:
                 # 从名称重新获取操作
+                print(f"   🔄 重新获取操作")
                 operation = types.GenerateVideosOperation(name=task_id)
             
             # 刷新操作状态
             operation = self.client.operations.get(operation)
             self.operations[task_id] = operation
             
+            print(f"   📊 操作状态: done={operation.done}")
+            
             if operation.done:
-                # 检查是否成功
+                print(f"   ✅ 操作已完成")
+                
+                # 检查是否有错误
                 if hasattr(operation, 'error') and operation.error:
-                    print(f"❌ 视频生成失败: {operation.error}")
+                    error_msg = str(operation.error)
+                    print(f"❌ 视频生成失败: {error_msg}")
                     return {
+                        'success': False,
                         'status': 'failed',
-                        'error': str(operation.error),
-                        'message': '视频生成失败'
+                        'error': error_msg,
+                        'message': f'视频生成失败: {error_msg}'
                     }
                 
                 # 获取生成的视频
@@ -231,12 +252,17 @@ class Veo31API:
                     if not hasattr(operation, 'response') or not operation.response:
                         print(f"❌ Operation没有response属性")
                         print(f"   Operation属性: {[attr for attr in dir(operation) if not attr.startswith('_')]}")
-                        raise Exception("视频生成完成但无法获取结果")
+                        return {
+                            'success': False,
+                            'status': 'failed',
+                            'error': 'no_response',
+                            'message': '视频生成完成但无法获取结果'
+                        }
+                    
+                    print(f"   📦 Response属性: {[attr for attr in dir(operation.response) if not attr.startswith('_')]}")
                     
                     if not hasattr(operation.response, 'generated_videos') or not operation.response.generated_videos:
                         print(f"❌ Response没有generated_videos或为空")
-                        print(f"   Response属性: {[attr for attr in dir(operation.response) if not attr.startswith('_')]}")
-                        print(f"   Response内容: {operation.response}")
                         
                         # 检查是否是内容安全过滤导致的失败
                         if hasattr(operation.response, 'rai_media_filtered_reasons') and operation.response.rai_media_filtered_reasons:
@@ -245,16 +271,39 @@ class Veo31API:
                             
                             # 返回特定的内容安全错误
                             return {
+                                'success': False,
                                 'status': 'content_filtered',
                                 'error': 'content_safety_violation',
-                                'message': '; '.join(reasons),
+                                'message': f'内容被安全过滤器阻止: {"; ".join(reasons)}',
                                 'filtered_reasons': reasons
                             }
                         
-                        raise Exception("视频生成完成但无法获取视频数据")
+                        return {
+                            'success': False,
+                            'status': 'failed',
+                            'error': 'no_video_data',
+                            'message': '视频生成完成但无法获取视频数据'
+                        }
+                    
+                    print(f"   🎬 找到生成的视频，数量: {len(operation.response.generated_videos)}")
                     
                     generated_video = operation.response.generated_videos[0]
                     video_file = generated_video.video
+                    
+                    # 调试：检查video_file的属性
+                    print(f"   📁 video_file类型: {type(video_file)}")
+                    print(f"   📁 video_file属性: {[attr for attr in dir(video_file) if not attr.startswith('_')]}")
+                    
+                    # 尝试获取文件信息（兼容不同的属性名）
+                    file_info = "unknown"
+                    if hasattr(video_file, 'name'):
+                        file_info = video_file.name
+                    elif hasattr(video_file, 'uri'):
+                        file_info = video_file.uri
+                    elif hasattr(video_file, 'file_uri'):
+                        file_info = video_file.file_uri
+                    
+                    print(f"   📁 视频文件信息: {file_info}")
                     
                     # 下载视频到本地
                     video_filename = f"veo_generated_{int(time.time())}.mp4"
@@ -266,27 +315,44 @@ class Veo31API:
                     # 下载视频
                     print(f"📥 下载视频到: {video_path}")
                     
-                    with open(video_path, 'wb') as f:
-                        # download方法返回的是一个迭代器，每个chunk可能是int或bytes
-                        total_bytes = 0
-                        
-                        for chunk in self.client.files.download(file=video_file):
-                            # 确保chunk是bytes类型
-                            if isinstance(chunk, bytes):
-                                f.write(chunk)
-                                total_bytes += len(chunk)
-                            elif isinstance(chunk, int):
-                                # 单个字节，转换为bytes
-                                f.write(bytes([chunk]))
-                                total_bytes += 1
-                        
-                        print(f"✅ 视频下载完成: {total_bytes / (1024*1024):.2f} MB")
+                    try:
+                        with open(video_path, 'wb') as f:
+                            # download方法返回的是一个迭代器，每个chunk可能是int或bytes
+                            total_bytes = 0
+                            chunk_count = 0
+                            
+                            for chunk in self.client.files.download(file=video_file):
+                                chunk_count += 1
+                                # 确保chunk是bytes类型
+                                if isinstance(chunk, bytes):
+                                    f.write(chunk)
+                                    total_bytes += len(chunk)
+                                elif isinstance(chunk, int):
+                                    # 单个字节，转换为bytes
+                                    f.write(bytes([chunk]))
+                                    total_bytes += 1
+                                
+                                # 每100个chunk输出一次进度
+                                if chunk_count % 100 == 0:
+                                    print(f"   📥 已下载 {chunk_count} chunks, {total_bytes / (1024*1024):.2f} MB")
+                            
+                            print(f"✅ 视频下载完成: {total_bytes / (1024*1024):.2f} MB (共{chunk_count}个chunks)")
+                    
+                    except Exception as download_error:
+                        print(f"❌ 视频下载失败: {str(download_error)}")
+                        return {
+                            'success': False,
+                            'status': 'failed',
+                            'error': f'video_download_failed: {str(download_error)}',
+                            'message': f'视频下载失败: {str(download_error)}'
+                        }
                     
                     video_url = f"/uploads/{video_filename}"
                     
                     print(f"✅ 视频已生成: {video_url}")
                     
                     return {
+                        'success': True,
                         'status': 'completed',
                         'progress': 100,
                         'video_url': video_url,
@@ -298,25 +364,31 @@ class Veo31API:
                     import traceback
                     traceback.print_exc()
                     return {
+                        'success': False,
                         'status': 'failed',
-                        'error': str(e),
-                        'message': '无法获取生成的视频'
+                        'error': f'result_processing_failed: {str(e)}',
+                        'message': f'无法获取生成的视频: {str(e)}'
                     }
             else:
                 # 还在处理中
                 print(f"⏳ 视频生成中...")
                 return {
+                    'success': True,
                     'status': 'processing',
                     'progress': 50,  # 无法获取精确进度，使用固定值
                     'message': '视频生成中，请稍候...'
                 }
                 
         except Exception as e:
-            print(f"❌ 状态检查失败: {str(e)}")
+            error_msg = str(e)
+            print(f"❌ 状态检查失败: {error_msg}")
+            import traceback
+            traceback.print_exc()
             return {
+                'success': False,
                 'status': 'failed',
-                'error': str(e),
-                'message': '状态检查失败'
+                'error': f'status_check_failed: {error_msg}',
+                'message': f'状态检查失败: {error_msg}'
             }
     
     def get_video_url(self, task_id: str) -> Optional[str]:
