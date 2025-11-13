@@ -4,7 +4,7 @@
 """
 
 from app import app, db
-from models import Artwork
+from auth.models import Artwork
 from sqlalchemy import text
 
 def update_artwork_schema():

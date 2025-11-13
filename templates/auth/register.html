@@ -61,7 +61,8 @@
             <div class="form-container">
                 <div class="form-header">
                     <h2>创建你的账户</h2>
-                    <p>几步简单操作，开始创作</p>
+                    <p>只需填写用户名、昵称和家长邮箱即可快速注册</p>
+                    <p class="sub-hint">其他信息可以稍后在个人资料中补充</p>
                 </div>
 
                 <!-- 显示消息 -->
@@ -83,7 +84,7 @@
                     <div class="form-section">
                         <h3 class="section-title">
                             <i class="fas fa-user-plus"></i>
-                            创建你的账户
+                            快速注册
                         </h3>
                         
                         <div class="input-group">
@@ -121,88 +122,6 @@
                         </div>
 
                         <div class="input-group">
-                            {{ form.role.label(class="input-label") }}
-                            <div class="input-wrapper">
-                                <i class="fas fa-user-tag input-icon"></i>
-                                {{ form.role(class="form-select", id="role-select-register") }}
-                            </div>
-                            {% if form.role.errors %}
-                                <div class="input-errors">
-                                    {% for error in form.role.errors %}
-                                        <span class="error-message">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="input-group">
-                            {{ form.birth_date.label(class="input-label") }}
-                            <span id="age-hint-register" class="age-hint">(学生：5-24岁)</span>
-                            <div class="input-wrapper">
-                                <i class="fas fa-birthday-cake input-icon"></i>
-                                {{ form.birth_date(class="form-input", id="birth-date-input-register") }}
-                            </div>
-                            {% if form.birth_date.errors %}
-                                <div class="input-errors">
-                                    {% for error in form.birth_date.errors %}
-                                        <span class="error-message">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="input-group">
-                            {{ form.gender.label(class="input-label") }}
-                            <div class="input-wrapper">
-                                <i class="fas fa-venus-mars input-icon"></i>
-                                {{ form.gender(class="form-select") }}
-                            </div>
-                            {% if form.gender.errors %}
-                                <div class="input-errors">
-                                    {% for error in form.gender.errors %}
-                                        <span class="error-message">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="input-group">
-                            {{ form.contact_phone.label(class="input-label") }}
-                            <div class="input-wrapper">
-                                <i class="fas fa-phone input-icon"></i>
-                                {{ form.contact_phone(class="form-input", placeholder="联系电话（可选）") }}
-                            </div>
-                            {% if form.contact_phone.errors %}
-                                <div class="input-errors">
-                                    {% for error in form.contact_phone.errors %}
-                                        <span class="error-message">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="input-group">
-                            {{ form.mailing_address.label(class="input-label") }}
-                            <div class="input-wrapper">
-                                <i class="fas fa-map-marker-alt input-icon"></i>
-                                {{ form.mailing_address(class="form-textarea", placeholder="邮寄地址（可选，用于3D模型邮寄）", rows="3") }}
-                            </div>
-                            {% if form.mailing_address.errors %}
-                                <div class="input-errors">
-                                    {% for error in form.mailing_address.errors %}
-                                        <span class="error-message">{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                                <div class="input-hint">
-                                    <i class="fas fa-star"></i>
-                                    <span>其他小朋友看到的名字</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="input-group">
                             {{ form.parent_email.label(class="input-label") }}
                             <div class="input-wrapper">
                                 <i class="fas fa-envelope input-icon"></i>
@@ -223,7 +142,7 @@
 
                         <div class="input-row">
                             <div class="input-group half-width">
-                                {{ form.password.label(class="input-label") }}
+                                <label class="input-label">密码</label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-lock input-icon"></i>
                                     {{ form.password(class="form-input", placeholder="设置登录密码") }}
@@ -241,7 +160,7 @@
                             </div>
 
                             <div class="input-group half-width">
-                                {{ form.password_confirm.label(class="input-label") }}
+                                <label class="input-label">确认密码</label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-lock input-icon"></i>
                                     {{ form.password_confirm(class="form-input", placeholder="再次输入密码") }}
@@ -252,6 +171,92 @@
                                 {% if form.password_confirm.errors %}
                                     <div class="input-errors">
                                         {% for error in form.password_confirm.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 更多信息折叠区域 -->
+                        <div class="optional-fields-toggle">
+                            <button type="button" class="toggle-btn" onclick="toggleOptionalFields()">
+                                <i class="fas fa-chevron-down" id="toggleIcon"></i>
+                                <span id="toggleText">填写更多信息（可选）</span>
+                            </button>
+                        </div>
+
+                        <div id="optionalFields" class="optional-fields" style="display: none;">
+                            <div class="input-group">
+                                {{ form.role.label(class="input-label") }}
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user-tag input-icon"></i>
+                                    {{ form.role(class="form-select", id="role-select-register") }}
+                                </div>
+                                {% if form.role.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.role.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">出生日期</label>
+                                <span id="age-hint-register" class="age-hint">(学生：5-24岁)</span>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-birthday-cake input-icon"></i>
+                                    {{ form.birth_date(class="form-input", id="birth-date-input-register") }}
+                                </div>
+                                {% if form.birth_date.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.birth_date.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group">
+                                <label class="input-label">性别</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-venus-mars input-icon"></i>
+                                    {{ form.gender(class="form-select") }}
+                                </div>
+                                {% if form.gender.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.gender.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group">
+                                {{ form.contact_phone.label(class="input-label") }}
+                                <div class="input-wrapper">
+                                    <i class="fas fa-phone input-icon"></i>
+                                    {{ form.contact_phone(class="form-input", placeholder="联系电话（可选）") }}
+                                </div>
+                                {% if form.contact_phone.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.contact_phone.errors %}
+                                            <span class="error-message">{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="input-group">
+                                {{ form.mailing_address.label(class="input-label") }}
+                                <div class="input-wrapper">
+                                    <i class="fas fa-map-marker-alt input-icon"></i>
+                                    {{ form.mailing_address(class="form-textarea", placeholder="邮寄地址（可选，用于3D模型邮寄）", rows="3") }}
+                                </div>
+                                {% if form.mailing_address.errors %}
+                                    <div class="input-errors">
+                                        {% for error in form.mailing_address.errors %}
                                             <span class="error-message">{{ error }}</span>
                                         {% endfor %}
                                     </div>
@@ -293,6 +298,23 @@
     </div>
 
     <script>
+        // 切换可选字段显示/隐藏
+        function toggleOptionalFields() {
+            const optionalFields = document.getElementById('optionalFields');
+            const toggleIcon = document.getElementById('toggleIcon');
+            const toggleText = document.getElementById('toggleText');
+            
+            if (optionalFields.style.display === 'none') {
+                optionalFields.style.display = 'block';
+                toggleIcon.className = 'fas fa-chevron-up';
+                toggleText.textContent = '收起更多信息';
+            } else {
+                optionalFields.style.display = 'none';
+                toggleIcon.className = 'fas fa-chevron-down';
+                toggleText.textContent = '填写更多信息（可选）';
+            }
+        }
+
         // 密码显示/隐藏切换
         function togglePassword(fieldName) {
             const passwordField = document.querySelector(`input[name="${fieldName}"]`);

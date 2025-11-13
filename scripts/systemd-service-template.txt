@@ -1,0 +1,33 @@
+# Linux系统服务配置模板 (systemd)
+# 使用方法:
+# 1. 复制此文件为 hltraining.service
+# 2. 修改 User, WorkingDirectory, ExecStart 路径
+# 3. sudo cp hltraining.service /etc/systemd/system/
+# 4. sudo systemctl daemon-reload
+# 5. sudo systemctl enable hltraining
+# 6. sudo systemctl start hltraining
+
+[Unit]
+Description=AI创意工坊 - 儿童AI培训网站
+After=network.target
+
+[Service]
+Type=simple
+User=hongyuwang
+Group=hongyuwang
+WorkingDirectory=/Users/hongyuwang/code/HLTraining
+Environment="PATH=/Users/hongyuwang/code/HLTraining/.venv/bin"
+ExecStart=/Users/hongyuwang/code/HLTraining/.venv/bin/python /Users/hongyuwang/code/HLTraining/app.py
+Restart=always
+RestartSec=10
+
+# 日志
+StandardOutput=append:/Users/hongyuwang/code/HLTraining/logs/app.log
+StandardError=append:/Users/hongyuwang/code/HLTraining/logs/error.log
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

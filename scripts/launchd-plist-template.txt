@@ -1,0 +1,43 @@
+<!-- macOS系统服务配置模板 (launchd) -->
+<!-- 使用方法: -->
+<!-- 1. 复制此文件为 com.hltraining.app.plist -->
+<!-- 2. 修改路径为你的实际路径 -->
+<!-- 3. cp com.hltraining.app.plist ~/Library/LaunchAgents/ -->
+<!-- 4. launchctl load ~/Library/LaunchAgents/com.hltraining.app.plist -->
+<!-- 5. launchctl start com.hltraining.app -->
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.hltraining.app</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/hongyuwang/code/HLTraining/.venv/bin/python</string>
+        <string>/Users/hongyuwang/code/HLTraining/app.py</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>/Users/hongyuwang/code/HLTraining</string>
+    
+    <key>StandardOutPath</key>
+    <string>/Users/hongyuwang/code/HLTraining/logs/app.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/Users/hongyuwang/code/HLTraining/logs/error.log</string>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/hongyuwang/code/HLTraining/.venv/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
+</dict>
+</plist>

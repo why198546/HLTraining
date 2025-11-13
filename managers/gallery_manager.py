@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import uuid
 import shutil
-from version_manager import VersionManager
+from managers.version_manager import VersionManager
 
 class GalleryManager:
     def __init__(self, data_file='gallery_data.json', gallery_folder='static/gallery'):

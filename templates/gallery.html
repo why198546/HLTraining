@@ -46,104 +46,14 @@
 
         <section class="gallery-content">
             <div class="container">
-                {% if artworks %}
-                    <div class="gallery-grid" id="galleryGrid">
-                        {% for artwork in artworks %}
-                            {% set file_urls = artwork.get_file_urls() %}
-                            <div class="artwork-item" data-category="{{ artwork.category or 'other' }}" 
-                                 data-artwork-id="{{ artwork.id }}"
-                                 data-artwork-title="{{ artwork.title }}"
-                                 data-artwork-author="{{ artwork.author.nickname }}"
-                                 data-artwork-age="{{ artwork.author.age }}"
-                                 data-artwork-description="{{ artwork.description or '暂无描述' }}"
-                                 data-artwork-original="{{ file_urls.original_sketch or '' }}"
-                                 data-artwork-generated="{{ file_urls.colored_image or file_urls.figurine_image or '' }}"
-                                 data-artwork-model="{{ file_urls.model_3d or '' }}"
-                                 data-artwork-likes="{{ artwork.like_count or 0 }}"
-                                 data-artwork-views="{{ artwork.view_count or 0 }}"
-                                 data-artwork-date="{{ artwork.created_at.strftime('%Y-%m-%d') if artwork.created_at else '' }}">
-                                <div class="artwork-card">
-                                    <div class="artwork-image">
-                                        {% if file_urls.colored_image %}
-                                            <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" loading="lazy">
-                                        {% elif file_urls.figurine_image %}
-                                            <img src="{{ file_urls.figurine_image }}" alt="{{ artwork.title }}" loading="lazy">
-                                        {% elif file_urls.original_sketch %}
-                                            <img src="{{ file_urls.original_sketch }}" alt="{{ artwork.title }}" loading="lazy">
-                                        {% else %}
-                                            <div class="placeholder-image">
-                                                <i class="fas fa-image"></i>
-                                                <p>图片加载中...</p>
-                                            </div>
-                                        {% endif %}
-                                        
-                                        <!-- 推荐标签 -->
-                                        <div class="featured-badge">
-                                            <i class="fas fa-crown"></i> 推荐作品
-                                        </div>
-                                        
-                                        <!-- 3D模型指示器 -->
-                                        {% if file_urls.model_3d %}
-                                            <div class="model-3d-badge">
-                                                <i class="fas fa-cube"></i> 3D
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    
-                                    <div class="artwork-info">
-                                        <h3 class="artwork-title">{{ artwork.title }}</h3>
-                                        <div class="artwork-author">
-                                            <i class="fas fa-user"></i> 
-                                            {{ artwork.author.nickname }} ({{ artwork.author.age }}岁)
-                                        </div>
-                                        
-                                        {% if artwork.description %}
-                                            <p class="artwork-description">{{ artwork.description }}</p>
-                                        {% endif %}
-                                        
-                                        <div class="artwork-actions">
-                                            <div class="stats">
-                                                <span class="stat-item">
-                                                    <i class="fas fa-eye"></i> {{ artwork.view_count or 0 }}
-                                                </span>
-                                                <span class="stat-item">
-                                                    <i class="fas fa-heart"></i> {{ artwork.vote_count or 0 }}
-                                                </span>
-                                            </div>
-                                            
-                                            {% if current_user.is_authenticated and current_user.id != artwork.user_id %}
-                                                <div class="vote-buttons">
-                                                    <button class="vote-btn" data-artwork-id="{{ artwork.id }}" data-vote-type="like" 
-                                                            title="喜欢">
-                                                        <i class="fas fa-heart"></i>
-                                                    </button>
-                                                    <button class="vote-btn" data-artwork-id="{{ artwork.id }}" data-vote-type="wow" 
-                                                            title="惊艳">
-                                                        <i class="fas fa-star"></i>
-                                                    </button>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="empty-gallery">
-                        <i class="fas fa-palette"></i>
-                        <h2>暂无推荐作品</h2>
-                        <p>快去创作并设置你的推荐作品吧！</p>
-                        <button class="btn-primary" onclick="window.location.href='{{ url_for('create') }}'">
-                            <i class="fas fa-plus"></i>
-                            开始创作
-                        </button>
-                    </div>
-                {% endif %}
+                {% set show_author = true %}
+                {% set show_privacy = false %}
+                {% set show_actions = false %}
+                {% set grid_id = 'galleryGrid' %}
+                {% set empty_message = '暂无推荐作品' %}
+                {% include 'components/artwork_grid.html' %}
             </div>
-        </section>
-
-        <section class="inspiration-section">
+        </section>        <section class="inspiration-section">
             <div class="container">
                 <h2 class="section-title">创作灵感</h2>
                 <div class="inspiration-grid">

@@ -7,15 +7,15 @@ import cv2
 import numpy as np
 from api.nano_banana import NanoBananaAPI
 from api.hunyuan3d import Hunyuan3DGenerator
-from gallery_manager import GalleryManager
-from creation_session_manager import CreationSessionManager
+from managers.gallery_manager import GalleryManager
+from managers.creation_session_manager import CreationSessionManager
 import json
 from dotenv import load_dotenv
 from datetime import datetime
 
 # 用户管理系统导入
 from flask_login import LoginManager, login_required, current_user
-from models import db, User, Artwork, CreationSession
+from auth.models import db, User, Artwork, CreationSession
 from auth import auth_bp
 from auth.routes import *
 from utils.email_service import init_mail
@@ -118,7 +118,7 @@ def generate_3d_model_from_image(image_path):
 def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, prompt=None):
     """自动保存作品到数据库"""
     try:
-        from models import Artwork
+        from auth.models import Artwork
         import glob
         
         # 验证必需的图片路径
@@ -191,7 +191,7 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
             
             artwork.status = 'completed'
             artwork.description = prompt or "AI生成的精美作品"
-            artwork.is_public = True  # 默认设为公开
+            artwork.is_public = False  # 默认私密，需手动设为公开
             
             # 设置文件路径
             if generated_image_path:
@@ -228,7 +228,7 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
 def index():
     """主页"""
     # 获取最新的4个作品用于首页展示
-    from models import Artwork, User
+    from auth.models import Artwork, User
     from sqlalchemy import desc
     
     latest_artworks = Artwork.query.filter_by(
@@ -247,7 +247,7 @@ def create():
 @login_required
 def edit_artwork(artwork_id):
     """编辑作品页面"""
-    from models import Artwork
+    from auth.models import Artwork
     
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
@@ -267,7 +267,7 @@ def edit_artwork(artwork_id):
 @login_required
 def update_artwork(artwork_id):
     """更新作品信息"""
-    from models import Artwork, db
+    from auth.models import Artwork, db
     
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
@@ -336,7 +336,7 @@ def update_artwork(artwork_id):
 @app.route('/gallery')
 def gallery():
     """显示作品画廊"""
-    from models import Artwork, User
+    from auth.models import Artwork, User
     from sqlalchemy import desc
     
     # 获取所有公开的作品，按创建时间降序排列
@@ -840,7 +840,7 @@ def save_artwork():
         print(f"👤 创作者: {artist_name}, 年龄: {artist_age}")
         
         # 检查是否已存在该会话的作品
-        from models import Artwork
+        from auth.models import Artwork
         existing_artwork = Artwork.query.filter_by(session_id=session_id).first()
         
         if existing_artwork:
@@ -876,7 +876,7 @@ def save_artwork():
             
             artwork.description = data.get('description', '')
             artwork.status = 'completed'
-            artwork.is_public = True  # 默认设为公开
+            artwork.is_public = False  # 默认私密，需手动设为公开
             
             # 保存所有版本的文件（只保存文件名，路径由session_id构建）
             artwork.original_sketch = all_files['original_sketch']
@@ -930,15 +930,6 @@ def view_artwork(artwork_id):
     gallery_manager.increment_views(artwork_id)
     
     return render_template('artwork_detail.html', artwork=artwork)
-
-@app.route('/like-artwork/<artwork_id>', methods=['POST'])
-def like_artwork(artwork_id):
-    """点赞作品"""
-    try:
-        likes = gallery_manager.toggle_like(artwork_id)
-        return jsonify({'success': True, 'likes': likes})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
 # ===================== 视频生成相关路由 =====================
 
@@ -1363,7 +1354,7 @@ def serve_creation_sessions_direct(filename):
 def feature_artwork(artwork_id):
     """设置作品为推荐作品"""
     try:
-        from models import Artwork
+        from auth.models import Artwork
         
         # 获取作品
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
@@ -1397,7 +1388,7 @@ def feature_artwork(artwork_id):
 def vote_artwork(artwork_id):
     """为作品投票"""
     try:
-        from models import Artwork, ArtworkVote
+        from auth.models import Artwork, ArtworkVote
         
         data = request.get_json()
         vote_type = data.get('vote_type', 'like')
@@ -1411,10 +1402,7 @@ def vote_artwork(artwork_id):
         if not artwork or not artwork.is_public:
             return jsonify({'error': '作品不存在或未公开'}), 404
         
-        # 不能给自己的作品投票
-        if artwork.user_id == current_user.id:
-            return jsonify({'error': '不能为自己的作品投票'}), 400
-        
+        # 允许给自己的作品投票
         # 检查是否已投票
         existing_vote = ArtworkVote.query.filter_by(
             artwork_id=artwork_id, 
@@ -1422,9 +1410,12 @@ def vote_artwork(artwork_id):
         ).first()
         
         if existing_vote:
-            # 更新投票类型
-            existing_vote.vote_type = vote_type
-            message = '投票已更新！'
+            # 已经投过票，不允许重复投票
+            return jsonify({
+                'success': False,
+                'error': '您已经为这个作品点过赞了！',
+                'vote_count': artwork.vote_count
+            })
         else:
             # 新投票
             vote = ArtworkVote(artwork_id, current_user.id, vote_type)
@@ -1432,7 +1423,7 @@ def vote_artwork(artwork_id):
             
             # 更新作品投票数
             artwork.vote_count = (artwork.vote_count or 0) + 1
-            message = '投票成功！'
+            message = '点赞成功！'
         
         db.session.commit()
         
@@ -1446,11 +1437,54 @@ def vote_artwork(artwork_id):
         db.session.rollback()
         return jsonify({'error': f'投票失败: {str(e)}'}), 500
 
+@app.route('/increment-view/<int:artwork_id>', methods=['POST'])
+@login_required
+def increment_view(artwork_id):
+    """增加作品浏览次数（每个用户只记录一次）"""
+    try:
+        from auth.models import Artwork, ArtworkView
+        
+        artwork = Artwork.query.get(artwork_id)
+        if not artwork:
+            return jsonify({'error': '作品不存在'}), 404
+        
+        # 检查该用户是否已经浏览过这个作品
+        existing_view = ArtworkView.query.filter_by(
+            artwork_id=artwork_id,
+            viewer_id=current_user.id
+        ).first()
+        
+        if not existing_view:
+            # 首次浏览，创建浏览记录
+            view = ArtworkView(artwork_id, current_user.id)
+            db.session.add(view)
+            
+            # 增加浏览次数
+            artwork.view_count = (artwork.view_count or 0) + 1
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'view_count': artwork.view_count,
+                'is_new_view': True
+            })
+        else:
+            # 已经浏览过，不增加计数
+            return jsonify({
+                'success': True,
+                'view_count': artwork.view_count,
+                'is_new_view': False
+            })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'更新浏览次数失败: {str(e)}'}), 500
+
 @app.route('/gallery')
 def public_gallery():
     """公共作品展示页面"""
     try:
-        from models import Artwork, User
+        from auth.models import Artwork, User
         from sqlalchemy import desc
         
         # 获取所有公开的推荐作品
@@ -1470,7 +1504,7 @@ def public_gallery():
 def unfeature_artwork(artwork_id):
     """取消推荐作品"""
     try:
-        from models import Artwork
+        from auth.models import Artwork
         
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
         if not artwork:
@@ -1497,7 +1531,7 @@ def unfeature_artwork(artwork_id):
 def get_artwork_api(artwork_id):
     """获取作品详情API"""
     try:
-        from models import Artwork, User
+        from auth.models import Artwork, User
         
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
         if not artwork:
@@ -1535,7 +1569,7 @@ def get_artwork_api(artwork_id):
 def delete_artwork_api(artwork_id):
     """删除作品API"""
     try:
-        from models import Artwork, ArtworkVote
+        from auth.models import Artwork, ArtworkVote
         import os
         
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
@@ -1583,7 +1617,7 @@ def delete_artwork_api(artwork_id):
 def update_artwork_privacy(artwork_id):
     """更新作品隐私设置API"""
     try:
-        from models import Artwork
+        from auth.models import Artwork
         
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
         if not artwork:
@@ -1605,11 +1639,64 @@ def update_artwork_privacy(artwork_id):
         db.session.rollback()
         return jsonify({'error': f'更新失败: {str(e)}'}), 500
 
+@app.route('/api/artwork/<int:artwork_id>/set-public', methods=['POST'])
+@login_required
+def set_artwork_public(artwork_id):
+    """设置作品为公开"""
+    try:
+        from auth.models import Artwork
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        artwork.is_public = True
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '作品已设为公开',
+            'is_public': True
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'设置失败: {str(e)}'}), 500
+
+@app.route('/api/artwork/<int:artwork_id>/set-private', methods=['POST'])
+@login_required
+def set_artwork_private(artwork_id):
+    """设置作品为私密"""
+    try:
+        from auth.models import Artwork
+        
+        artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
+        if not artwork:
+            return jsonify({'error': '作品不存在或无权限'}), 404
+        
+        artwork.is_public = False
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '作品已设为私密',
+            'is_public': False
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'设置失败: {str(e)}'}), 500
+
 @app.route('/test-privacy-toggles')
 def test_privacy_toggles():
     """测试隐私设置切换开关页面"""
     with open('/Users/hongyuwang/code/HLTraining/test_privacy_toggles.html', 'r', encoding='utf-8') as f:
         return f.read()
+
+@app.route('/test-content-indicators')
+def test_content_indicators():
+    """测试内容类型指示器页面"""
+    return render_template('test_content_indicators.html')
 
 @app.route('/api/fetch-image', methods=['POST'])
 @login_required
@@ -1681,16 +1768,23 @@ def fetch_image_from_url():
         return jsonify({'success': False, 'error': f'图片处理失败: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    print("🚀 儿童AI培训网站启动中...")
-    print("📝 功能特色:")
-    print("   - 用户管理系统：注册、登录、家长验证")
-    print("   - 统一创作界面：文字+图片混合输入")
-    print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
-    print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
-    print("   - 3D模型生成：使用腾讯云AI3D (混元3D)")
-    print("   - 适合儿童：10-14岁友好界面设计")
-    print("\n🌐 访问地址: http://127.0.0.1:8080")
-    print("🔗 注册页面: http://127.0.0.1:8080/auth/register")
-    print("🔗 登录页面: http://127.0.0.1:8080/auth/login")
-    print("🔗 创作页面: http://127.0.0.1:8080/create (需要登录)")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    # 从环境变量读取配置
+    port = int(os.getenv('PORT', 8088))
+    host = os.getenv('HOST', '0.0.0.0')
+    
+    # 只在主进程显示启动信息（避免调试模式重复输出）
+    if not os.environ.get('WERKZEUG_RUN_MAIN'):
+        print("🚀 儿童AI培训网站启动中...")
+        print("📝 功能特色:")
+        print("   - 用户管理系统：注册、登录、家长验证")
+        print("   - 统一创作界面：文字+图片混合输入")
+        print("   - 分步骤工作流：图片生成 → 调整 → 3D模型")
+        print("   - AI图片生成：使用Nano Banana (Gemini 2.5 Flash Image)")
+        print("   - 3D模型生成：使用腾讯云AI3D (混元3D)")
+        print("   - 适合儿童：10-14岁友好界面设计")
+        print(f"\n🌐 访问地址: http://127.0.0.1:{port}")
+        print(f"🔗 注册页面: http://127.0.0.1:{port}/auth/register")
+        print(f"🔗 登录页面: http://127.0.0.1:{port}/auth/login")
+        print(f"🔗 创作页面: http://127.0.0.1:{port}/create (需要登录)")
+    
+    app.run(debug=True, host=host, port=port)

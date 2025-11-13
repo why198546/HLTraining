@@ -19,7 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # Virtual Environment
 .venv/
@@ -27,42 +26,21 @@ venv/
 ENV/
 env/
 
-# Environment variables and API keys
-.env
-.env.local
-.env.production
-.env.development
-*.key
-api_keys.txt
-secrets.json
-.env.*
-!.env.example
-
 # Flask
 instance/
 .webassets-cache
+flask_app.log
 
-# 生产环境文件
-logs/
-*.log
-*.pid
-gunicorn.pid
-
-# 数据库文件
+# Database
 *.db
+*.db-journal
 *.sqlite
 *.sqlite3
-artworks.db
+database/*.db
 
-# User uploads (可根据需要调整)
-uploads/*
-!uploads/.gitkeep
-
-# Generated models (可根据需要调整)
-models/*
-!models/.gitkeep
-creation_sessions/*
-!creation_sessions/.gitkeep
+# Environment Variables
+.env
+.envrc
 
 # IDE
 .vscode/
@@ -73,16 +51,26 @@ creation_sessions/*
 
 # OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
+
+# Uploads and Sessions
+uploads/*
+!uploads/.gitkeep
+creation_sessions/*
+!creation_sessions/.gitkeep
+
+# Static Gallery (generated content)
+static/gallery/*
+!static/gallery/.gitkeep
 
 # Logs
 *.log
+logs/
+
+# MCP
+.playwright-mcp/
 
 # Temporary files
 *.tmp
-*.temp
+*.bak
+.*.bak

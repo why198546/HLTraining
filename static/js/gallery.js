@@ -176,7 +176,10 @@ function createArtworkElement(data) {
 }
 
 function setupArtworkInteractions() {
-    const galleryGrid = document.getElementById('galleryGrid');
+    // 支持多个页面的不同网格ID
+    const galleryGrid = document.getElementById('galleryGrid') || 
+                       document.getElementById('myArtworksGrid') ||
+                       document.querySelector('.gallery-grid');
     
     if (!galleryGrid) {
         console.error('Gallery grid not found!');
@@ -630,7 +633,48 @@ function showMessage(message, type = 'info') {
 // 用户作品点赞功能
 async function likeArtwork(artworkId) {
     try {
-        const response = await fetch(`/like-artwork/${artworkId}`, {
+        const response = await fetch(`/vote-artwork/${artworkId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                vote_type: 'like'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 更新点赞数显示
+            const modalLikesElement = document.getElementById(`modal-likes-${artworkId}`);
+            if (modalLikesElement) {
+                modalLikesElement.textContent = result.vote_count;
+                
+                // 添加点赞动画
+                const heartIcon = modalLikesElement.closest('.modal-likes').querySelector('i');
+                if (heartIcon) {
+                    heartIcon.style.animation = 'heartBeat 0.6s ease';
+                    setTimeout(() => {
+                        heartIcon.style.animation = '';
+                    }, 600);
+                }
+            }
+            
+            showMessage('点赞成功！', 'success');
+        } else {
+            showMessage(result.error || '点赞失败', 'error');
+        }
+    } catch (error) {
+        console.error('点赞失败:', error);
+        showMessage('点赞失败，请稍后重试', 'error');
+    }
+}
+
+// 增加浏览次数
+async function incrementViewCount(artworkId) {
+    try {
+        const response = await fetch(`/increment-view/${artworkId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -640,436 +684,16 @@ async function likeArtwork(artworkId) {
         const result = await response.json();
         
         if (result.success) {
-            // 更新点赞数显示
-            const likesElement = document.getElementById(`likes-${artworkId}`);
-            if (likesElement) {
-                likesElement.textContent = result.likes;
-                
-                // 添加点赞动画
-                const heartIcon = likesElement.parentElement.querySelector('i');
-                heartIcon.style.animation = 'heartBeat 0.6s ease';
-                setTimeout(() => {
-                    heartIcon.style.animation = '';
-                }, 600);
-                
-                // 添加点赞样式
-                likesElement.parentElement.classList.add('liked');
-                setTimeout(() => {
-                    likesElement.parentElement.classList.remove('liked');
-                }, 600);
-            }
-            
-            showMessage('点赞成功！', 'success');
-        } else {
-            showMessage('点赞失败，请稍后重试', 'error');
+            console.log(`作品 ${artworkId} 浏览次数已更新: ${result.view_count}`);
         }
-        
     } catch (error) {
-        console.error('点赞失败:', error);
-        showMessage('点赞失败，请稍后重试', 'error');
+        console.error('更新浏览次数失败:', error);
     }
 }
 
-// 作品详情模态框功能
-function showArtworkModal(element) {
-    // 阻止事件冒泡，防止意外触发
-    if (event) {
-        event.stopPropagation();
-    }
-    
-    if (!element) {
-        console.error('Element is null or undefined');
-        return;
-    }
-    
-    const artworkData = {
-        id: element.dataset.artworkId,
-        title: element.dataset.artworkTitle,
-        artist: element.dataset.artworkArtist,
-        age: element.dataset.artworkAge,
-        date: element.dataset.artworkDate,
-        description: element.dataset.artworkDescription,
-        originalImage: element.dataset.artworkOriginal,
-        generatedImage: element.dataset.artworkGenerated,
-        modelFile: element.dataset.artworkModel,
-        likes: element.dataset.artworkLikes,
-        views: element.dataset.artworkViews
-    };
-    
-    // 设置模态框标题
-    const modalTitle = document.getElementById('modalArtworkTitle');
-    if (modalTitle) {
-        modalTitle.textContent = artworkData.title;
-    }
-    
-    // 构建作品展示区域
-    const showcase = document.getElementById('modalArtworkShowcase');
-    if (!showcase) {
-        console.error('Modal showcase element not found');
-        return;
-    }
-    showcase.innerHTML = '';
-    
-    // 原始简笔画
-    if (artworkData.originalImage && artworkData.originalImage.trim() !== '' && artworkData.originalImage !== 'null') {
-        const originalStep = document.createElement('div');
-        originalStep.className = 'artwork-detail-step';
-        originalStep.innerHTML = `
-            <h4>原始简笔画</h4>
-            <img src="${artworkData.originalImage}" alt="原始简笔画" 
-                 onclick="showImageModal(this.src, '原始简笔画')" 
-                 style="cursor: pointer;" 
-                 title="点击查看大图"
-                 onerror="this.parentElement.style.display='none'">
-        `;
-        showcase.appendChild(originalStep);
-    } else {
-        // 显示文字提示创作的说明
-        const originalStep = document.createElement('div');
-        originalStep.className = 'artwork-detail-step';
-        originalStep.innerHTML = `
-            <h4>创作方式</h4>
-            <div class="text-creation-info">
-                <i class="fas fa-keyboard"></i>
-                <p>通过文字描述生成</p>
-                <small>作者使用文字提示词直接创作，没有上传简笔画</small>
-            </div>
-        `;
-        showcase.appendChild(originalStep);
-    }
-    
-    // AI生成图片
-    if (artworkData.generatedImage) {
-        const generatedStep = document.createElement('div');
-        generatedStep.className = 'artwork-detail-step';
-        generatedStep.innerHTML = `
-            <h4>AI生成效果</h4>
-            <img src="${artworkData.generatedImage}" alt="AI生成效果" 
-                 onclick="showImageModal(this.src, 'AI生成效果')" 
-                 style="cursor: pointer;" 
-                 title="点击查看大图"
-                 onerror="this.parentElement.style.display='none'">
-        `;
-        showcase.appendChild(generatedStep);
-    }
-    
-    // 3D模型
-    if (artworkData.modelFile) {
-        const modelStep = document.createElement('div');
-        modelStep.className = 'artwork-detail-step';
-        modelStep.innerHTML = `
-            <h4>3D模型</h4>
-            <div class="model-preview-container">
-                <div class="model-preview-thumb" onclick="showModelModal('${artworkData.modelFile}', '3D模型')">
-                    <div class="model-thumbnail">
-                        <i class="fas fa-cube"></i>
-                        <span>点击查看3D模型</span>
-                    </div>
-                </div>
-            </div>
-        `;
-        showcase.appendChild(modelStep);
-    }
-    
-    // 设置作品信息
-    const info = document.getElementById('modalArtworkInfo');
-    if (!info) {
-        console.error('Modal info element not found');
-        return;
-    }
-    info.innerHTML = `
-        <div class="modal-artwork-info">
-            <p class="modal-artist-info">
-                <i class="fas fa-user-circle"></i>
-                <strong>${artworkData.artist}</strong>，${artworkData.age}岁
-            </p>
-            <p class="modal-creation-date">
-                <i class="fas fa-calendar"></i>
-                创作时间：${artworkData.date}
-            </p>
-            ${artworkData.description ? `
-                <div class="modal-artwork-description">
-                    <h4><i class="fas fa-comment"></i> 作品说明</h4>
-                    <p>${artworkData.description}</p>
-                </div>
-            ` : ''}
-            <div class="modal-artwork-stats">
-                <span class="modal-likes" onclick="likeArtwork('${artworkData.id}')">
-                    <i class="fas fa-heart"></i>
-                    <span id="modal-likes-${artworkData.id}">${artworkData.likes}</span>个赞
-                </span>
-                <span class="modal-views">
-                    <i class="fas fa-eye"></i>
-                    ${artworkData.views}次浏览
-                </span>
-            </div>
-        </div>
-    `;
-    
-    // 显示模态框
-    const modal = document.getElementById('artworkModal');
-    if (!modal) {
-        console.error('Artwork modal element not found');
-        return;
-    }
-    
-    modal.style.display = 'flex';
-    
-    // 添加显示类来触发CSS动画
-    modal.classList.add('show');
-    
-    // 保存当前滚动位置并固定页面
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    
-    // 添加动画效果
-    setTimeout(() => {
-        const modalContent = modal.querySelector('.artwork-modal-content');
-        if (modalContent) {
-            modalContent.style.transform = 'scale(1)';
-            modalContent.style.opacity = '1';
-        }
-    }, 10);
-}
-
-function closeArtworkModal() {
-    const modal = document.getElementById('artworkModal');
-    const content = modal.querySelector('.artwork-modal-content');
-    
-    // 移除显示类
-    modal.classList.remove('show');
-    
-    // 添加关闭动画
-    content.style.transform = 'scale(0.9)';
-    content.style.opacity = '0';
-    
-    setTimeout(() => {
-        modal.style.display = 'none';
-        
-        // 恢复页面滚动位置
-        const scrollY = document.body.style.top;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        
-        // 重置模态框状态
-        content.classList.remove('enlarged-mode');
-        if (content.dataset.originalContent) {
-            delete content.dataset.originalContent;
-        }
-        
-        // 重置动画状态
-        content.style.transform = 'scale(0.9)';
-        content.style.opacity = '0';
-    }, 300);
-}
-
-// 在当前模态框上方叠加图片
-function showImageModal(imageSrc, title) {
-    event.stopPropagation();
-    
-    // 创建图片叠加层
-    const imageOverlay = document.createElement('div');
-    imageOverlay.id = 'imageOverlay';
-    imageOverlay.className = 'image-overlay';
-    
-    imageOverlay.innerHTML = `
-        <div class="image-overlay-backdrop"></div>
-        <div class="image-overlay-content">
-            <img src="${imageSrc}" alt="${title}" class="overlay-image thumbnail-mode" 
-                 ondblclick="toggleImageMode(this)" 
-                 onclick="handleImageClick(this)"
-                 data-mode="thumbnail">
-        </div>
-    `;
-    
-    // 添加到当前模态窗口内
-    const artworkModal = document.getElementById('artworkModal');
-    artworkModal.appendChild(imageOverlay);
-    
-    // 点击背景关闭叠加层
-    imageOverlay.addEventListener('click', function(e) {
-        // 如果点击的不是图片本身，就关闭叠加层
-        if (e.target === imageOverlay || 
-            e.target.classList.contains('image-overlay-backdrop') ||
-            e.target.classList.contains('image-overlay-content')) {
-            closeImageOverlay();
-        }
-    });
-    
-    // 显示动画
-    setTimeout(() => {
-        imageOverlay.classList.add('visible');
-    }, 10);
-}
-
-// 处理图片点击事件
-function handleImageClick(img) {
-    event.stopPropagation();
-    
-    const currentMode = img.dataset.mode;
-    
-    // 单击逻辑：缩略图 → 窗口，窗口 → 缩略图，原始 → 缩略图
-    if (currentMode === 'thumbnail') {
-        setImageMode(img, 'fit');
-    } else {
-        setImageMode(img, 'thumbnail');
-    }
-}
-
-// 关闭图片叠加层
-function closeImageOverlay() {
-    const imageOverlay = document.getElementById('imageOverlay');
-    if (imageOverlay) {
-        imageOverlay.classList.remove('visible');
-        setTimeout(() => {
-            imageOverlay.remove();
-        }, 300);
-    }
-}
-
-// 全局变量用于3D模型显示
-let modelViewer = null;
-
-// 显示3D模型模态框
-function showModelModal(modelSrc, title) {
-    event.stopPropagation();
-    
-    const modelOverlay = document.getElementById('modelOverlay');
-    const modelTitle = document.getElementById('modelTitle');
-    const modelInfo = document.getElementById('modelInfo');
-    
-    if (modelOverlay && modelTitle) {
-        modelTitle.textContent = title;
-        if (modelInfo) {
-            modelInfo.textContent = `正在加载3D模型...`;
-        }
-        
-        modelOverlay.classList.add('visible');
-        
-        // 检查Three.js是否加载
-        if (typeof THREE === 'undefined') {
-            console.error('Three.js 未加载');
-            const loading = document.getElementById('modelLoading');
-            if (loading) {
-                loading.querySelector('p').textContent = 'Three.js 加载失败，请刷新页面重试';
-            }
-            return;
-        }
-        
-        // 直接初始化3D场景
-        setTimeout(() => {
-            initializeModelViewer();
-            // 检查是否有实际的模型文件，如果没有或加载失败就显示占位符
-            if (modelViewer) {
-                if (modelSrc && modelSrc.trim() !== '' && modelSrc !== 'null') {
-                    // modelSrc 已经是完整的URL路径，不需要再添加 /static/
-                    modelViewer.loadModel(modelSrc);
-                } else {
-                    // 直接创建占位符模型，不依赖于外部文件
-                    modelViewer.createPlaceholderModel();
-                }
-            }
-        }, 100);
-    } else {
-        console.error('Model overlay elements not found');
-    }
-}
-
-// 关闭3D模型模态框
-function closeModelModal() {
-    const modelOverlay = document.getElementById('modelOverlay');
-    if (modelOverlay) {
-        modelOverlay.classList.remove('visible');
-        
-        // 销毁3D查看器实例
-        if (modelViewer) {
-            modelViewer.dispose();
-            modelViewer = null;
-        }
-    }
-}
-
-// 初始化3D模型查看器
-function initializeModelViewer() {
-    // 确保通用模块已加载
-    if (typeof ModelViewer3D === 'undefined') {
-        console.error('ModelViewer3D 模块未加载');
-        const loading = document.getElementById('modelLoading');
-        if (loading) {
-            loading.querySelector('p').textContent = 'ModelViewer3D 模块加载失败';
-        }
-        return;
-    }
-    
-    // 销毁之前的实例
-    if (modelViewer) {
-        modelViewer.dispose();
-    }
-    
-    // 获取canvas元素
-    const canvas = document.getElementById('modelCanvas');
-    if (!canvas) {
-        console.error('找不到modelCanvas元素');
-        return;
-    }
-    
-    // 创建新的3D查看器实例
-    modelViewer = new ModelViewer3D(canvas, {
-        backgroundColor: 0x2c3e50,
-        enableControls: true,
-        enableAutoRotate: false,
-        enableAnimation: true,
-        onModelLoaded: (model) => {
-            const loading = document.getElementById('modelLoading');
-            if (loading) {
-                loading.classList.add('hidden');
-            }
-        },
-        onLoadError: (error) => {
-            console.error('模型加载失败:', error);
-            const loading = document.getElementById('modelLoading');
-            if (loading) {
-                loading.querySelector('p').textContent = `加载失败: ${error.message}`;
-            }
-        },
-        onLoadProgress: (progress) => {
-            const loading = document.getElementById('modelLoading');
-            if (loading && progress.loaded && progress.total) {
-                const percent = Math.round((progress.loaded / progress.total) * 100);
-                loading.querySelector('p').textContent = `正在加载模型... ${percent}%`;
-            }
-        }
-    });
-    
-    // 初始化3D查看器
-    modelViewer.init();
-}
-
-
-
-// 关闭3D模型叠加层
-function closeModelOverlay() {
-    const modelOverlay = document.getElementById('modelOverlay');
-    if (modelOverlay) {
-        modelOverlay.classList.remove('visible');
-        
-        // 清理ModelViewer3D资源
-        if (modelViewer) {
-            modelViewer.dispose();
-            modelViewer = null;
-        }
-        
-        // 显示加载状态
-        const loading = document.getElementById('modelLoading');
-        if (loading) {
-            loading.classList.remove('hidden');
-        }
-    }
-}
+// 注意: 模态框功能已移至 artwork-modal.js 统一管理
+// showArtworkModal, closeArtworkModal, showImageModal, showModelModal 等函数
+// 都在 artwork-modal.js 中定义，两个页面共享同一套代码
 
 // 3D模型控制函数
 function rotateModel() {

@@ -1,0 +1,130 @@
+{# 作品卡片组件 - 统一的作品展示卡片 #}
+{# 
+参数:
+- artwork: 作品对象
+- show_author: 是否显示作者信息 (默认true)
+- show_privacy: 是否显示公开/私密状态 (默认false)
+- show_actions: 是否显示操作按钮(编辑/删除/设为公开等，默认false)
+#}
+{% set file_urls = artwork.get_file_urls() %}
+<div class="artwork-item" data-category="{{ artwork.category or 'other' }}" 
+     data-artwork-id="{{ artwork.id }}"
+     data-artwork-title="{{ artwork.title }}"
+     data-artwork-artist="{{ artwork.author.nickname }}"
+     data-artwork-age="{{ artwork.author.age }}"
+     data-artwork-description="{{ artwork.description or '暂无描述' }}"
+     data-artwork-original="{{ file_urls.original_sketch or '' }}"
+     data-artwork-generated="{{ file_urls.colored_image or file_urls.figurine_image or '' }}"
+     data-artwork-model="{{ file_urls.model_3d or '' }}"
+     data-artwork-likes="{{ artwork.vote_count or 0 }}"
+     data-artwork-views="{{ artwork.view_count or 0 }}"
+     data-artwork-public="{{ 'true' if artwork.is_public else 'false' }}"
+     data-artwork-date="{{ artwork.created_at.strftime('%Y-%m-%d') if artwork.created_at else '' }}"
+     data-artwork-session-id="{{ artwork.session_id or '' }}"
+     data-artwork-colored-versions='{{ (artwork.colored_versions|tojson) if artwork.colored_versions else "[]" }}'
+     data-artwork-adjusted-versions='{{ (artwork.adjusted_versions|tojson) if artwork.adjusted_versions else "[]" }}'>
+    <div class="artwork-card">
+        <div class="artwork-image">
+            {% if file_urls.colored_image %}
+                <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" loading="lazy">
+            {% elif file_urls.figurine_image %}
+                <img src="{{ file_urls.figurine_image }}" alt="{{ artwork.title }}" loading="lazy">
+            {% elif file_urls.original_sketch %}
+                <img src="{{ file_urls.original_sketch }}" alt="{{ artwork.title }}" loading="lazy">
+            {% else %}
+                <div class="placeholder-image">
+                    <i class="fas fa-image"></i>
+                    <p>图片加载中...</p>
+                </div>
+            {% endif %}
+            
+            {% if show_privacy|default(false) %}
+                <!-- 公开/私密标签 -->
+                <div class="privacy-badge {{ 'public' if artwork.is_public else 'private' }}">
+                    <i class="fas {{ 'fa-globe' if artwork.is_public else 'fa-lock' }}"></i>
+                    {{ '公开' if artwork.is_public else '私密' }}
+                </div>
+            {% endif %}
+            
+            {% if artwork.is_featured and show_author|default(true) %}
+                <!-- 推荐标签 -->
+                <div class="featured-badge">
+                    <i class="fas fa-crown"></i> 推荐作品
+                </div>
+            {% endif %}
+            
+            <!-- 内容类型指示器 -->
+            <div class="content-type-indicators">
+                <!-- 图片 -->
+                <div class="type-indicator {{ 'active' if (file_urls.colored_image or file_urls.figurine_image or file_urls.original_sketch) else 'inactive' }}" 
+                     title="{{ '包含图片' if (file_urls.colored_image or file_urls.figurine_image or file_urls.original_sketch) else '无图片' }}">
+                    <i class="fas fa-image"></i>
+                </div>
+                <!-- 3D模型 -->
+                <div class="type-indicator {{ 'active' if file_urls.model_3d else 'inactive' }}" 
+                     title="{{ '包含3D模型' if file_urls.model_3d else '无3D模型' }}">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <!-- 视频 -->
+                <div class="type-indicator {{ 'active' if artwork.video_file else 'inactive' }}" 
+                     title="{{ '包含视频' if artwork.video_file else '无视频' }}">
+                    <i class="fas fa-video"></i>
+                </div>
+            </div>
+
+            {% if show_actions|default(false) %}
+                <!-- 作品操作按钮 -->
+                <div class="artwork-actions">
+                    {% if not artwork.is_public %}
+                        <button class="action-btn set-public-btn" 
+                                onclick="setArtworkPublic('{{ artwork.id }}', event)"
+                                title="设为公开">
+                            <i class="fas fa-globe"></i>
+                        </button>
+                    {% else %}
+                        <button class="action-btn set-private-btn" 
+                                onclick="setArtworkPrivate('{{ artwork.id }}', event)"
+                                title="设为私密">
+                            <i class="fas fa-lock"></i>
+                        </button>
+                    {% endif %}
+                    <button class="action-btn delete-btn" 
+                            onclick="deleteArtwork('{{ artwork.id }}', event)"
+                            title="删除作品">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="artwork-info">
+            <h3 class="artwork-title">{{ artwork.title }}</h3>
+            
+            {% if show_author|default(true) %}
+                <div class="artwork-author">
+                    <i class="fas fa-user"></i> 
+                    {{ artwork.author.nickname }} ({{ artwork.author.age }}岁)
+                </div>
+            {% endif %}
+            
+            {% if artwork.description %}
+                <p class="artwork-description">{{ artwork.description[:50] }}{% if artwork.description|length > 50 %}...{% endif %}</p>
+            {% endif %}
+            
+            <div class="artwork-meta">
+                <span class="meta-item">
+                    <i class="fas fa-heart"></i>
+                    <span class="likes-count">{{ artwork.vote_count or 0 }}</span>
+                </span>
+                <span class="meta-item">
+                    <i class="fas fa-eye"></i>
+                    <span class="views-count">{{ artwork.view_count or 0 }}</span>
+                </span>
+                <span class="meta-item">
+                    <i class="fas fa-calendar"></i>
+                    {{ artwork.created_at.strftime('%m-%d') if artwork.created_at else '' }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

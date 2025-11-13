@@ -7,8 +7,20 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, IntegerField, SelectField, BooleanField, TextAreaField
 from wtforms.fields import DateField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, NumberRange, ValidationError, Optional
-from models import User
+from auth.models import User
 from datetime import date
+
+
+def checkbox_required(message=None):
+    """自定义验证器：确保复选框必须勾选"""
+    if message is None:
+        message = '此项为必选项'
+    
+    def _checkbox_required(form, field):
+        if not field.data:
+            raise ValidationError(message)
+    
+    return _checkbox_required
 
 
 class BirthDateValidator:
@@ -62,15 +74,15 @@ class KidRegistrationForm(FlaskForm):
     ], default='student')
     
     birth_date = DateField('出生日期', validators=[
-        DataRequired(message='请输入出生日期'),
-        BirthDateValidator()
+        Optional()
     ])
     
     gender = SelectField('性别', choices=[
+        ('', '暂不选择'),
         ('male', '男'),
         ('female', '女'),
         ('other', '其他')
-    ], validators=[DataRequired(message='请选择性别')])
+    ], validators=[Optional()])
     
     contact_phone = StringField('联系电话', validators=[
         Optional(),
@@ -134,6 +146,18 @@ class ParentVerificationForm(FlaskForm):
     verification_code = StringField('验证码', validators=[
         DataRequired(message='请输入6位验证码'),
         Length(min=6, max=6, message='验证码为6位数字')
+    ])
+    
+    consent_terms = BooleanField('同意用户协议和隐私政策', validators=[
+        checkbox_required(message='请阅读并同意用户协议和隐私政策')
+    ])
+    
+    consent_age = BooleanField('确认孩子年龄', validators=[
+        checkbox_required(message='请确认孩子年龄在10-14岁之间')
+    ])
+    
+    consent_supervision = BooleanField('同意监督使用', validators=[
+        checkbox_required(message='请同意在您的监督下使用本平台')
     ])
 
 
@@ -219,23 +243,3 @@ class PrivacySettingsForm(FlaskForm):
     show_in_gallery = BooleanField('允许在作品展示中显示我的作品', default=True)
     show_age = BooleanField('在作品上显示我的年龄', default=False)
     allow_parent_reports = BooleanField('向家长发送使用报告', default=True)
-
-
-class ParentVerificationForm(FlaskForm):
-    """家长验证表单"""
-    verification_code = StringField('验证码', validators=[
-        DataRequired(message='请输入验证码'),
-        Length(min=6, max=6, message='验证码为6位')
-    ])
-    
-    consent_terms = BooleanField('我已阅读并同意《用户协议》和《隐私政策》', validators=[
-        DataRequired(message='请确认您已阅读并同意相关条款')
-    ])
-    
-    consent_age = BooleanField('我确认我的孩子年龄在10-14岁之间', validators=[
-        DataRequired(message='请确认孩子年龄符合要求')
-    ])
-    
-    consent_supervision = BooleanField('我同意孩子在我的监督下使用本平台', validators=[
-        DataRequired(message='请确认您同意监督孩子使用')
-    ])

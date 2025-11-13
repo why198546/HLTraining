@@ -1,0 +1,33 @@
+{# 作品网格组件 - 统一的作品列表展示 #}
+{# 
+参数:
+- artworks: 作品列表
+- grid_id: 网格容器ID (默认'artworks-grid')
+- show_author: 是否显示作者 (默认true)
+- show_privacy: 是否显示公开/私密状态 (默认false)
+- show_actions: 是否显示操作按钮 (默认false)
+- empty_message: 无作品时的提示消息
+#}
+<div class="gallery-grid" id="{{ grid_id|default('artworks-grid') }}">
+    {% if artworks %}
+        {% for artwork in artworks %}
+            {% include 'components/artwork_card.html' with context %}
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-palette"></i>
+            </div>
+            <h3>{{ empty_message|default('暂无作品') }}</h3>
+            {% if show_actions|default(false) %}
+                <p>赶快开始你的第一件AI创作吧！</p>
+                <a href="{{ url_for('create') }}" class="btn btn-primary btn-large">
+                    <i class="fas fa-plus"></i>
+                    开始创作
+                </a>
+            {% else %}
+                <p>期待更多精彩作品！</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>

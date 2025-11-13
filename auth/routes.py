@@ -8,11 +8,11 @@ from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
 import random
 import string
-from models import db
+from auth.models import db
 
 from auth import auth_bp
-from models import db, User, ParentVerification, CreationSession
-from forms import KidRegistrationForm, KidLoginForm, ParentVerificationForm
+from auth.models import db, User, ParentVerification, CreationSession
+from auth.forms import KidRegistrationForm, KidLoginForm, ParentVerificationForm
 from utils.email_service import send_verification_email
 
 
@@ -29,15 +29,15 @@ def register():
         user = User(
             username=form.username.data,
             nickname=form.nickname.data,
-            birth_date=form.birth_date.data,
-            gender=form.gender.data,
             parent_email=form.parent_email.data,
             password=form.password.data,
-            contact_phone=form.contact_phone.data,
-            mailing_address=form.mailing_address.data
+            birth_date=form.birth_date.data if form.birth_date.data else None,
+            gender=form.gender.data if form.gender.data else None,
+            contact_phone=form.contact_phone.data if form.contact_phone.data else None,
+            mailing_address=form.mailing_address.data if form.mailing_address.data else None
         )
         user.role = form.role.data
-        user.color_preference = form.color_preference.data
+        user.color_preference = form.color_preference.data if form.color_preference.data else 'warm'
         
         db.session.add(user)
         db.session.commit()
@@ -100,38 +100,51 @@ def verification_pending(user_id):
 @auth_bp.route('/parent-verify/<verification_token>', methods=['GET', 'POST'])
 def parent_verify(verification_token):
     """家长验证页面"""
-    user = User.query.filter_by(verification_token=verification_token).first()
-    if not user:
-        flash('验证链接无效或已过期', 'error')
-        return redirect(url_for('index'))
-    
-    if user.is_verified:
-        flash('账户已经通过验证', 'info')
-        return redirect(url_for('index'))
-    
-    form = ParentVerificationForm()
-    
-    if form.validate_on_submit():
-        # 查找验证记录
-        verification = ParentVerification.query.filter_by(
-            user_id=user.id,
-            verification_code=form.verification_code.data,
-            is_verified=False
-        ).first()
+    try:
+        user = User.query.filter_by(verification_token=verification_token).first()
+        if not user:
+            flash('验证链接无效或已过期', 'error')
+            return redirect(url_for('index'))
         
-        if verification and not verification.is_expired():
-            # 验证成功
-            verification.verify()
-            user.is_verified = True
-            user.verification_token = None
-            db.session.commit()
+        if user.is_verified:
+            flash('账户已经通过验证', 'info')
+            return redirect(url_for('index'))
+        
+        form = ParentVerificationForm()
+        
+        if form.validate_on_submit():
+            # 查找验证记录
+            verification = ParentVerification.query.filter_by(
+                user_id=user.id,
+                verification_code=form.verification_code.data,
+                is_verified=False
+            ).first()
             
-            flash('验证成功！孩子现在可以正常使用账户了。', 'success')
-            return render_template('auth/verification_success.html', user=user)
-        else:
-            flash('验证码错误或已过期，请重新发送验证邮件', 'error')
-    
-    return render_template('auth/parent_verify.html', form=form, user=user)
+            if verification and not verification.is_expired():
+                # 验证成功
+                verification.verify()
+                user.is_verified = True
+                user.verification_token = None
+                db.session.commit()
+                
+                flash('验证成功！孩子现在可以正常使用账户了。', 'success')
+                return render_template('auth/verification_success.html', user=user)
+            else:
+                flash('验证码错误或已过期，请重新发送验证邮件', 'error')
+        elif request.method == 'POST':
+            # 表单验证失败，显示具体错误
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f'{error}', 'error')
+        
+        return render_template('auth/parent_verify.html', form=form, user=user)
+    except Exception as e:
+        # 捕获所有异常并记录
+        import traceback
+        error_msg = f"Error in parent_verify: {str(e)}\n{traceback.format_exc()}"
+        print(error_msg)  # 打印到gunicorn日志
+        flash(f'系统错误：{str(e)}', 'error')
+        return render_template('auth/parent_verify.html', form=ParentVerificationForm(), user=user if 'user' in locals() else None)
 
 
 @auth_bp.route('/resend-verification/<int:user_id>')
@@ -196,9 +209,9 @@ def send_parent_verification(user):
 def profile():
     """用户个人中心"""
     print("DEBUG: Profile function called")
-    from models import Artwork, CreationSession
+    from auth.models import Artwork, CreationSession
     from datetime import datetime
-    from forms import ProfileUpdateForm, PrivacySettingsForm
+    from auth.forms import ProfileUpdateForm, PrivacySettingsForm
     
     # 创建表单实例
     form = ProfileUpdateForm()
@@ -324,7 +337,7 @@ def profile():
 @login_required
 def edit_profile():
     """编辑个人资料"""
-    from forms import ProfileUpdateForm
+    from auth.forms import ProfileUpdateForm
     
     form = ProfileUpdateForm()
     
@@ -355,40 +368,47 @@ def edit_profile():
 @login_required
 def my_artworks():
     """我的作品页面"""
-    from models import Artwork
+    from auth.models import Artwork
     from sqlalchemy import func
     
     page = request.args.get('page', 1, type=int)
-    pagination = Artwork.query.filter_by(user_id=current_user.id).order_by(
+    
+    # 获取所有作品（不分页，和gallery保持一致的体验）
+    artworks = Artwork.query.filter_by(user_id=current_user.id).order_by(
         Artwork.created_at.desc()
-    ).paginate(
-        page=page, per_page=12, error_out=False
-    )
+    ).all()
     
     # 计算统计信息
     total_likes = db.session.query(func.sum(Artwork.vote_count)).filter_by(user_id=current_user.id).scalar() or 0
     total_views = db.session.query(func.sum(Artwork.view_count)).filter_by(user_id=current_user.id).scalar() or 0
     
-    # 按类型统计作品数量（基于是否有相应文件）
-    total_artworks = Artwork.query.filter_by(user_id=current_user.id).count()
+    # 按类型统计作品数量
+    total_artworks = len(artworks)
     public_artworks = Artwork.query.filter_by(user_id=current_user.id, is_public=True).count()
     featured_artworks = Artwork.query.filter_by(user_id=current_user.id, is_featured=True).count()
     
+    # 按分类统计（基于文件类型）
+    ai_coloring_count = sum(1 for a in artworks if a.colored_image)
+    model_3d_count = sum(1 for a in artworks if a.model_3d)
+    video_count = sum(1 for a in artworks if a.video_file)
+    
     return render_template('auth/my_artworks.html', 
-                         artworks=pagination, 
-                         pagination=pagination,
+                         artworks=artworks,
                          total_likes=total_likes,
                          total_views=total_views,
                          total_artworks=total_artworks,
                          public_artworks=public_artworks,
-                         featured_artworks=featured_artworks)
+                         featured_artworks=featured_artworks,
+                         ai_coloring_count=ai_coloring_count,
+                         model_3d_count=model_3d_count,
+                         video_count=video_count)
 
 
 @auth_bp.route('/privacy-settings', methods=['GET', 'POST'])
 @login_required
 def privacy_settings():
     """隐私设置"""
-    from forms import PrivacySettingsForm
+    from auth.forms import PrivacySettingsForm
     
     form = PrivacySettingsForm()
     
@@ -431,7 +451,7 @@ def parent_dashboard(verification_token):
     }
     
     # 获取最近的创作活动
-    from models import CreationSession, Artwork
+    from auth.models import CreationSession, Artwork
     from datetime import datetime, timedelta
     recent_sessions = CreationSession.query.filter_by(user_id=user.id).order_by(
         CreationSession.started_at.desc()

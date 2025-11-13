@@ -1,6 +1,28 @@
 // 统一的作品模态框功能
 // 用于gallery页面和my_artworks页面的共享模态框组件
 
+// 增加浏览次数(如果有artworkId的话)
+async function incrementViewCount(artworkId) {
+    if (!artworkId) return;
+    
+    try {
+        const response = await fetch(`/increment-view/${artworkId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log(`作品 ${artworkId} 浏览次数已更新: ${result.view_count}`);
+        }
+    } catch (error) {
+        console.error('更新浏览次数失败:', error);
+    }
+}
+
 // 作品详情模态框功能
 function showArtworkModal(element) {
     // 阻止事件冒泡，防止意外触发
@@ -31,6 +53,11 @@ function showArtworkModal(element) {
         coloredVersions: JSON.parse(element.dataset.artworkColoredVersions || '[]'),
         adjustedVersions: JSON.parse(element.dataset.artworkAdjustedVersions || '[]')
     };
+    
+    // 增加浏览次数(仅对公开作品)
+    if (artworkData.id) {
+        incrementViewCount(artworkData.id);
+    }
     
     console.log('Artwork versions:', {
         colored: artworkData.coloredVersions,
@@ -224,22 +251,15 @@ function showArtworkModal(element) {
     
     modal.style.display = 'flex';
     
-    // 添加显示类来触发CSS动画
-    modal.classList.add('show');
-    
     // 保存当前滚动位置并固定页面
     const scrollY = window.scrollY;
     document.body.style.position = 'fixed';
     document.body.style.top = `-${scrollY}px`;
     document.body.style.width = '100%';
     
-    // 添加动画效果
+    // 添加显示类来触发CSS动画（使用setTimeout确保display生效后再添加类）
     setTimeout(() => {
-        const modalContent = modal.querySelector('.artwork-modal-content');
-        if (modalContent) {
-            modalContent.style.transform = 'scale(1)';
-            modalContent.style.opacity = '1';
-        }
+        modal.classList.add('show');
     }, 10);
 }
 

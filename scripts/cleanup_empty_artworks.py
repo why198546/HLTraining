@@ -5,7 +5,7 @@
 """
 
 from app import app, db
-from models import Artwork
+from auth.models import Artwork
 import os
 
 def cleanup_empty_artworks():

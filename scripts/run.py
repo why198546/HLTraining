@@ -10,7 +10,11 @@ import webbrowser
 import threading
 import time
 import argparse
-from flask_manager import FlaskProcessManager
+
+# 添加项目根目录到Python路径
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from managers.flask_manager import FlaskProcessManager
 
 def open_browser():
     """延迟打开浏览器"""

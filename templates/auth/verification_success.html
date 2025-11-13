@@ -4,280 +4,148 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>验证成功 - AI创意工坊</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20251113">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     {% include 'components/header.html' %}
 
-    <main class="main-content success-page">
-        <div class="container">
-            <div class="success-container">
-                <!-- 成功动画和标题 -->
-                <div class="success-header">
-                    <div class="success-animation">
-                        <div class="success-icon">
-                            <i class="fas fa-check-circle"></i>
+    <div class="verification-page">
+        <div class="verification-wrapper">
+            <!-- 左侧：平台安全承诺 -->
+            <div class="safety-promise">
+                <div class="promise-header">
+                    <i class="fas fa-shield-check"></i>
+                    <h2>平台安全承诺</h2>
+                </div>
+                
+                <div class="promise-grid">
+                    <div class="promise-item">
+                        <div class="promise-icon">
+                            <i class="fas fa-lock"></i>
                         </div>
-                        <div class="celebration-stars">
-                            <i class="fas fa-star star-1"></i>
-                            <i class="fas fa-star star-2"></i>
-                            <i class="fas fa-star star-3"></i>
-                            <i class="fas fa-star star-4"></i>
-                            <i class="fas fa-star star-5"></i>
-                        </div>
+                        <h3>隐私保护</h3>
+                        <p>我们不会收集孩子的个人敏感信息，所有数据都经过安全加密</p>
                     </div>
                     
-                    <h1 class="success-title">🎉 验证成功！</h1>
-                    <p class="success-subtitle">欢迎来到AI创意的神奇世界！</p>
+                    <div class="promise-item">
+                        <div class="promise-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h3>内容监控</h3>
+                        <p>所有创作内容都经过AI审核，确保健康向上</p>
+                    </div>
+                    
+                    <div class="promise-item">
+                        <div class="promise-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3>教育导向</h3>
+                        <p>专注于培养孩子的创造力和对AI技术的理解</p>
+                    </div>
+                    
+                    <div class="promise-item">
+                        <div class="promise-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3>时间管理</h3>
+                        <p>提供使用时长统计，帮助管理孩子的在线时间</p>
+                    </div>
                 </div>
 
-                <!-- 用户信息卡片 -->
-                {% if user %}
-                <div class="welcome-card">
-                    <div class="user-avatar">
-                        <i class="fas fa-user-circle"></i>
+                <div class="feature-intro-section">
+                    <h4>💡 平台功能介绍</h4>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <i class="fas fa-palette"></i>
+                            <span>AI智能上色：将简笔画转换为彩色插画</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-cube"></i>
+                            <span>3D模型生成：从2D图像创建3D模型</span>
+                        </div>
                     </div>
-                    <div class="welcome-text">
+                </div>
+
+                <div class="contact-section">
+                    <h4><i class="fas fa-phone"></i> 联系我们</h4>
+                    <p>如果您有任何疑问或建议，欢迎联系我们：</p>
+                    <p><i class="fas fa-envelope"></i> support@ai-workshop.com</p>
+                    <p><i class="fas fa-globe"></i> www.ai-workshop.com</p>
+                </div>
+            </div>
+            
+            <!-- 右侧：成功信息 -->
+            <div class="verification-form-section">
+                <div class="success-content">
+                    <div class="success-header">
+                        <div class="success-icon-large">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h1 class="success-title">验证成功！</h1>
+                        <p class="success-subtitle">你的账户已经通过家长验证</p>
+                    </div>
+                    
+                    {% if user %}
+                    <div class="success-welcome-card">
+                        <div class="welcome-icon">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
                         <h2>你好，{{ user.nickname }}！</h2>
-                        <p>你的账户已经通过家长验证，现在可以开始你的AI创作之旅了！</p>
+                        <p>欢迎来到AI创意工坊</p>
                     </div>
-                </div>
-                {% endif %}
-
-                <!-- 下一步指引 -->
-                <div class="next-steps">
-                    <h3>🚀 接下来你可以：</h3>
-                    <div class="steps-grid">
-                        <div class="step-card primary">
-                            <div class="step-icon">
-                                <i class="fas fa-sign-in-alt"></i>
-                            </div>
-                            <h4>立即登录</h4>
-                            <p>使用你的用户名和密码登录，开始创作</p>
-                            <a href="{{ url_for('auth.login') }}" class="step-btn btn-primary">
-                                立即登录
+                    {% endif %}
+                    
+                    <div class="next-steps-section">
+                        <h3 class="section-title">🚀 接下来你可以：</h3>
+                        
+                        <div class="action-cards">
+                            <a href="{{ url_for('auth.login') }}" class="action-card primary" title="使用你的用户名和密码登录系统">
+                                <div class="action-icon">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>立即登录</h4>
+                                    <p>使用你的用户名和密码登录</p>
+                                </div>
                             </a>
-                        </div>
-                        
-                        <div class="step-card">
-                            <div class="step-icon">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <h4>学习教程</h4>
-                            <p>了解如何使用平台的各种酷炫功能</p>
-                            <a href="{{ url_for('tutorial') }}" class="step-btn">
-                                查看教程
-                            </a>
-                        </div>
-                        
-                        <div class="step-card">
-                            <div class="step-icon">
-                                <i class="fas fa-images"></i>
-                            </div>
-                            <h4>浏览作品</h4>
-                            <p>看看其他小朋友的精彩创作，获得灵感</p>
-                            <a href="{{ url_for('gallery') }}" class="step-btn">
-                                作品展示
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 功能预览 -->
-                <div class="features-preview">
-                    <h3>✨ 平台功能预览</h3>
-                    <div class="features-grid">
-                        <div class="feature-card">
-                            <div class="feature-icon ai-coloring">
-                                <i class="fas fa-palette"></i>
-                            </div>
-                            <h4>AI智能上色</h4>
-                            <p>上传你的简笔画，AI会自动为它添加漂亮的颜色</p>
-                            <div class="feature-demo">
-                                <span class="demo-before">黑白线稿</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="demo-after">彩色插画</span>
-                            </div>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon model-3d">
-                                <i class="fas fa-cube"></i>
-                            </div>
-                            <h4>3D模型生成</h4>
-                            <p>将你的2D画作转换成酷炫的3D模型</p>
-                            <div class="feature-demo">
-                                <span class="demo-before">平面图画</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="demo-after">立体模型</span>
-                            </div>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon video-gen">
-                                <i class="fas fa-film"></i>
-                            </div>
-                            <h4>动画视频</h4>
-                            <p>让你的画作动起来，创作属于自己的小动画</p>
-                            <div class="feature-demo">
-                                <span class="demo-before">静态图片</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="demo-after">动画视频</span>
-                            </div>
-                        </div>
-                        
-                        <div class="feature-card">
-                            <div class="feature-icon gallery">
-                                <i class="fas fa-users"></i>
-                            </div>
-                            <h4>作品分享</h4>
-                            <p>与其他小朋友分享你的创作，互相学习</p>
-                            <div class="feature-demo">
-                                <span class="demo-before">个人作品</span>
-                                <i class="fas fa-arrow-right"></i>
-                                <span class="demo-after">公开展示</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 安全提醒 -->
-                <div class="safety-reminder">
-                    <div class="reminder-icon">
-                        <i class="fas fa-shield-check"></i>
-                    </div>
-                    <div class="reminder-content">
-                        <h4>🛡️ 安全使用提醒</h4>
-                        <ul class="safety-tips">
-                            <li>记住保护好你的用户名和密码，不要告诉其他人</li>
-                            <li>如果遇到任何问题，及时告诉爸爸妈妈</li>
-                            <li>只上传自己画的作品，尊重原创</li>
-                            <li>与其他小朋友友善交流，传播正能量</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <!-- 家长信息 -->
-                <div class="parent-info">
-                    <h4>📧 给家长的话</h4>
-                    <div class="parent-message">
-                        <p>感谢您对我们平台的信任！您的孩子现在可以安全地使用AI创意工坊了。</p>
-                        <p>我们会定期向您的邮箱 <strong>{{ user.parent_email if user else '家长邮箱' }}</strong> 发送孩子的使用报告，让您了解孩子的创作情况。</p>
-                        
-                        <div class="parent-actions">
-                            {% if user and user.verification_token %}
-                            <a href="{{ url_for('auth.parent_dashboard', verification_token=user.verification_token) }}" 
-                               class="btn btn-outline">
-                                <i class="fas fa-tachometer-alt"></i>
-                                查看家长控制台
-                            </a>
-                            {% else %}
-                            <span class="btn btn-outline disabled">
-                                <i class="fas fa-tachometer-alt"></i>
-                                家长控制台（不可用）
-                            </span>
-                            {% endif %}
                             
-                            <a href="mailto:support@ai-workshop.com" class="btn btn-outline">
-                                <i class="fas fa-envelope"></i>
-                                联系客服
+                            <a href="{{ url_for('tutorial') }}" class="action-card" title="观看教程视频，了解如何使用平台的各项功能">
+                                <div class="action-icon">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>学习教程</h4>
+                                    <p>了解如何使用平台功能</p>
+                                </div>
+                            </a>
+                            
+                            <a href="{{ url_for('gallery') }}" class="action-card" title="浏览其他小朋友的精彩创作，获取灵感">
+                                <div class="action-icon">
+                                    <i class="fas fa-images"></i>
+                                </div>
+                                <div class="action-content">
+                                    <h4>浏览作品</h4>
+                                    <p>看看其他小朋友的创作</p>
+                                </div>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2025 AI创意工坊 - 让每个孩子都成为小小创作家</p>
-        </div>
-    </footer>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 成功页面动画效果
-            const successIcon = document.querySelector('.success-icon');
-            const stars = document.querySelectorAll('.celebration-stars .fas');
-            const featureCards = document.querySelectorAll('.feature-card');
-            
-            // 成功图标放大动画
-            setTimeout(() => {
-                if (successIcon) {
-                    successIcon.classList.add('animate-pulse');
-                }
-            }, 500);
-            
-            // 星星闪烁动画
-            stars.forEach((star, index) => {
+            // 成功图标动画
+            const successIcon = document.querySelector('.success-icon-large i');
+            if (successIcon) {
                 setTimeout(() => {
-                    star.style.animation = `sparkle 1.5s ease-in-out infinite ${index * 0.2}s`;
-                }, 1000 + index * 200);
-            });
-            
-            // 功能卡片依次出现
-            featureCards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.style.opacity = '1';
-                    card.style.transform = 'translateY(0)';
-                }, 1500 + index * 200);
-            });
-            
-            // 自动跳转倒计时（可选）
-            let countdown = 10;
-            const loginBtn = document.querySelector('.step-btn.btn-primary');
-            
-            if (loginBtn) {
-                const originalText = loginBtn.textContent;
-                
-                const updateCountdown = () => {
-                    if (countdown > 0) {
-                        loginBtn.innerHTML = `${originalText} (${countdown}s)`;
-                        countdown--;
-                        setTimeout(updateCountdown, 1000);
-                    } else {
-                        loginBtn.textContent = originalText;
-                        // 可以在这里添加自动跳转逻辑
-                        // window.location.href = loginBtn.href;
-                    }
-                };
-                
-                // 开始倒计时（可选功能）
-                // setTimeout(updateCountdown, 3000);
+                    successIcon.style.animation = 'bounce 1s ease';
+                }, 300);
             }
         });
-        
-        // CSS动画定义
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes sparkle {
-                0%, 100% { opacity: 0.3; transform: scale(1); }
-                50% { opacity: 1; transform: scale(1.2); }
-            }
-            
-            .success-icon {
-                transition: all 0.3s ease;
-            }
-            
-            .success-icon.animate-pulse {
-                animation: pulse 2s infinite;
-            }
-            
-            @keyframes pulse {
-                0% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-                100% { transform: scale(1); }
-            }
-            
-            .feature-card {
-                opacity: 0;
-                transform: translateY(20px);
-                transition: all 0.5s ease;
-            }
-        `;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>

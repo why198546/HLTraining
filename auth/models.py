@@ -21,8 +21,8 @@ class User(UserMixin, db.Model):
     nickname = db.Column(db.String(50), nullable=False)  # 儿童友好的昵称
     
     # 基本信息
-    birth_date = db.Column(db.Date, nullable=False)  # 出生年月日
-    gender = db.Column(db.String(10), nullable=False)  # 性别：male/female/other
+    birth_date = db.Column(db.Date, nullable=True)  # 出生年月日
+    gender = db.Column(db.String(10), nullable=True)  # 性别：male/female/other
     contact_phone = db.Column(db.String(20))  # 联系电话
     mailing_address = db.Column(db.Text)  # 邮寄地址（用于3D模型邮寄）
     
@@ -47,7 +47,7 @@ class User(UserMixin, db.Model):
     artworks = db.relationship('Artwork', backref='author', lazy=True, cascade='all, delete-orphan')
     sessions = db.relationship('CreationSession', backref='user', lazy=True, cascade='all, delete-orphan')
     
-    def __init__(self, username, nickname, birth_date, gender, parent_email, password, contact_phone=None, mailing_address=None):
+    def __init__(self, username, nickname, parent_email, password, birth_date=None, gender=None, contact_phone=None, mailing_address=None):
         self.username = username
         self.nickname = nickname
         self.birth_date = birth_date
@@ -311,6 +311,15 @@ class ParentVerification(db.Model):
         self.parent_email = parent_email
         self.verification_code = verification_code
         self.expires_at = expires_at
+    
+    def is_expired(self):
+        """检查验证码是否过期"""
+        return datetime.utcnow() > self.expires_at
+    
+    def verify(self):
+        """标记为已验证"""
+        self.is_verified = True
+        self.verified_at = datetime.utcnow()
 
 
 class ArtworkVote(db.Model):
@@ -333,12 +342,23 @@ class ArtworkVote(db.Model):
         self.artwork_id = artwork_id
         self.voter_id = voter_id
         self.vote_type = vote_type
+
+
+class ArtworkView(db.Model):
+    """作品浏览记录模型"""
+    __tablename__ = 'artwork_views'
     
-    def is_expired(self):
-        """验证码是否过期"""
-        return datetime.utcnow() > self.expires_at
+    id = db.Column(db.Integer, primary_key=True)
+    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False)
+    viewer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    def verify(self):
-        """验证成功"""
-        self.is_verified = True
-        self.verified_at = datetime.utcnow()
+    # 关联关系
+    viewer = db.relationship('User', backref='artwork_views')
+    
+    # 确保同一用户对同一作品只记录一次浏览
+    __table_args__ = (db.UniqueConstraint('artwork_id', 'viewer_id', name='unique_view'),)
+    
+    def __init__(self, artwork_id, viewer_id):
+        self.artwork_id = artwork_id
+        self.viewer_id = viewer_id

@@ -4,1079 +4,249 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>家长验证 - AI创意工坊</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20251113">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .parent-verify-page {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px 0;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .parent-verify-page::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="30" cy="20" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="15" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="70" cy="25" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="90" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-            animation: float 20s infinite linear;
-            opacity: 0.3;
-        }
-        
-        @keyframes float {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        
-        .verification-container {
-            background: white;
-            border-radius: 25px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            overflow: hidden;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .verification-header {
-            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
-            padding: 40px 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .verification-header::before {
-            content: '🛡️👨‍👩‍👧‍👦🔒✨';
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 24px;
-            opacity: 0.3;
-            letter-spacing: 30px;
-        }
-        
-        .parent-icon {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 48px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        .verification-header h1 {
-            margin: 0 0 10px;
-            font-size: 36px;
-            color: #2c3e50;
-            font-weight: bold;
-        }
-        
-        .subtitle {
-            margin: 0;
-            font-size: 18px;
-            color: #5a6c7d;
-            opacity: 0.9;
-        }
-        
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            padding: 40px 30px;
-        }
-        
-        .left-panel > * {
-            margin-bottom: 25px;
-        }
-        
-        .left-panel > *:last-child {
-            margin-bottom: 0;
-        }
-        
-        .right-panel > * {
-            margin-bottom: 25px;
-        }
-        
-        .right-panel > *:last-child {
-            margin-bottom: 0;
-        }
-        
-        .child-info-card {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            box-shadow: 0 8px 25px rgba(168, 237, 234, 0.3);
-        }
-        
-        .child-info-card h3 {
-            margin: 0 0 20px;
-            color: #2c3e50;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .info-item {
-            background: rgba(255,255,255,0.7);
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .info-item .label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .info-item .value {
-            font-weight: bold;
-            color: #2c3e50;
-            font-size: 14px;
-        }
-        
-        .platform-safety-info {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            box-shadow: 0 8px 25px rgba(255, 236, 210, 0.3);
-        }
-        
-        .platform-safety-info h3 {
-            margin: 0 0 20px;
-            color: #2c3e50;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        
-        .safety-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .safety-item {
-            background: rgba(255,255,255,0.7);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .safety-item:hover {
-            transform: translateY(-5px);
-        }
-        
-        .safety-item i {
-            font-size: 36px;
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-        
-        .safety-item h4 {
-            margin: 0 0 10px;
-            color: #2c3e50;
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
-        .safety-item p {
-            margin: 0;
-            color: #5a6c7d;
-            font-size: 13px;
-            line-height: 1.4;
-        }
-        
-        .verification-form-container {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 30px;
-            border-radius: 20px;
-            color: white;
-            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.3);
-        }
-        
-        .form-section {
-            margin-bottom: 25px;
-        }
-        
-        .form-section h3 {
-            margin: 0 0 15px;
-            font-size: 22px;
-            font-weight: bold;
-        }
-        
-        .form-section p {
-            margin: 0 0 20px;
-            opacity: 0.9;
-            font-size: 16px;
-        }
-        
-        .verification-code-input {
-            position: relative;
-            margin-bottom: 15px;
-        }
-        
-        .verification-input {
-            width: 100%;
-            padding: 18px 20px 18px 60px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 12px;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            letter-spacing: 8px;
-            background: rgba(255,255,255,0.1);
-            color: white;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        
-        .verification-input:focus {
-            outline: none;
-            border-color: rgba(255,255,255,0.8);
-            background: rgba(255,255,255,0.2);
-        }
-        
-        .verification-input::placeholder {
-            color: rgba(255,255,255,0.6);
-            font-size: 16px;
-            letter-spacing: 2px;
-        }
-        
-        .input-icon {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 20px;
-            color: rgba(255,255,255,0.7);
-        }
-        
-        .consent-checklist > * {
-            margin-bottom: 15px;
-        }
-        
-        .consent-checklist > *:last-child {
-            margin-bottom: 0;
-        }
-        
-        .consent-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 15px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .consent-item:hover {
-            background: rgba(255,255,255,0.15);
-        }
-        
-        .consent-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin: 0;
-            flex-shrink: 0;
-        }
-        
-        .consent-item label {
-            margin: 0;
-            cursor: pointer;
-            line-height: 1.5;
-            font-size: 15px;
-        }
-        
-        .form-actions {
-            text-align: center;
-            margin-top: 30px;
-        }
-        
-        .btn-large {
-            padding: 18px 40px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 50px;
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .btn-large:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
-        }
-        
-        .btn-large:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .secondary-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
-        .btn-secondary, .btn-outline {
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-        
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.5);
-        }
-        
-        .btn-outline {
-            background: transparent;
-            color: white;
-            border: 2px solid rgba(255,255,255,0.5);
-        }
-        
-        .btn-outline:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.8);
-        }
-        
-        .additional-info {
-            background: #f8f9fa;
-            padding: 30px;
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        
-        .info-section h4 {
-            color: #2c3e50;
-            margin: 0 0 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-        
-        .feature-list > * {
-            margin-bottom: 15px;
-        }
-        
-        .feature-list > *:last-child {
-            margin-bottom: 0;
-        }
-        
-        .feature-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
-        }
-        
-        .feature-item i {
-            font-size: 24px;
-            color: #667eea;
-            width: 40px;
-            text-align: center;
-        }
-        
-        .contact-section {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-        
-        .contact-info > * {
-            margin-bottom: 10px;
-        }
-        
-        .contact-info > *:last-child {
-            margin-bottom: 0;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .contact-item i {
-            color: #667eea;
-            width: 20px;
-        }
-        
-        .error-messages {
-            margin-top: 10px;
-        }
-        
-        .error-message {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            margin: 5px 0;
-        }
-        
-        .footer {
-            background: rgba(0,0,0,0.1);
-            color: white;
-            text-align: center;
-            padding: 20px 0;
-            margin-top: 0;
-        }
-        
-        .footer-links {
-            margin-bottom: 10px;
-        }
-        
-        .footer-links a {
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            margin: 0 15px;
-            font-size: 14px;
-        }
-        
-        .footer-links a:hover {
-            color: white;
-        }
-        
-        .footer p {
-            margin: 0;
-            font-size: 14px;
-            opacity: 0.7;
-        }
-        
-        @media (max-width: 768px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-                padding: 20px 15px;
-            }
-            
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .safety-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .secondary-actions {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .verification-input {
-                font-size: 20px;
-                letter-spacing: 4px;
-            }
-        }
-    </style>
 </head>
 <body>
-    {% include 'components/auth_header.html' %}
+    {% include 'components/header.html' %}
 
-    <main class="main-content parent-verify-page">
-        <div class="container">
-            <div class="verification-container">
-                <div class="verification-header">
-                    <div class="parent-icon">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <h1>家长验证</h1>
-                    <p class="subtitle">确认您的孩子可以安全使用AI创意工坊</p>
+    <div class="verification-page">
+        <div class="verification-wrapper">
+            <!-- 左侧：平台安全承诺 -->
+            <div class="safety-promise">
+                <div class="promise-header">
+                    <i class="fas fa-shield-check"></i>
+                    <h2>平台安全承诺</h2>
                 </div>
-
-                <div class="content-grid">
-                    <div class="left-panel">
-                        {% if child %}
-                        <div class="child-info-card">
-                            <h3>👶 孩子信息</h3>
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <span class="label">昵称</span>
-                                    <span class="value">{{ child.nickname }}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">年龄</span>
-                                    <span class="value">{{ child.age }} 岁</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">注册时间</span>
-                                    <span class="value">{{ child.created_at.strftime('%m月%d日 %H:%M') }}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">用户名</span>
-                                    <span class="value">{{ child.username }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div class="platform-safety-info">
-                            <h3>🛡️ 平台安全承诺</h3>
-                            <div class="safety-grid">
-                                <div class="safety-item">
-                                    <i class="fas fa-lock"></i>
-                                    <h4>隐私保护</h4>
-                                    <p>我们不会收集孩子的个人敏感信息，所有数据都经过安全加密</p>
-                                </div>
-                                
-                                <div class="safety-item">
-                                    <i class="fas fa-eye"></i>
-                                    <h4>内容监控</h4>
-                                    <p>所有创作内容都经过AI审核，确保健康向上</p>
-                                </div>
-                                
-                                <div class="safety-item">
-                                    <i class="fas fa-graduation-cap"></i>
-                                    <h4>教育导向</h4>
-                                    <p>专注于培养孩子的创造力和对AI技术的理解</p>
-                                </div>
-                                
-                                <div class="safety-item">
-                                    <i class="fas fa-clock"></i>
-                                    <h4>时间管理</h4>
-                                    <p>提供使用时长统计，帮助您管理孩子的在线时间</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="right-panel">
-                        <div class="verification-form-container">
-                            <form method="POST" class="verification-form">
-                                {{ form.hidden_tag() }}
-                                
-                                <div class="form-section">
-                                    <h3>📧 验证码</h3>
-                                    <p>请输入您在邮件中收到的6位验证码：</p>
-                                    
-                                    <div class="verification-code-input">
-                                        {{ form.verification_code(class="verification-input", placeholder="请输入6位验证码", maxlength="6") }}
-                                        <div class="input-icon">
-                                            <i class="fas fa-key"></i>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if form.verification_code.errors %}
-                                        <div class="error-messages">
-                                            {% for error in form.verification_code.errors %}
-                                                <p class="error-message">{{ error }}</p>
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                <div class="form-section">
-                                    <h3>✅ 家长确认</h3>
-                                    <div class="consent-checklist">
-                                        <div class="consent-item">
-                                            {{ form.consent_terms() }}
-                                            <label for="{{ form.consent_terms.id }}">
-                                                我已阅读并同意《用户协议》和《隐私政策》
-                                            </label>
-                                        </div>
-                                        
-                                        <div class="consent-item">
-                                            {{ form.consent_age() }}
-                                            <label for="{{ form.consent_age.id }}">
-                                                我确认我的孩子年龄在10-14岁之间
-                                            </label>
-                                        </div>
-                                        
-                                        <div class="consent-item">
-                                            {{ form.consent_supervision() }}
-                                            <label for="{{ form.consent_supervision.id }}">
-                                                我同意孩子在我的监督下使用本平台
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if form.consent_terms.errors or form.consent_age.errors or form.consent_supervision.errors %}
-                                        <div class="error-messages">
-                                            {% for field in [form.consent_terms, form.consent_age, form.consent_supervision] %}
-                                                {% for error in field.errors %}
-                                                    <p class="error-message">{{ error }}</p>
-                                                {% endfor %}
-                                            {% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-
-                                <div class="form-actions">
-                                    <button type="submit" class="btn btn-primary btn-large">
-                                        <i class="fas fa-check-shield"></i>
-                                        确认验证
-                                    </button>
-                                    
-                                    <div class="secondary-actions">
-                                        <a href="{{ url_for('auth.resend_verification', user_id=child.id if child else 0) }}" 
-                                           class="btn btn-secondary">
-                                            <i class="fas fa-envelope"></i>
-                                            重新发送验证码
-                                        </a>
-                                        
-                                        <a href="mailto:support@ai-workshop.com" class="btn btn-outline">
-                                            <i class="fas fa-question-circle"></i>
-                                            联系客服
-                                        </a>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="additional-info">
-                    <div class="info-grid">
-                        <div class="info-section">
-                            <h4>🌟 平台功能介绍</h4>
-                            <div class="feature-list">
-                                <div class="feature-item">
-                                    <i class="fas fa-palette"></i>
-                                    <span>AI智能上色：将简笔画转换为彩色插画</span>
-                                </div>
-                                <div class="feature-item">
-                                    <i class="fas fa-cube"></i>
-                                    <span>3D模型生成：从2D图像创建3D模型</span>
-                                </div>
-                                <div class="feature-item">
-                                    <i class="fas fa-film"></i>
-                                    <span>动画视频制作：让静态图片动起来</span>
-                                </div>
-                                <div class="feature-item">
-                                    <i class="fas fa-users"></i>
-                                    <span>作品展示：与其他小朋友分享创作</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="contact-section">
-                            <h4>📞 联系我们</h4>
-                            <p>如果您有任何疑问或建议，欢迎联系我们：</p>
-                            <div class="contact-info">
-                                <div class="contact-item">
-                                    <i class="fas fa-envelope"></i>
-                                    <span>support@ai-workshop.com</span>
-                                </div>
-                                <div class="contact-item">
-                                    <i class="fas fa-globe"></i>
-                                    <span>www.ai-workshop.com</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-links">
-                <a href="/terms">用户协议</a>
-                <a href="/privacy">隐私政策</a>
-                <a href="/contact">联系我们</a>
-            </div>
-            <p>&copy; 2025 AI创意工坊 - 安全、有趣的儿童AI创作平台</p>
-        </div>
-    </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // 验证码输入框自动大写和格式化
-            const codeInput = document.querySelector('.verification-input');
-            if (codeInput) {
-                codeInput.addEventListener('input', function(e) {
-                    // 转换为大写
-                    e.target.value = e.target.value.toUpperCase();
-                    
-                    // 限制只能输入字母和数字
-                    e.target.value = e.target.value.replace(/[^A-Z0-9]/g, '');
-                    
-                    // 添加动画效果
-                    if (e.target.value.length === 6) {
-                        e.target.style.borderColor = 'rgba(40, 167, 69, 0.8)';
-                        e.target.style.background = 'rgba(40, 167, 69, 0.1)';
-                    } else {
-                        e.target.style.borderColor = 'rgba(255,255,255,0.3)';
-                        e.target.style.background = 'rgba(255,255,255,0.1)';
-                    }
-                });
                 
-                // 聚焦时添加特效
-                codeInput.addEventListener('focus', function(e) {
-                    e.target.style.transform = 'scale(1.02)';
-                });
-                
-                codeInput.addEventListener('blur', function(e) {
-                    e.target.style.transform = 'scale(1)';
-                });
-            }
-
-            // 复选框联动效果和按钮状态
-            const consentBoxes = document.querySelectorAll('input[type="checkbox"]');
-            const submitBtn = document.querySelector('button[type="submit"]');
-            
-            function updateSubmitButton() {
-                const allChecked = Array.from(consentBoxes).every(box => box.checked);
-                const codeValid = codeInput && codeInput.value.length === 6;
-                
-                if (submitBtn) {
-                    submitBtn.disabled = !(allChecked && codeValid);
-                    
-                    if (allChecked && codeValid) {
-                        submitBtn.style.background = 'linear-gradient(45deg, #28a745, #20c997)';
-                        submitBtn.style.transform = 'scale(1.05)';
-                    } else {
-                        submitBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #ee5a24)';
-                        submitBtn.style.transform = 'scale(1)';
-                        submitBtn.style.opacity = allChecked && codeValid ? '1' : '0.6';
-                    }
-                }
-            }
-            
-            // 为复选框添加动画效果
-            consentBoxes.forEach(box => {
-                box.addEventListener('change', function() {
-                    const item = this.closest('.consent-item');
-                    if (this.checked) {
-                        item.style.background = 'rgba(40, 167, 69, 0.2)';
-                        item.style.borderLeft = '4px solid #28a745';
-                    } else {
-                        item.style.background = 'rgba(255,255,255,0.1)';
-                        item.style.borderLeft = 'none';
-                    }
-                    updateSubmitButton();
-                });
-            });
-            
-            if (codeInput) {
-                codeInput.addEventListener('input', updateSubmitButton);
-            }
-            
-            // 初始状态检查
-            updateSubmitButton();
-            
-            // 页面加载动画
-            const container = document.querySelector('.verification-container');
-            if (container) {
-                container.style.opacity = '0';
-                container.style.transform = 'translateY(30px)';
-                
-                setTimeout(() => {
-                    container.style.transition = 'all 0.6s ease';
-                    container.style.opacity = '1';
-                    container.style.transform = 'translateY(0)';
-                }, 100);
-            }
-        });
-    </script>
-</body>
-</html>
-
-    <main class="main-content parent-verify-page">
-        <div class="container">
-            <div class="verification-container">
-                <div class="verification-header">
-                    <div class="parent-icon">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <h1>家长验证</h1>
-                    <p class="subtitle">确认您的孩子可以安全使用AI创意工坊</p>
-                </div>
-
-                {% if child %}
-                <div class="child-info-card">
-                    <h3>👦 孩子信息</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="label">昵称：</span>
-                            <span class="value">{{ child.nickname }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">年龄：</span>
-                            <span class="value">{{ child.age }} 岁</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">注册时间：</span>
-                            <span class="value">{{ child.created_at.strftime('%Y年%m月%d日 %H:%M') }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label">用户名：</span>
-                            <span class="value">{{ child.username }}</span>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <div class="platform-safety-info">
-                    <h3>🛡️ 平台安全承诺</h3>
-                    <div class="safety-grid">
-                        <div class="safety-item">
+                <div class="promise-grid">
+                    <div class="promise-item">
+                        <div class="promise-icon">
                             <i class="fas fa-lock"></i>
-                            <h4>隐私保护</h4>
-                            <p>我们不会收集孩子的个人敏感信息，所有数据都经过安全加密</p>
                         </div>
-                        
-                        <div class="safety-item">
+                        <h3>隐私保护</h3>
+                        <p>我们不会收集孩子的个人敏感信息，所有数据都经过安全加密</p>
+                    </div>
+                    
+                    <div class="promise-item">
+                        <div class="promise-icon">
                             <i class="fas fa-eye"></i>
-                            <h4>内容监控</h4>
-                            <p>所有创作内容都经过AI审核，确保健康向上</p>
                         </div>
-                        
-                        <div class="safety-item">
+                        <h3>内容监控</h3>
+                        <p>所有创作内容都经过AI审核，确保健康向上</p>
+                    </div>
+                    
+                    <div class="promise-item">
+                        <div class="promise-icon">
                             <i class="fas fa-graduation-cap"></i>
-                            <h4>教育导向</h4>
-                            <p>专注于培养孩子的创造力和对AI技术的理解</p>
                         </div>
-                        
-                        <div class="safety-item">
+                        <h3>教育导向</h3>
+                        <p>专注于培养孩子的创造力和对AI技术的理解</p>
+                    </div>
+                    
+                    <div class="promise-item">
+                        <div class="promise-icon">
                             <i class="fas fa-clock"></i>
-                            <h4>时间管理</h4>
-                            <p>提供使用时长统计，帮助您管理孩子的在线时间</p>
+                        </div>
+                        <h3>时间管理</h3>
+                        <p>提供使用时长统计，帮助管理孩子的在线时间</p>
+                    </div>
+                </div>
+
+                <div class="feature-intro-section">
+                    <h4>💡 平台功能介绍</h4>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <i class="fas fa-palette"></i>
+                            <span>AI智能上色：将简笔画转换为彩色插画</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-cube"></i>
+                            <span>3D模型生成：从2D图像创建3D模型</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="verification-form-container">
-                    <form method="POST" class="verification-form">
+                <div class="contact-section">
+                    <h4><i class="fas fa-phone"></i> 联系我们</h4>
+                    <p>如果您有任何疑问或建议，欢迎联系我们：</p>
+                    <p><i class="fas fa-envelope"></i> support@ai-workshop.com</p>
+                    <p><i class="fas fa-globe"></i> www.ai-workshop.com</p>
+                </div>
+            </div>
+            
+            <!-- 右侧：验证表单 -->
+            <div class="verification-form-section">
+                <div class="verification-header">
+                    <div class="header-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h1>家长验证</h1>
+                    <p class="header-subtitle">确认您的孩子可以安全使用AI创意工坊</p>
+                </div>
+                
+                <div class="verification-form-card">
+                    <!-- Flash消息显示 -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div class="flash-messages" style="margin-bottom: 20px;">
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}" style="padding: 12px 15px; margin-bottom: 10px; border-radius: 8px; {% if category == 'error' %}background: #fee; border-left: 4px solid #dc3545; color: #721c24;{% elif category == 'success' %}background: #d4edda; border-left: 4px solid #28a745; color: #155724;{% else %}background: #d1ecf1; border-left: 4px solid #17a2b8; color: #0c5460;{% endif %}">
+                                        <i class="fas {% if category == 'error' %}fa-exclamation-circle{% elif category == 'success' %}fa-check-circle{% else %}fa-info-circle{% endif %}"></i>
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    {% if user %}
+                    <div class="child-info-section">
+                        <h3>👶 孩子账户信息</h3>
+                        <div class="child-info-grid">
+                            <div class="child-info-item">
+                                <span class="info-label">昵称</span>
+                                <span class="info-value">{{ user.nickname }}</span>
+                            </div>
+                            <div class="child-info-item">
+                                <span class="info-label">用户名</span>
+                                <span class="info-value">{{ user.username }}</span>
+                            </div>
+                            {% if user.birth_date %}
+                            <div class="child-info-item">
+                                <span class="info-label">年龄</span>
+                                <span class="info-value">{{ ((now() - user.birth_date).days // 365) }} 岁</span>
+                            </div>
+                            {% endif %}
+                            <div class="child-info-item">
+                                <span class="info-label">注册时间</span>
+                                <span class="info-value">{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" class="parent-verify-form">
                         {{ form.hidden_tag() }}
                         
-                        <div class="form-section">
-                            <h3>📧 验证码</h3>
-                            <p>请输入您在邮件中收到的6位验证码：</p>
+                        <div class="form-section-verify">
+                            <h3><i class="fas fa-key"></i> 输入验证码</h3>
+                            <p class="section-hint">请输入您在邮件中收到的6位验证码</p>
                             
-                            <div class="verification-code-input">
-                                {{ form.verification_code(class="verification-input", placeholder="请输入6位验证码", maxlength="6") }}
-                                <div class="input-icon">
-                                    <i class="fas fa-key"></i>
-                                </div>
+                            <div class="verification-code-wrapper">
+                                {{ form.verification_code(class="verification-code-input", placeholder="请输入6位验证码", maxlength="6", autocomplete="off") }}
                             </div>
                             
                             {% if form.verification_code.errors %}
-                                <div class="error-messages">
+                                <div class="field-errors">
                                     {% for error in form.verification_code.errors %}
-                                        <p class="error-message">{{ error }}</p>
+                                        <p class="error-text"><i class="fas fa-exclamation-circle"></i> {{ error }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
 
-                        <div class="form-section">
-                            <h3>✅ 家长确认</h3>
-                            <div class="consent-checklist">
-                                <div class="consent-item">
-                                    {{ form.consent_terms() }}
-                                    <label for="{{ form.consent_terms.id }}">
-                                        我已阅读并同意《用户协议》和《隐私政策》
-                                    </label>
-                                </div>
+                        <div class="form-section-verify">
+                            <h3><i class="fas fa-check-square"></i> 家长同意</h3>
+                            <div class="consent-list">
+                                <label class="consent-label">
+                                    {{ form.consent_terms(class="consent-checkbox") }}
+                                    <span class="consent-text">我已阅读并同意《用户协议》和《隐私政策》</span>
+                                    <span class="checkmark"></span>
+                                </label>
                                 
-                                <div class="consent-item">
-                                    {{ form.consent_age() }}
-                                    <label for="{{ form.consent_age.id }}">
-                                        我确认我的孩子年龄在10-14岁之间
-                                    </label>
-                                </div>
+                                <label class="consent-label">
+                                    {{ form.consent_age(class="consent-checkbox") }}
+                                    <span class="consent-text">我确认我的孩子年龄在10-14岁之间</span>
+                                    <span class="checkmark"></span>
+                                </label>
                                 
-                                <div class="consent-item">
-                                    {{ form.consent_supervision() }}
-                                    <label for="{{ form.consent_supervision.id }}">
-                                        我同意孩子在我的监督下使用本平台
-                                    </label>
-                                </div>
+                                <label class="consent-label">
+                                    {{ form.consent_supervision(class="consent-checkbox") }}
+                                    <span class="consent-text">我同意孩子在我的监督下使用本平台</span>
+                                    <span class="checkmark"></span>
+                                </label>
                             </div>
                             
                             {% if form.consent_terms.errors or form.consent_age.errors or form.consent_supervision.errors %}
-                                <div class="error-messages">
+                                <div class="field-errors">
                                     {% for field in [form.consent_terms, form.consent_age, form.consent_supervision] %}
                                         {% for error in field.errors %}
-                                            <p class="error-message">{{ error }}</p>
+                                            <p class="error-text"><i class="fas fa-exclamation-circle"></i> {{ error }}</p>
                                         {% endfor %}
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
 
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary btn-large">
-                                <i class="fas fa-check-shield"></i>
+                        <div class="verification-actions">
+                            <button type="submit" class="btn-verify-submit">
+                                <i class="fas fa-check-circle"></i>
                                 确认验证
                             </button>
-                            
-                            <div class="secondary-actions">
-                                <a href="{{ url_for('auth.resend_verification', user_id=child.id if child else 0) }}" 
-                                   class="btn btn-secondary">
-                                    <i class="fas fa-envelope"></i>
-                                    重新发送验证码
-                                </a>
-                                
-                                <a href="mailto:support@ai-workshop.com" class="btn btn-outline">
-                                    <i class="fas fa-question-circle"></i>
-                                    联系客服
-                                </a>
-                            </div>
+                        </div>
+                        
+                        <div class="verification-actions">
+                            <a href="{{ url_for('auth.resend_verification', user_id=user.id if user else 0) }}" class="btn-resend">
+                                <i class="fas fa-paper-plane"></i>
+                                重新发送验证码
+                            </a>
+                            <a href="mailto:support@ai-workshop.com" class="btn-login">
+                                <i class="fas fa-headset"></i>
+                                联系客服
+                            </a>
                         </div>
                     </form>
                 </div>
-
-                <div class="additional-info">
-                    <div class="info-section">
-                        <h4>📚 平台功能介绍</h4>
-                        <div class="feature-list">
-                            <div class="feature-item">
-                                <i class="fas fa-palette"></i>
-                                <span>AI智能上色：将简笔画转换为彩色插画</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-cube"></i>
-                                <span>3D模型生成：从2D图像创建3D模型</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-film"></i>
-                                <span>动画视频制作：让静态图片动起来</span>
-                            </div>
-                            <div class="feature-item">
-                                <i class="fas fa-users"></i>
-                                <span>作品展示：与其他小朋友分享创作</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="contact-section">
-                        <h4>📞 联系我们</h4>
-                        <p>如果您有任何疑问或建议，欢迎联系我们：</p>
-                        <div class="contact-info">
-                            <div class="contact-item">
-                                <i class="fas fa-envelope"></i>
-                                <span>support@ai-workshop.com</span>
-                            </div>
-                            <div class="contact-item">
-                                <i class="fas fa-globe"></i>
-                                <span>www.ai-workshop.com</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-links">
-                <a href="/terms">用户协议</a>
-                <a href="/privacy">隐私政策</a>
-                <a href="/contact">联系我们</a>
-            </div>
-            <p>&copy; 2025 AI创意工坊 - 安全、有趣的儿童AI创作平台</p>
-        </div>
-    </footer>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 验证码输入框自动大写
-            const codeInput = document.querySelector('.verification-input');
+            // 验证码输入框自动格式化
+            const codeInput = document.querySelector('.verification-code-input');
             if (codeInput) {
                 codeInput.addEventListener('input', function(e) {
-                    e.target.value = e.target.value.toUpperCase();
+                    // 只允许输入数字和大写字母
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                     
-                    // 限制只能输入字母和数字
-                    e.target.value = e.target.value.replace(/[^A-Z0-9]/g, '');
+                    // 限制6位
+                    if (this.value.length > 6) {
+                        this.value = this.value.substring(0, 6);
+                    }
+                });
+                
+                // 粘贴时也进行格式化
+                codeInput.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+                    const cleaned = pastedText.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+                    this.value = cleaned;
+                });
+            }
+            
+            // 表单提交前验证
+            const form = document.querySelector('.parent-verify-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const code = codeInput.value;
+                    if (code.length !== 6) {
+                        e.preventDefault();
+                        alert('请输入6位验证码');
+                        codeInput.focus();
+                        return false;
+                    }
                     
-                    // 如果输入6位，自动提交表单
-                    if (e.target.value.length === 6) {
-                        // 可以在这里添加自动提交逻辑
-                        // document.querySelector('.verification-form').submit();
+                    const checkboxes = form.querySelectorAll('.consent-checkbox');
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    if (!allChecked) {
+                        e.preventDefault();
+                        alert('请勾选所有同意项');
+                        return false;
                     }
                 });
             }
-
-            // 复选框联动效果
-            const consentBoxes = document.querySelectorAll('input[type="checkbox"]');
-            const submitBtn = document.querySelector('button[type="submit"]');
-            
-            function updateSubmitButton() {
-                const allChecked = Array.from(consentBoxes).every(box => box.checked);
-                const codeValid = codeInput && codeInput.value.length === 6;
-                
-                if (submitBtn) {
-                    submitBtn.disabled = !(allChecked && codeValid);
-                    submitBtn.classList.toggle('disabled', !(allChecked && codeValid));
-                }
-            }
-            
-            consentBoxes.forEach(box => {
-                box.addEventListener('change', updateSubmitButton);
-            });
-            
-            if (codeInput) {
-                codeInput.addEventListener('input', updateSubmitButton);
-            }
-            
-            // 初始状态检查
-            updateSubmitButton();
         });
     </script>
 </body>
