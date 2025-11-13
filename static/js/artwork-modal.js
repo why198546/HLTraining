@@ -65,10 +65,31 @@ function showArtworkModal(element) {
         sessionId: artworkData.sessionId
     });
     
+    // 保存sessionId到modal元素
+    const modal = document.getElementById('artworkModal');
+    if (modal && artworkData.sessionId) {
+        modal.dataset.sessionId = artworkData.sessionId;
+    }
+    
     // 设置模态框标题
     const modalTitle = document.getElementById('modalArtworkTitle');
+    const editBtn = document.getElementById('editTitleBtn');
+    
     if (modalTitle) {
         modalTitle.textContent = artworkData.title;
+        modalTitle.dataset.artworkId = artworkData.id;
+        
+        // 只在"我的作品"页面显示编辑按钮
+        const isMyArtworks = window.location.pathname.includes('my-artworks');
+        if (editBtn && artworkData.id && isMyArtworks) {
+            editBtn.style.display = 'inline-block';
+            modalTitle.setAttribute('contenteditable', 'false');
+            modalTitle.classList.remove('editing');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = '编辑标题';
+        } else if (editBtn) {
+            editBtn.style.display = 'none';
+        }
     }
     
     // 构建作品展示区域
@@ -124,13 +145,35 @@ function showArtworkModal(element) {
         console.log('Adding generated image with click handler:', artworkData.generatedImage);
         const generatedStep = document.createElement('div');
         generatedStep.className = 'artwork-detail-step';
+        
+        // 检查是否在"我的作品"页面
+        const isMyArtworks = window.location.pathname.includes('my-artworks');
+        
         generatedStep.innerHTML = `
             <h4>AI生成效果</h4>
-            <img src="${artworkData.generatedImage}" alt="AI生成效果" 
-                 style="cursor: pointer;" 
-                 title="点击查看大图"
-                 class="clickable-image"
-                 onerror="this.parentElement.style.display='none'">
+            <div class="image-with-actions">
+                <img src="${artworkData.generatedImage}" alt="AI生成效果" 
+                     style="cursor: pointer;" 
+                     title="点击查看大图"
+                     class="clickable-image"
+                     onerror="this.parentElement.style.display='none'">
+                ${isMyArtworks && artworkData.id ? `
+                <div class="image-action-buttons">
+                    <button class="image-action-btn" data-action="continue" title="基于此图调整后重新生成">
+                        <i class="fas fa-paint-brush"></i>
+                        <span>继续调整</span>
+                    </button>
+                    <button class="image-action-btn" data-action="generate-model" title="基于此图调整参数后生成3D模型">
+                        <i class="fas fa-cube"></i>
+                        <span>转3D模型</span>
+                    </button>
+                    <button class="image-action-btn" data-action="generate-video" title="基于此图调整参数后生成视频">
+                        <i class="fas fa-video"></i>
+                        <span>转视频</span>
+                    </button>
+                </div>
+                ` : ''}
+            </div>
         `;
         showcase.appendChild(generatedStep);
         
@@ -141,6 +184,18 @@ function showArtworkModal(element) {
                 e.stopPropagation();
                 console.log('Generated image clicked, calling showImageModal');
                 showImageModal(this.src, 'AI生成效果');
+            });
+        }
+        
+        // 为操作按钮添加事件监听器
+        if (isMyArtworks && artworkData.id) {
+            const actionButtons = generatedStep.querySelectorAll('.image-action-btn');
+            actionButtons.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const action = this.dataset.action;
+                    handleImageAction(action, artworkData.id, artworkData.generatedImage);
+                });
             });
         }
     } else {
@@ -249,13 +304,10 @@ function showArtworkModal(element) {
         return;
     }
     
-    modal.style.display = 'flex';
+    // 禁止背景滚动
+    document.body.style.overflow = 'hidden';
     
-    // 保存当前滚动位置并固定页面
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
+    modal.style.display = 'flex';
     
     // 添加显示类来触发CSS动画（使用setTimeout确保display生效后再添加类）
     setTimeout(() => {
@@ -265,34 +317,42 @@ function showArtworkModal(element) {
 
 function closeArtworkModal() {
     const modal = document.getElementById('artworkModal');
+    if (!modal) return;
+    
     const content = modal.querySelector('.artwork-modal-content');
     
     // 移除显示类
     modal.classList.remove('show');
     
     // 添加关闭动画
-    content.style.transform = 'scale(0.9)';
-    content.style.opacity = '0';
+    if (content) {
+        content.style.transform = 'scale(0.9)';
+        content.style.opacity = '0';
+    }
     
     setTimeout(() => {
         modal.style.display = 'none';
         
-        // 恢复页面滚动位置
-        const scrollY = document.body.style.top;
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        // 恢复背景滚动
+        document.body.style.overflow = '';
         
         // 重置模态框状态
-        content.classList.remove('enlarged-mode');
-        if (content.dataset.originalContent) {
-            delete content.dataset.originalContent;
+        if (content) {
+            content.classList.remove('enlarged-mode');
+            if (content.dataset.originalContent) {
+                delete content.dataset.originalContent;
+            }
+            
+            // 重置动画状态
+            content.style.transform = '';
+            content.style.opacity = '';
         }
         
-        // 重置动画状态
-        content.style.transform = 'scale(0.9)';
-        content.style.opacity = '0';
+        // 清除图片叠加层（如果存在）
+        const imageOverlay = document.getElementById('imageOverlay');
+        if (imageOverlay) {
+            imageOverlay.remove();
+        }
     }, 300);
 }
 
@@ -300,8 +360,10 @@ function closeArtworkModal() {
 function showImageModal(imageSrc, title) {
     console.log('showImageModal called with:', imageSrc, title);
     
-    if (event) {
-        event.stopPropagation();
+    // 阻止事件冒泡
+    if (window.event) {
+        window.event.stopPropagation();
+        window.event.preventDefault();
     }
     
     // 检查是否已经有图片叠加层，如果有就先移除
@@ -322,8 +384,6 @@ function showImageModal(imageSrc, title) {
         <div class="image-overlay-backdrop"></div>
         <div class="image-overlay-content">
             <img src="${imageSrc}" alt="${title}" class="overlay-image thumbnail-mode" 
-                 ondblclick="toggleImageMode(this)" 
-                 onclick="handleImageClick(this)"
                  data-mode="thumbnail">
         </div>
     `;
@@ -346,7 +406,32 @@ function showImageModal(imageSrc, title) {
     }, 10);
     console.log('Image overlay should now be visible');
     
+    // 为图片添加事件监听
+    const overlayImg = imageOverlay.querySelector('.overlay-image');
+    if (overlayImg) {
+        // 双击切换全屏
+        overlayImg.addEventListener('dblclick', function(e) {
+            e.stopPropagation();
+            toggleImageMode(this);
+        });
+        
+        // 单击切换模式
+        overlayImg.addEventListener('click', function(e) {
+            e.stopPropagation();
+            handleImageClick(this);
+        });
+    }
+    
     // 点击背景关闭叠加层
+    const backdrop = imageOverlay.querySelector('.image-overlay-backdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', function(e) {
+            e.stopPropagation();
+            closeImageOverlay();
+        });
+    }
+    
+    // 也可以点击图片区域关闭
     imageOverlay.addEventListener('click', function(e) {
         console.log('Image overlay clicked:', e.target.className);
         // 如果点击的不是图片本身，就关闭叠加层
@@ -384,6 +469,19 @@ function closeImageOverlay() {
                 imageOverlay.remove();
             }
         }, 300);
+    }
+}
+
+// 关闭独立的图片模态框（artwork_modals.html中的imageModal）
+function closeImageModal() {
+    const imageModal = document.getElementById('imageModal');
+    if (imageModal) {
+        imageModal.style.display = 'none';
+        // 清空图片
+        const fullImage = document.getElementById('fullImage');
+        if (fullImage) {
+            fullImage.src = '';
+        }
     }
 }
 
@@ -526,14 +624,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // 点击关闭按钮关闭模态框
     const closeBtn = document.querySelector('.artwork-modal-close');
     if (closeBtn) {
-        closeBtn.addEventListener('click', closeArtworkModal);
+        closeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeArtworkModal();
+        });
     }
     
     // 点击模态框背景关闭模态框
     const modal = document.getElementById('artworkModal');
     if (modal) {
         modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
+            // 只有点击模态框本身（不是内容区域）时才关闭
+            if (e.target === modal || e.target.classList.contains('artwork-modal')) {
+                e.preventDefault();
+                e.stopPropagation();
                 closeArtworkModal();
             }
         });
@@ -542,10 +647,279 @@ document.addEventListener('DOMContentLoaded', function() {
     // ESC键关闭模态框
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
+            // 优先关闭图片叠加层
+            const imageOverlay = document.getElementById('imageOverlay');
+            if (imageOverlay && imageOverlay.style.display !== 'none') {
+                closeImageOverlay();
+                return;
+            }
+            
+            // 然后关闭模态框
             const modal = document.getElementById('artworkModal');
             if (modal && modal.style.display === 'flex') {
                 closeArtworkModal();
             }
         }
     });
+    
+    // 标题编辑功能
+    setupTitleEdit();
+    
+    // 右键菜单功能
+    setupContextMenu();
 });
+
+// 标题编辑功能
+function setupTitleEdit() {
+    const editBtn = document.getElementById('editTitleBtn');
+    const titleElement = document.getElementById('modalArtworkTitle');
+    
+    if (!editBtn || !titleElement) return;
+    
+    editBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isEditing = titleElement.getAttribute('contenteditable') === 'true';
+        
+        if (isEditing) {
+            // 保存
+            titleElement.setAttribute('contenteditable', 'false');
+            titleElement.classList.remove('editing');
+            editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+            editBtn.title = '编辑标题';
+            
+            // 保存到服务器
+            saveTitleChange(titleElement.dataset.artworkId, titleElement.textContent.trim());
+        } else {
+            // 开始编辑
+            titleElement.setAttribute('contenteditable', 'true');
+            titleElement.classList.add('editing');
+            titleElement.focus();
+            editBtn.innerHTML = '<i class="fas fa-save"></i>';
+            editBtn.title = '保存标题';
+            
+            // 选中文本
+            const range = document.createRange();
+            range.selectNodeContents(titleElement);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+    
+    // 按Enter键保存
+    titleElement.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            editBtn.click();
+        }
+    });
+}
+
+// 保存标题修改
+async function saveTitleChange(artworkId, newTitle) {
+    if (!artworkId || !newTitle) return;
+    
+    try {
+        const response = await fetch(`/auth/artwork/${artworkId}/update-title`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ title: newTitle })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('标题已更新');
+            // 更新卡片上的标题
+            const card = document.querySelector(`[data-artwork-id="${artworkId}"]`);
+            if (card) {
+                const cardTitle = card.querySelector('.artwork-title');
+                if (cardTitle) {
+                    cardTitle.textContent = newTitle;
+                }
+                card.dataset.artworkTitle = newTitle;
+            }
+        } else {
+            alert('保存失败：' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        console.error('保存标题失败:', error);
+        alert('保存失败，请重试');
+    }
+}
+
+// 图片操作处理函数
+function handleImageAction(action, artworkId, imageUrl) {
+    if (!artworkId) {
+        alert('无法获取作品ID');
+        return;
+    }
+    
+    // 获取sessionId
+    const titleElement = document.getElementById('modalArtworkTitle');
+    const modal = document.getElementById('artworkModal');
+    const sessionId = modal?.dataset.sessionId;
+    
+    // 构建URL参数
+    let url = '/create?';
+    const params = new URLSearchParams();
+    
+    params.append('reference', imageUrl);
+    params.append('artwork_id', artworkId);
+    
+    if (sessionId) {
+        params.append('session_id', sessionId);
+    }
+    
+    switch (action) {
+        case 'continue':
+            // 继续创作 - 调整参数后重新生成
+            params.append('mode', 'adjust');
+            break;
+        case 'generate-model':
+            // 生成3D模型 - 先调整参数
+            params.append('mode', 'model');
+            params.append('target', '3d');
+            break;
+        case 'generate-video':
+            // 生成视频 - 先调整参数
+            params.append('mode', 'video');
+            params.append('target', 'video');
+            break;
+    }
+    
+    window.location.href = url + params.toString();
+}
+
+// 右键菜单功能
+let currentContextImage = null;
+
+function setupContextMenu() {
+    const contextMenu = document.getElementById('imageContextMenu');
+    if (!contextMenu) return;
+    
+    // 隐藏菜单（点击页面其他地方）
+    document.addEventListener('click', function() {
+        contextMenu.style.display = 'none';
+    });
+    
+    // 菜单项点击事件
+    contextMenu.querySelectorAll('.context-menu-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const action = this.dataset.action;
+            handleContextMenuAction(action, currentContextImage);
+            contextMenu.style.display = 'none';
+        });
+    });
+}
+
+// 显示右键菜单
+function showContextMenu(e, imageElement) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const contextMenu = document.getElementById('imageContextMenu');
+    if (!contextMenu) return;
+    
+    currentContextImage = imageElement;
+    
+    // 定位菜单
+    contextMenu.style.display = 'block';
+    contextMenu.style.left = e.pageX + 'px';
+    contextMenu.style.top = e.pageY + 'px';
+}
+
+// 处理右键菜单操作
+function handleContextMenuAction(action, imageElement) {
+    if (!imageElement) return;
+    
+    const imageSrc = imageElement.src;
+    const titleElement = document.getElementById('modalArtworkTitle');
+    const artworkId = titleElement?.dataset.artworkId;
+    
+    switch (action) {
+        case 'continue':
+            // 跳转到创作页面，带上图片作为参考
+            window.location.href = `/create?reference=${encodeURIComponent(imageSrc)}`;
+            break;
+            
+        case 'generate-model':
+            // 生成3D模型
+            if (artworkId) {
+                generateModel(artworkId, imageSrc);
+            } else {
+                alert('无法生成模型：缺少作品ID');
+            }
+            break;
+            
+        case 'generate-video':
+            // 生成视频
+            if (artworkId) {
+                generateVideo(artworkId, imageSrc);
+            } else {
+                alert('无法生成视频：缺少作品ID');
+            }
+            break;
+    }
+}
+
+// 生成3D模型
+async function generateModel(artworkId, imageSrc) {
+    if (!confirm('确定要为这张图片生成3D模型吗？此过程可能需要几分钟。')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/auth/artwork/${artworkId}/generate-model`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image_url: imageSrc })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('3D模型生成已开始，完成后会自动显示');
+            // 可以添加进度显示或轮询状态
+        } else {
+            alert('生成失败：' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        console.error('生成3D模型失败:', error);
+        alert('生成失败，请重试');
+    }
+}
+
+// 生成视频
+async function generateVideo(artworkId, imageSrc) {
+    if (!confirm('确定要为这张图片生成视频吗？此过程可能需要几分钟。')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/auth/artwork/${artworkId}/generate-video`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image_url: imageSrc })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('视频生成已开始，完成后会自动显示');
+            // 可以添加进度显示或轮询状态
+        } else {
+            alert('生成失败：' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        console.error('生成视频失败:', error);
+        alert('生成失败，请重试');
+    }
+}

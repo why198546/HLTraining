@@ -104,50 +104,7 @@
         </div>
     </footer>
 
-    <!-- 作品详情模态框 -->
-    <div id="artworkModal" class="artwork-modal">
-        <div class="artwork-modal-content">
-            <div class="artwork-modal-header">
-                <button class="artwork-modal-close">&times;</button>
-                <h2 id="modalArtworkTitle">作品标题</h2>
-            </div>
-            <div class="artwork-modal-body">
-                <div class="artwork-detail-showcase" id="modalArtworkShowcase">
-                    <!-- 动态内容 -->
-                </div>
-                <div class="artwork-detail-info" id="modalArtworkInfo">
-                    <!-- 动态内容 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3D模型查看器 -->
-    <div id="modelOverlay" class="model-overlay" onclick="closeModelModal()">
-        <div class="model-overlay-backdrop"></div>
-        <div class="model-viewer-container" onclick="event.stopPropagation()">
-            <div class="model-header">
-                <h3 id="modelTitle">3D模型查看器</h3>
-                <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
-            </div>
-            <div id="modelContainer" class="model-container">
-                <!-- Canvas for 3D model -->
-                <canvas id="modelCanvas"></canvas>
-                <!-- 模型信息显示 -->
-                <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
-                    准备加载3D模型...
-                </div>
-                <!-- 模型加载状态 -->
-                <div id="modelLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; display: none;">
-                    <p>加载中...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3D模型查看器模块 -->
-    <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/artwork-modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
+    {% include 'components/artwork_modals.html' %}
+    {% include 'components/artwork_scripts.html' %}
 </body>
 </html>

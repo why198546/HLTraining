@@ -3,7 +3,7 @@
 处理注册、登录、验证等功能
 """
 
-from flask import render_template, redirect, url_for, flash, request, current_app, session
+from flask import render_template, redirect, url_for, flash, request, current_app, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from datetime import datetime, timedelta
 import random
@@ -510,3 +510,88 @@ def parent_dashboard(verification_token):
                          child_artworks=child_artworks,
                          usage_trend=usage_trend,
                          daily_usage_data=daily_usage_data)
+
+
+@auth_bp.route('/artwork/<int:artwork_id>/update-title', methods=['POST'])
+@login_required
+def update_artwork_title(artwork_id):
+    """更新作品标题"""
+    from auth.models import Artwork
+    
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    # 检查权限：只能编辑自己的作品
+    if artwork.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '无权限编辑此作品'}), 403
+    
+    data = request.get_json()
+    new_title = data.get('title', '').strip()
+    
+    if not new_title:
+        return jsonify({'success': False, 'message': '标题不能为空'}), 400
+    
+    if len(new_title) > 100:
+        return jsonify({'success': False, 'message': '标题不能超过100个字符'}), 400
+    
+    artwork.title = new_title
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': '标题已更新', 'new_title': new_title})
+
+
+@auth_bp.route('/artwork/<int:artwork_id>/generate-model', methods=['POST'])
+@login_required
+def generate_artwork_model(artwork_id):
+    """为作品生成3D模型"""
+    from auth.models import Artwork
+    
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    # 检查权限：只能为自己的作品生成模型
+    if artwork.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '无权限操作此作品'}), 403
+    
+    data = request.get_json()
+    image_url = data.get('image_url')
+    
+    if not image_url:
+        return jsonify({'success': False, 'message': '缺少图片URL'}), 400
+    
+    # TODO: 实现3D模型生成逻辑
+    # 这里应该调用Hunyuan3D API生成模型
+    # 暂时返回成功消息
+    
+    return jsonify({
+        'success': True, 
+        'message': '3D模型生成功能开发中，敬请期待！',
+        'status': 'pending'
+    })
+
+
+@auth_bp.route('/artwork/<int:artwork_id>/generate-video', methods=['POST'])
+@login_required
+def generate_artwork_video(artwork_id):
+    """为作品生成视频"""
+    from auth.models import Artwork
+    
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    # 检查权限：只能为自己的作品生成视频
+    if artwork.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '无权限操作此作品'}), 403
+    
+    data = request.get_json()
+    image_url = data.get('image_url')
+    
+    if not image_url:
+        return jsonify({'success': False, 'message': '缺少图片URL'}), 400
+    
+    # TODO: 实现视频生成逻辑
+    # 这里应该调用视频生成API
+    # 暂时返回成功消息
+    
+    return jsonify({
+        'success': True, 
+        'message': '视频生成功能开发中，敬请期待！',
+        'status': 'pending'
+    })

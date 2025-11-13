@@ -276,7 +276,17 @@ class CreationSessionManager:
     
     def _file_path_to_url(self, file_path: str) -> str:
         """将文件路径转换为URL路径"""
-        # 将绝对路径转换为相对于应用根目录的URL路径
-        if file_path.startswith(self.sessions_folder):
-            return f'/session-files/{file_path}'
+        # 将文件路径转换为URL路径
+        # file_path格式: creation_sessions/session_id/filename
+        if file_path.startswith('creation_sessions/'):
+            return f'/{file_path}'
+        
+        # 如果是绝对路径，提取相对路径部分
+        # 检查是否包含 'creation_sessions'
+        if 'creation_sessions' in file_path:
+            # 提取从 creation_sessions 开始的路径
+            idx = file_path.find('creation_sessions')
+            relative_path = file_path[idx:]
+            return f'/{relative_path}'
+        
         return file_path

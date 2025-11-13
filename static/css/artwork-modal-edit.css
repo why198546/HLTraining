@@ -1,0 +1,174 @@
+/* 作品编辑功能样式 */
+
+/* 标题编辑按钮 */
+.artwork-modal-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.edit-title-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    display: none;
+}
+
+.edit-title-btn:hover {
+    background: rgba(74, 144, 226, 0.1);
+    transform: scale(1.1);
+}
+
+.edit-title-btn i {
+    pointer-events: none;
+}
+
+/* 可编辑标题 */
+.editable-title.editing {
+    background: rgba(74, 144, 226, 0.1);
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 2px solid var(--primary-color);
+    outline: none;
+}
+
+.editable-title:focus {
+    outline: none;
+}
+
+/* 图片操作按钮容器 */
+.image-with-actions {
+    position: relative;
+    display: inline-block;
+}
+
+.image-action-buttons {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+}
+
+.image-with-actions:hover .image-action-buttons {
+    opacity: 1;
+}
+
+.image-action-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.image-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+.image-action-btn:active {
+    transform: translateY(0);
+}
+
+.image-action-btn i {
+    font-size: 16px;
+}
+
+/* 右键菜单（保留用于其他可能的用途） */
+.context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    min-width: 180px;
+    z-index: 10000;
+    display: none;
+}
+
+.context-menu-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.context-menu-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 16px;
+}
+.clickable-image {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    /* 移动端按钮始终显示 */
+    .image-action-buttons {
+        opacity: 1;
+        bottom: 10px;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .image-action-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        min-width: 120px;
+    }
+    
+    .image-action-btn span {
+        display: inline;
+    }
+    
+    .context-menu {
+        min-width: 160px;
+    }
+    
+    .context-menu-item {
+        padding: 12px 16px;
+        font-size: 15px;
+    }
+    
+    .edit-title-btn {
+        font-size: 16px;
+        padding: 8px;
+    }
+}

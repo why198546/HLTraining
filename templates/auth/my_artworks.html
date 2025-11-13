@@ -7,6 +7,7 @@
     <title>我的作品 - AI创意工坊</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/artwork-modal-edit.css') }}">
     
     <!-- Three.js - 使用compatible版本和正确的加载方式 -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -117,86 +118,8 @@
         </section>
     </main>
 
-    <!-- 作品详情模态框 -->
-    <div class="modal" id="artworkModal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="modal-body">
-                <!-- 左侧：图片展示 -->
-                <div class="modal-left">
-                    <div class="modal-image-container">
-                        <img id="modalImage" src="" alt="作品">
-                        <div id="model3DContainer" style="display: none;">
-                            <canvas id="model3DCanvas"></canvas>
-                        </div>
-                    </div>
-                    
-                    <!-- 图片版本切换 -->
-                    <div class="image-versions" id="imageVersions" style="display: none;">
-                        <button class="version-btn active" data-type="generated">
-                            <i class="fas fa-palette"></i> AI上色
-                        </button>
-                        <button class="version-btn" data-type="original">
-                            <i class="fas fa-pencil-alt"></i> 原始手绘
-                        </button>
-                        <button class="version-btn" data-type="3d" style="display: none;">
-                            <i class="fas fa-cube"></i> 3D模型
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 右侧：作品信息 -->
-                <div class="modal-right">
-                    <div class="modal-header">
-                        <h2 id="modalTitle"></h2>
-                    </div>
-                    
-                    <div class="modal-author">
-                        <i class="fas fa-user"></i>
-                        <span id="modalAuthor"></span>
-                        <span id="modalAge"></span>
-                    </div>
-                    
-                    <div class="modal-stats">
-                        <div class="stat-item">
-                            <i class="fas fa-heart"></i>
-                            <span id="modal-likes-count">0</span> 点赞
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-eye"></i>
-                            <span id="modal-views-count">0</span> 浏览
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-calendar"></i>
-                            <span id="modalDate"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-description">
-                        <h3><i class="fas fa-align-left"></i> 作品描述</h3>
-                        <p id="modalDescription"></p>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="modal-btn like-btn" onclick="likeArtwork(window.currentArtworkId)">
-                            <i class="fas fa-heart"></i>
-                            <span id="modal-likes-${window.currentArtworkId}">点赞</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- 模型加载状态 -->
-                <div id="modelLoading" class="model-loading-indicator" style="display: none;">
-                    <p>加载中...</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3D模型查看器模块 -->
-    <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/artwork-modal.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
+    {% include 'components/artwork_modals.html' %}
+    {% include 'components/artwork_scripts.html' %}
     
     <!-- 我的作品专用功能：设为公开/私密、删除 -->
     <script>
@@ -390,53 +313,5 @@
             }, 3000);
         }
     </script>
-
-    <!-- 作品详情模态框 -->
-    <div id="artworkModal" class="artwork-modal">
-        <div class="artwork-modal-content">
-            <div class="artwork-modal-header">
-                <button class="artwork-modal-close">&times;</button>
-                <h2 id="modalArtworkTitle">作品标题</h2>
-            </div>
-            <div class="artwork-modal-body">
-                <div class="artwork-detail-showcase" id="modalArtworkShowcase">
-                    <!-- 动态内容 -->
-                </div>
-                <div class="artwork-detail-info" id="modalArtworkInfo">
-                    <!-- 动态内容 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 图片预览模态框 -->
-    <div id="imageModal" class="image-modal">
-        <span class="image-modal-close">&times;</span>
-        <img class="image-modal-content" id="modalImage">
-        <div id="imageCaption"></div>
-    </div>
-
-    <!-- 3D模型查看器 -->
-    <div id="modelOverlay" class="model-overlay" onclick="closeModelModal()">
-        <div class="model-overlay-backdrop"></div>
-        <div class="model-viewer-container" onclick="event.stopPropagation()">
-            <div class="model-header">
-                <h3 id="modelTitle">3D模型查看器</h3>
-                <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
-            </div>
-            <div id="modelContainer" class="model-container">
-                <!-- Canvas for 3D model -->
-                <canvas id="modelCanvas"></canvas>
-                <!-- 模型信息显示 -->
-                <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
-                    准备加载3D模型...
-                </div>
-                <!-- 模型加载状态 -->
-                <div id="modelLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; display: none;">
-                    <p>加载中...</p>
-                </div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

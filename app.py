@@ -23,9 +23,12 @@ from utils.email_service import init_mail
 # 加载环境变量
 load_dotenv()
 
+# 获取项目根目录
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # 数据库配置
@@ -69,7 +72,7 @@ with app.app_context():
 
 # 初始化作品集管理器和创作会话管理器
 gallery_manager = GalleryManager()
-session_manager = CreationSessionManager()
+session_manager = CreationSessionManager(sessions_folder=os.path.join(BASE_DIR, 'creation_sessions'))
 
 # 允许的文件扩展名
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
@@ -393,10 +396,13 @@ def model_file(filename):
     """提供3D模型文件访问"""
     return send_file(os.path.join('models', filename))
 
-@app.route('/session-files/<path:filepath>')
-def session_file(filepath):
+@app.route('/creation_sessions/<path:filepath>')
+def creation_session_file(filepath):
     """提供创作会话文件访问"""
-    return send_file(filepath)
+    file_path = os.path.join(BASE_DIR, 'creation_sessions', filepath)
+    if not os.path.exists(file_path):
+        return "File not found", 404
+    return send_file(file_path)
 
 # ===== 创作会话管理API =====
 

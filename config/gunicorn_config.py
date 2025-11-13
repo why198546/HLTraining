@@ -34,9 +34,12 @@ keepalive = 5
 max_requests = 1000
 max_requests_jitter = 50  # 随机抖动，避免同时重启
 
+# 项目根目录（config目录的上级目录）
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # 日志配置
-accesslog = os.getenv('ACCESS_LOG', 'logs/access.log')
-errorlog = os.getenv('ERROR_LOG', 'logs/error.log')
+accesslog = os.getenv('ACCESS_LOG', os.path.join(BASE_DIR, 'logs/access.log'))
+errorlog = os.getenv('ERROR_LOG', os.path.join(BASE_DIR, 'logs/error.log'))
 loglevel = os.getenv('LOG_LEVEL', 'info')
 
 # 访问日志格式
@@ -46,7 +49,7 @@ access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
 proc_name = 'hltraining'
 
 # PID文件
-pidfile = 'logs/gunicorn.pid'
+pidfile = os.path.join(BASE_DIR, 'logs/gunicorn.pid')
 
 # Daemon模式（后台运行）
 daemon = False
