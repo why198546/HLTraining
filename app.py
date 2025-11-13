@@ -119,9 +119,43 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
     """自动保存作品到数据库"""
     try:
         from models import Artwork
+        import glob
+        
+        # 验证必需的图片路径
+        if not generated_image_path:
+            print(f"⚠️ 没有生成图片路径，跳过保存")
+            return False
+        
+        # 验证文件是否存在
+        if not os.path.exists(generated_image_path):
+            print(f"⚠️ 生成的图片文件不存在: {generated_image_path}")
+            return False
         
         # 检查是否已存在该会话的作品
         existing_artwork = Artwork.query.filter_by(session_id=session_id).first()
+        
+        # 扫描会话文件夹中的所有版本
+        colored_versions = []
+        adjusted_versions = []
+        
+        if session_id:
+            session_dir = f"creation_sessions/{session_id}"
+            if os.path.exists(session_dir):
+                # 查找所有colored版本
+                colored_files = glob.glob(f"{session_dir}/*_colored*.jpg") + \
+                               glob.glob(f"{session_dir}/*_colored*.png")
+                colored_versions = [os.path.basename(f) for f in colored_files]
+                
+                # 查找所有adjusted版本
+                adjusted_files = glob.glob(f"{session_dir}/*_adjusted*.jpg") + \
+                                glob.glob(f"{session_dir}/*_adjusted*.png")
+                adjusted_versions = [os.path.basename(f) for f in adjusted_files]
+                
+                print(f"📂 扫描到 {len(colored_versions)} 个上色版本, {len(adjusted_versions)} 个调整版本")
+        
+        # 获取用户信息
+        artist_name = current_user.nickname or current_user.username
+        artist_age = current_user.age if hasattr(current_user, 'age') else None
         
         if existing_artwork:
             # 更新现有作品
@@ -135,6 +169,16 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
                 existing_artwork.original_sketch = os.path.basename(sketch_path)
             if prompt:
                 existing_artwork.prompt_text = prompt
+            
+            # 更新版本历史
+            if colored_versions:
+                existing_artwork.all_colored_versions = colored_versions
+            if adjusted_versions:
+                existing_artwork.all_adjusted_versions = adjusted_versions
+            
+            # 更新创作者信息
+            existing_artwork.artist_name = artist_name
+            existing_artwork.artist_age = artist_age
                 
             print(f"🔄 更新现有作品: {existing_artwork.id}")
         else:
@@ -156,6 +200,16 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
                 artwork.original_sketch = os.path.basename(sketch_path)
             if prompt:
                 artwork.prompt_text = prompt
+            
+            # 设置版本历史
+            if colored_versions:
+                artwork.all_colored_versions = colored_versions
+            if adjusted_versions:
+                artwork.all_adjusted_versions = adjusted_versions
+            
+            # 设置创作者信息
+            artwork.artist_name = artist_name
+            artwork.artist_age = artist_age
                 
             db.session.add(artwork)
             print(f"➕ 创建新作品记录: {session_id}")
@@ -166,6 +220,8 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
     except Exception as e:
         db.session.rollback()
         print(f"❌ 自动保存失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return False
 
 @app.route('/')
@@ -501,6 +557,11 @@ def generate_image():
         
         print(f"✅ 图片生成完成: {generated_image_path}")
         
+        # 检查图片是否真的生成成功
+        if not generated_image_path or not os.path.exists(generated_image_path):
+            print(f"❌ 图片生成失败，不保存到数据库")
+            return jsonify({'error': '图片生成失败，请重试'}), 500
+        
         # 返回相对路径用于前端显示
         relative_path = generated_image_path.replace('uploads/', '/uploads/')
         
@@ -526,7 +587,7 @@ def generate_image():
                 # 自动选择新生成的版本
                 session_manager.select_version(session_id, version_id)
                 
-                # 自动保存到数据库（如果用户已登录）
+                # 自动保存到数据库（如果用户已登录且图片生成成功）
                 if current_user.is_authenticated:
                     try:
                         auto_save_artwork_to_db(session_id, generated_image_path, sketch_path, prompt)
@@ -688,28 +749,95 @@ def save_artwork():
             print("❌ 缺少会话ID")
             return jsonify({'error': '缺少会话ID'}), 400
         
-        # 从会话获取选择的版本
-        print(f"🔄 获取会话 {session_id} 的选择版本...")
+        # 获取会话的所有版本历史
+        print(f"🔄 获取会话 {session_id} 的所有版本...")
+        session_folder = f"creation_sessions/{session_id}"
+        
+        # 从会话文件夹获取所有文件
+        all_files = {
+            'original_sketch': None,
+            'colored_images': [],
+            'adjusted_images': [],
+            'model_3d': None,
+            'video_file': None
+        }
+        
+        if os.path.exists(session_folder):
+            files_in_folder = sorted(os.listdir(session_folder))
+            
+            for filename in files_in_folder:
+                if filename.startswith('.'):  # 跳过隐藏文件
+                    continue
+                    
+                file_path = os.path.join(session_folder, filename)
+                file_lower = filename.lower()
+                
+                # 原始简笔画 - 上传的或手绘的
+                if 'upload' in file_lower or 'sketch' in file_lower or 'original' in file_lower:
+                    if filename.endswith(('.png', '.jpg', '.jpeg')):
+                        all_files['original_sketch'] = filename
+                
+                # 调整后的图片（包含'adjusted'关键字）
+                elif 'adjusted' in file_lower:
+                    all_files['adjusted_images'].append(filename)
+                
+                # AI生成的图片（包含'colored', 'generated', 或时间戳格式）
+                elif any(keyword in file_lower for keyword in ['colored', 'generated', 'image_']):
+                    all_files['colored_images'].append(filename)
+                
+                # 如果是普通的PNG/JPG但不属于以上类别，也算作生成图片
+                elif filename.endswith(('.png', '.jpg', '.jpeg')):
+                    # 排除明确标记为其他类型的文件
+                    if not any(x in file_lower for x in ['model', 'thumbnail']):
+                        all_files['colored_images'].append(filename)
+                
+                # 3D模型
+                elif filename.endswith(('.glb', '.obj', '.fbx', '.gltf')):
+                    all_files['model_3d'] = filename
+                
+                # 视频文件
+                elif filename.endswith(('.mp4', '.mov', '.avi')):
+                    all_files['video_file'] = filename
+        
+        # 对列表排序（按文件名，通常包含时间戳）
+        all_files['colored_images'].sort()
+        all_files['adjusted_images'].sort()
+        
+        print(f"📁 会话文件统计:")
+        print(f"  - 原始简笔画: {all_files['original_sketch']}")
+        print(f"  - AI生成图片: {len(all_files['colored_images'])}个")
+        print(f"  - 调整后图片: {len(all_files['adjusted_images'])}个")
+        print(f"  - 3D模型: {all_files['model_3d']}")
+        print(f"  - 视频: {all_files['video_file']}")
+        
+        # 获取选择的版本（用于主要展示）
         selected_versions = session_manager.get_selected_versions(session_id)
-        print(f"📋 选择的版本: {selected_versions}")
+        print(f"⭐ 选择的版本: {selected_versions}")
         
         if 'image' not in selected_versions:
-            print("❌ 没有选择图片版本")
-            return jsonify({'error': '请先选择一个图片版本'}), 400
+            # 如果没有选择版本，优先使用调整后的图片，其次是生成的图片
+            if all_files['adjusted_images']:
+                selected_image = all_files['adjusted_images'][-1]  # 最新的调整版本
+            elif all_files['colored_images']:
+                selected_image = all_files['colored_images'][-1]  # 最新的生成版本
+            else:
+                print("❌ 没有找到任何图片")
+                return jsonify({'error': '没有找到生成的图片'}), 400
+        else:
+            image_version = selected_versions['image']
+            selected_image = os.path.basename(image_version['file_path'])
         
-        # 获取文件路径
-        image_version = selected_versions['image']
-        model_version = selected_versions.get('model')
+        print(f"🎯 主要展示图片: {selected_image}")
         
-        image_path = image_version['file_path']
-        model_path = model_version['file_path'] if model_version else None
+        # 从当前用户session获取姓名和年龄
+        artist_name = current_user.username  # 使用登录用户名
+        artist_age = getattr(current_user, 'age', None)  # 如果用户模型有age字段
         
-        # 验证文件存在
-        if not os.path.exists(image_path):
-            return jsonify({'error': '选择的图片文件不存在'}), 400
+        # 如果用户模型没有年龄字段，使用默认值或从前端获取
+        if not artist_age:
+            artist_age = data.get('artist_age', 10)
         
-        if model_path and not os.path.exists(model_path):
-            return jsonify({'error': '选择的3D模型文件不存在'}), 400
+        print(f"👤 创作者: {artist_name}, 年龄: {artist_age}")
         
         # 检查是否已存在该会话的作品
         from models import Artwork
@@ -718,17 +846,20 @@ def save_artwork():
         if existing_artwork:
             # 更新现有作品
             existing_artwork.title = data.get('title', '我的作品')
+            existing_artwork.artist_name = artist_name
+            existing_artwork.artist_age = artist_age
+            existing_artwork.category = data.get('category', 'other')
             existing_artwork.description = data.get('description', '')
             existing_artwork.status = 'completed'
             existing_artwork.updated_at = datetime.utcnow()
             
-            # 更新文件路径（相对路径）
-            session_folder = f"creation_sessions/{session_id}"
-            if image_path.startswith(session_folder):
-                existing_artwork.colored_image = os.path.basename(image_path)
-            
-            if model_path and model_path.startswith(session_folder):
-                existing_artwork.model_3d = os.path.basename(model_path)
+            # 保存所有版本的文件
+            existing_artwork.original_sketch = all_files['original_sketch']
+            existing_artwork.colored_image = selected_image  # 主要展示的图片
+            existing_artwork.all_colored_versions = all_files['colored_images']  # 所有上色版本
+            existing_artwork.all_adjusted_versions = all_files['adjusted_images']  # 所有调整版本
+            existing_artwork.model_3d = all_files['model_3d']
+            existing_artwork.video_file = all_files['video_file']
             
             artwork_id = existing_artwork.id
             print(f"✅ 更新现有作品: {artwork_id}")
@@ -737,25 +868,35 @@ def save_artwork():
             artwork = Artwork(
                 session_id=session_id,
                 title=data.get('title', '我的作品'),
-                user_id=current_user.id
+                user_id=current_user.id,
+                artist_name=artist_name,
+                artist_age=artist_age,
+                category=data.get('category', 'other')
             )
             
             artwork.description = data.get('description', '')
             artwork.status = 'completed'
             artwork.is_public = True  # 默认设为公开
             
-            # 设置文件路径（只保存文件名，路径由session_id构建）
-            session_folder = f"creation_sessions/{session_id}"
-            if image_path.startswith(session_folder):
-                artwork.colored_image = os.path.basename(image_path)
-            
-            if model_path and model_path.startswith(session_folder):
-                artwork.model_3d = os.path.basename(model_path)
+            # 保存所有版本的文件（只保存文件名，路径由session_id构建）
+            artwork.original_sketch = all_files['original_sketch']
+            artwork.colored_image = selected_image  # 主要展示的图片
+            artwork.all_colored_versions = all_files['colored_images']  # 所有上色版本
+            artwork.all_adjusted_versions = all_files['adjusted_images']  # 所有调整版本
+            artwork.model_3d = all_files['model_3d']
+            artwork.video_file = all_files['video_file']
             
             # 保存到数据库
             db.session.add(artwork)
             artwork_id = None  # 将在commit后获取
             print(f"✅ 创建新作品记录")
+            print(f"📦 保存的文件:")
+            print(f"  - 原始简笔画: {artwork.original_sketch}")
+            print(f"  - 主要展示图: {artwork.colored_image}")
+            print(f"  - 所有上色版本({len(all_files['colored_images'])}个): {all_files['colored_images']}")
+            print(f"  - 所有调整版本({len(all_files['adjusted_images'])}个): {all_files['adjusted_images']}")
+            print(f"  - 3D模型: {artwork.model_3d}")
+            print(f"  - 视频: {artwork.video_file}")
         
         db.session.commit()
         
@@ -887,6 +1028,148 @@ def translate_prompt_api():
         
     except Exception as e:
         print(f"❌ prompt翻译失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/organize-prompt', methods=['POST'])
+def organize_prompt_api():
+    """使用AI整理语音输入的内容成为清晰的prompt"""
+    try:
+        import google.generativeai as genai
+        
+        data = request.get_json()
+        voice_input = data.get('voice_input', '').strip()
+        
+        if not voice_input:
+            return jsonify({'success': False, 'error': '语音内容为空'}), 400
+        
+        print(f"🎤 收到语音输入: {voice_input}")
+        
+        # 配置Gemini API
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({'success': False, 'error': 'API密钥未配置'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        # 构建整理指令
+        system_prompt = """你是一个专业的AI创意助手，负责将用户的语音描述整理成清晰、详细的图片生成提示词。
+
+要求：
+1. 保留用户表达的核心创意和关键元素
+2. 补充必要的视觉细节（如颜色、形状、风格、场景等）
+3. 使用儿童友好的语言（面向10-14岁儿童）
+4. 按照"主体-特征-动作-场景-风格"的结构组织
+5. 如果用户提到对话内容，必须保持原文不翻译
+6. 最终输出一段连贯、详细的中文描述（100-200字）
+7. 直接输出整理后的提示词，不要任何前缀说明或客套话
+
+示例：
+输入："我想要一只猫，红色的帽子，在彩虹上"
+输出："一只可爱的小猫咪，戴着鲜艳的红色小帽子，毛茸茸的身体，大大的眼睛闪烁着好奇的光芒，正优雅地坐在七彩的彩虹上，背景是蓝天白云，阳光明媚，卡通风格，色彩明亮温暖。"
+
+现在请整理以下语音输入（只输出整理后的提示词，不要其他内容）："""
+        
+        # 调用AI整理
+        full_prompt = f"{system_prompt}\n\n用户语音：{voice_input}"
+        response = model.generate_content(full_prompt)
+        organized_prompt = response.text.strip()
+        
+        print(f"✨ AI整理后: {organized_prompt}")
+        
+        return jsonify({
+            'success': True,
+            'original_input': voice_input,
+            'organized_prompt': organized_prompt
+        })
+        
+    except Exception as e:
+        print(f"❌ AI整理失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/generate-artwork-info', methods=['POST'])
+def generate_artwork_info_api():
+    """使用AI生成作品的标题、分类和介绍"""
+    try:
+        import google.generativeai as genai
+        
+        data = request.get_json()
+        prompt = data.get('prompt', '').strip()
+        
+        if not prompt:
+            return jsonify({'success': False, 'error': 'prompt为空'}), 400
+        
+        print(f"🎨 为prompt生成作品信息: {prompt}")
+        
+        # 配置Gemini API
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({'success': False, 'error': 'API密钥未配置'}), 500
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        
+        # 构建生成指令
+        system_prompt = """你是一个创意作品命名和介绍专家，请根据用户的创作提示词，生成以下内容：
+
+1. 作品标题：简短有趣（4-10个字），适合儿童作品
+2. 作品分类：从以下类别选择一个最合适的：
+   - animals（动物）
+   - characters（人物）
+   - objects（物品）
+   - nature（自然）
+   - other（其他）
+3. 作品介绍：编写一个100字左右的儿童友好小故事，描述这个创作的奇妙之处
+
+请严格按照以下JSON格式返回（不要任何markdown标记或代码块标记）：
+{
+  "title": "作品标题",
+  "category": "分类英文",
+  "description": "作品介绍小故事"
+}
+
+示例：
+提示词："一只可爱的小猫咪，戴着红色的帽子，坐在彩虹上..."
+
+返回：
+{
+  "title": "彩虹上的猫咪",
+  "category": "animals",
+  "description": "在一个阳光明媚的早晨，一只勇敢的小猫咪戴上了它最喜欢的红色帽子，踏上了一场奇妙的冒险。它爬上了天边的彩虹，那里有七种颜色的道路，每一步都闪闪发光。小猫咪坐在彩虹的最顶端，俯瞰着整个世界，感觉自己就像一个小小的探险家。这是属于它的奇妙时刻！"
+}
+
+现在请为以下提示词生成作品信息："""
+        
+        # 调用AI生成
+        full_prompt = f"{system_prompt}\n\n提示词：{prompt}"
+        response = model.generate_content(full_prompt)
+        result_text = response.text.strip()
+        
+        # 移除可能的markdown代码块标记
+        if result_text.startswith('```'):
+            lines = result_text.split('\n')
+            # 移除第一行和最后一行的```
+            result_text = '\n'.join(lines[1:-1] if lines[-1].strip() == '```' else lines[1:])
+        if result_text.startswith('json'):
+            result_text = result_text[4:].strip()
+        
+        print(f"📝 AI生成的JSON: {result_text}")
+        
+        # 解析JSON
+        import json
+        artwork_info = json.loads(result_text)
+        
+        return jsonify({
+            'success': True,
+            'title': artwork_info.get('title', ''),
+            'category': artwork_info.get('category', 'other'),
+            'description': artwork_info.get('description', '')
+        })
+        
+    except Exception as e:
+        print(f"❌ 生成作品信息失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate-video', methods=['POST'])
@@ -1327,6 +1610,75 @@ def test_privacy_toggles():
     """测试隐私设置切换开关页面"""
     with open('/Users/hongyuwang/code/HLTraining/test_privacy_toggles.html', 'r', encoding='utf-8') as f:
         return f.read()
+
+@app.route('/api/fetch-image', methods=['POST'])
+@login_required
+def fetch_image_from_url():
+    """从URL获取图片并保存到本地"""
+    try:
+        import requests
+        from io import BytesIO
+        
+        data = request.get_json()
+        image_url = data.get('url', '').strip()
+        
+        if not image_url:
+            return jsonify({'success': False, 'error': '图片链接不能为空'}), 400
+        
+        print(f"🔗 正在获取图片: {image_url}")
+        
+        # 设置请求头，模拟浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # 下载图片
+        response = requests.get(image_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # 检查是否是图片
+        content_type = response.headers.get('content-type', '')
+        if not content_type.startswith('image/'):
+            return jsonify({'success': False, 'error': '链接不是有效的图片'}), 400
+        
+        # 读取图片数据
+        image_data = BytesIO(response.content)
+        img = Image.open(image_data)
+        
+        # 转换为RGB（如果需要）
+        if img.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+            img = background
+        
+        # 生成唯一文件名
+        filename = f"url_image_{int(datetime.now().timestamp())}.png"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # 确保目录存在
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # 保存图片
+        img.save(filepath, 'PNG')
+        
+        print(f"✅ 图片已保存: {filepath}")
+        
+        return jsonify({
+            'success': True,
+            'image_url': f'/uploads/{filename}',
+            'filename': filename
+        })
+        
+    except requests.exceptions.Timeout:
+        return jsonify({'success': False, 'error': '图片下载超时，请重试'}), 400
+    except requests.exceptions.RequestException as e:
+        print(f"❌ 下载图片失败: {str(e)}")
+        return jsonify({'success': False, 'error': '无法访问该图片链接'}), 400
+    except Exception as e:
+        print(f"❌ 处理图片失败: {str(e)}")
+        return jsonify({'success': False, 'error': f'图片处理失败: {str(e)}'}), 500
 
 if __name__ == '__main__':
     print("🚀 儿童AI培训网站启动中...")

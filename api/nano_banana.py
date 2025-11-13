@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 
 class NanoBananaAPI:
-    """Nano Banana API类 - 使用Gemini 2.5 Flash Image实现，支持原生高宽比"""
+    """Nano Banana API类 - 使用Gemini 2.5 Flash Image (真正的Nano Banana模型)"""
     
     def __init__(self):
         # 从环境变量获取API密钥，优先使用Gemini密钥
@@ -19,15 +19,15 @@ class NanoBananaAPI:
         # 初始化新的Google Gen AI客户端
         try:
             self.client = genai.Client(api_key=self.api_key)
-            print("✅ 新版 Google Gen AI 客户端初始化成功")
+            print("✅ Google Gen AI 客户端初始化成功 (Gemini 2.5 Flash Image)")
         except Exception as e:
             print(f"❌ Google Gen AI 客户端初始化失败: {str(e)}")
             self.client = None
     
     def colorize_sketch(self, sketch_path, description="", style="cute", color_preference="colorful", expert_mode=False, aspect_ratio="1:1"):
-        """为手绘简笔画上色 - 使用真正的Imagen模型原生高宽比支持！"""
+        """为手绘简笔画上色 - 使用Gemini 2.5 Flash Image模型（真正的Nano Banana）"""
         try:
-            print("� 开始使用真正的Imagen模型进行图像上色...")
+            print("🎨 开始使用Gemini 2.5 Flash Image (Nano Banana) 进行图像上色...")
             print(f"🎨 风格: {style}, 色彩偏好: {color_preference}, Expert模式: {expert_mode}, 高宽比: {aspect_ratio}")
             
             # 检查客户端
@@ -70,7 +70,7 @@ class NanoBananaAPI:
             print(f"🎨 用户描述：{description or '使用默认风格'}")
             print(f"📝 上色提示词: {prompt}")
             
-            # 使用支持重试机制的imagen模型
+            # 使用Gemini模型进行图像上色（支持图片输入）
             max_retries = 3
             retry_count = 0
             last_error = None
@@ -78,29 +78,98 @@ class NanoBananaAPI:
             while retry_count < max_retries:
                 try:
                     retry_count += 1
-                    print(f"🔥 正在使用Imagen模型进行上色... (尝试 {retry_count}/{max_retries})")
+                    print(f"🔥 正在使用Gemini 2.5 Flash Image (Nano Banana)... (尝试 {retry_count}/{max_retries})")
                     
-                    # 使用新的Google Gen AI SDK，真正支持aspect_ratio！
-                    response = self.client.models.generate_images(
-                        model='imagen-3.0-generate-002',  # 使用Imagen模型
-                        prompt=prompt,
-                        reference_images=[image_bytes],  # 传入原始图片作为参考
-                        config=types.GenerateImagesConfig(
-                            number_of_images=1,
-                            include_rai_reason=True,
-                            output_mime_type='image/jpeg',
-                            aspect_ratio=aspect_ratio  # 真正的原生高宽比支持！
-                        )
+                    # 使用Gemini 2.5 Flash Image - 这才是真正的Nano Banana！
+                    config = types.GenerateContentConfig(
+                        response_modalities=["IMAGE"],  # 明确要求返回图片
+                        temperature=0.7
                     )
                     
-                    # 检查是否成功生成图片
-                    print(f"🔍 响应检查: response={bool(response)}")
-                    if response and response.generated_images:
-                        print(f"🔍 生成的图片数量: {len(response.generated_images)}")
+                    response = self.client.models.generate_content(
+                        model='models/gemini-2.5-flash-image',  # 使用Gemini 2.5 Flash Image
+                        contents=[
+                            prompt,
+                            types.Part.from_bytes(
+                                data=image_bytes,
+                                mime_type='image/png'
+                            )
+                        ],
+                        config=config
+                    )
+                    
+                    # 检查响应是否有效
+                    print(f"🔍 响应对象: {response is not None}")
+                    if not response:
+                        print("❌ 响应为空")
+                        last_error = "API返回空响应"
+                        continue
+                    
+                    print(f"🔍 candidates存在: {hasattr(response, 'candidates')}")
+                    if not hasattr(response, 'candidates') or not response.candidates:
+                        print("❌ 响应中没有candidates")
+                        last_error = "响应中没有candidates"
+                        continue
+                    
+                    print(f"🔍 candidates数量: {len(response.candidates)}")
+                    candidate = response.candidates[0]
+                    
+                    print(f"🔍 content存在: {hasattr(candidate, 'content')}")
+                    if not hasattr(candidate, 'content') or not candidate.content:
+                        print("❌ candidate中没有content")
+                        last_error = "candidate中没有content"
+                        continue
+                    
+                    print(f"🔍 parts存在: {hasattr(candidate.content, 'parts')}")
+                    if not hasattr(candidate.content, 'parts') or not candidate.content.parts:
+                        print("❌ content中没有parts")
+                        last_error = "content中没有parts"
+                        continue
+                    
+                    print(f"🔍 parts数量: {len(candidate.content.parts)}")
+                    
+                    # 提取生成的图像
+                    image_parts = [
+                        part.inline_data.data
+                        for part in candidate.content.parts
+                        if hasattr(part, 'inline_data') and part.inline_data
+                    ]
+                    
+                    print(f"🔍 提取到的图片数量: {len(image_parts)}")
+                    
+                    if image_parts:
+                        print("✅ 成功生成图片")
                         
-                        # 获取生成的图片
-                        generated_image = response.generated_images[0]
-                        image = generated_image.image
+                        # 将生成的图像转换为PIL图像
+                        from io import BytesIO
+                        image = Image.open(BytesIO(image_parts[0]))
+                        
+                        # 调整图片尺寸以匹配aspect_ratio
+                        if aspect_ratio != "1:1":
+                            width, height = image.size
+                            ratio_parts = aspect_ratio.split(':')
+                            target_ratio = int(ratio_parts[0]) / int(ratio_parts[1])
+                            current_ratio = width / height
+                            
+                            # 如果比例不匹配，调整尺寸
+                            if abs(current_ratio - target_ratio) > 0.1:
+                                if target_ratio > current_ratio:
+                                    # 需要更宽
+                                    new_width = int(height * target_ratio)
+                                    new_height = height
+                                else:
+                                    # 需要更高
+                                    new_width = width
+                                    new_height = int(width / target_ratio)
+                                
+                                # 创建新画布
+                                new_image = Image.new('RGB', (new_width, new_height), (255, 255, 255))
+                                # 将原图居中粘贴
+                                x_offset = (new_width - width) // 2
+                                y_offset = (new_height - height) // 2
+                                new_image.paste(image, (x_offset, y_offset))
+                                image = new_image
+                                print(f"📐 调整图片尺寸以匹配 {aspect_ratio}")
                         
                         # 保存上色后的图像
                         base_name = os.path.splitext(os.path.basename(sketch_path))[0]
@@ -108,14 +177,24 @@ class NanoBananaAPI:
                         output_path = os.path.join(self.upload_folder, colored_filename)
                         
                         # 保存图片
-                        image.save(output_path)
+                        image.save(output_path, 'JPEG', quality=95)
                         
-                        print(f"✅ Imagen上色完成: {output_path}")
-                        print(f"📐 生成的高宽比: {aspect_ratio}")
+                        print(f"✅ Gemini上色完成: {output_path}")
+                        print(f"📐 高宽比: {aspect_ratio}")
                         return output_path
                     else:
-                        print("⚠️ 响应中没有生成图片")
-                        last_error = "响应中没有生成图片"
+                        # 检查是否有文本响应
+                        text_parts = [
+                            part.text
+                            for part in candidate.content.parts
+                            if hasattr(part, 'text') and part.text
+                        ]
+                        if text_parts:
+                            print(f"⚠️ Gemini返回了文本而非图片: {text_parts[0][:200]}")
+                            last_error = f"Gemini返回文本响应: {text_parts[0][:100]}"
+                        else:
+                            print("⚠️ 响应中没有生成图片或文本")
+                            last_error = "响应中没有图片或文本数据"
                     
                 except Exception as e:
                     last_error = str(e)
@@ -484,4 +563,115 @@ class NanoBananaAPI:
             
         except Exception as e:
             print(f"❌ 图片+文字模式生成失败: {str(e)}")
+            return None
+    
+    def adjust_image(self, image_path, adjust_prompt, expert_mode=False):
+        """调整现有图片 - 使用Gemini 2.5 Flash Image根据调整说明重新生成图片"""
+        try:
+            print(f"🔧 开始调整图片: {image_path}")
+            print(f"📝 调整说明: {adjust_prompt}")
+            print(f"⚡ Expert模式: {expert_mode}")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 读取原始图像
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # 将图像转换为PIL Image对象
+            pil_image = Image.open(io.BytesIO(image_bytes))
+            
+            # 获取原始图片的宽高比
+            original_width, original_height = pil_image.size
+            
+            # 计算宽高比并转换为字符串格式
+            if original_width > original_height:
+                # 横向图片
+                aspect_ratio = "16:9"
+            elif original_height > original_width:
+                # 纵向图片
+                aspect_ratio = "9:16"
+            else:
+                # 正方形
+                aspect_ratio = "1:1"
+            
+            print(f"📐 原始图片尺寸: {original_width}x{original_height}, 使用宽高比: {aspect_ratio}")
+            
+            # 构建调整提示词
+            if expert_mode:
+                # Expert模式：直接使用用户的调整说明
+                final_prompt = f"根据以下要求调整这张图片：{adjust_prompt}"
+            else:
+                # 标准模式：构建详细的调整提示词
+                final_prompt = f"""请根据以下要求调整这张图片：
+
+调整要求：{adjust_prompt}
+
+注意事项：
+1. 保持图片的主体元素和整体构图
+2. 根据调整要求进行相应的修改
+3. 确保调整后的图片适合儿童观看
+4. 保持色彩明亮、风格可爱
+5. 图片质量要清晰、细节丰富
+
+请生成调整后的图片！"""
+            
+            print(f"📝 调整提示词: {final_prompt}")
+            
+            # 使用Gemini 2.5 Flash Image模型 - 使用简化API
+            # 直接传入prompt和图片，使用原始图片的宽高比
+            generate_content_config = types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(
+                    aspect_ratio=aspect_ratio,
+                ),
+            )
+            
+            # 使用stream方式获取响应
+            image_data = None
+            
+            for chunk in self.client.models.generate_content_stream(
+                model="gemini-2.5-flash-image",
+                contents=[final_prompt, pil_image],
+                config=generate_content_config,
+            ):
+                if (
+                    chunk.candidates is None
+                    or chunk.candidates[0].content is None
+                    or chunk.candidates[0].content.parts is None
+                ):
+                    continue
+                
+                # 检查是否有图像数据
+                if (chunk.candidates[0].content.parts[0].inline_data and 
+                    chunk.candidates[0].content.parts[0].inline_data.data):
+                    inline_data = chunk.candidates[0].content.parts[0].inline_data
+                    image_data = inline_data.data
+                    print(f"🎉 成功获取调整后的图像数据!")
+            
+            if image_data:
+                # 保存调整后的图像
+                base_name = os.path.splitext(os.path.basename(image_path))[0]
+                timestamp = int(time.time())
+                adjusted_filename = f"{base_name}_adjusted_{timestamp}.png"
+                output_path = os.path.join(self.upload_folder, adjusted_filename)
+                
+                with open(output_path, 'wb') as f:
+                    f.write(image_data)
+                
+                print(f"✅ 图片调整完成: {output_path}")
+                return output_path
+            else:
+                raise Exception("未能从响应中获取调整后的图片")
+                
+        except Exception as e:
+            error_msg = str(e)
+            print(f"❌ 图片调整错误: {error_msg}")
+            
+            # 检查是否是配额耗尽错误
+            if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
+                print("⚠️ API配额已耗尽，请稍后再试")
+            
             return None

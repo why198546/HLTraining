@@ -1401,7 +1401,7 @@ let generatedImagePath = null; // 存储生成图片路径
 let modelFilePath = null;      // 存储3D模型文件路径
 
 // 显示保存作品对话框
-function showSaveArtworkDialog() {
+async function showSaveArtworkDialog() {
     // 检查是否有必要的图片（至少要有生成的图片）
     if (!generatedImageUrl) {
         showMessage('请先完成图片生成才能保存作品', 'error');
@@ -1419,6 +1419,78 @@ function showSaveArtworkDialog() {
     
     // 显示对话框
     document.getElementById('save-artwork-modal').style.display = 'flex';
+    
+    // 重置表单为加载状态
+    const titleInput = document.getElementById('artwork-title');
+    const categorySelect = document.getElementById('artwork-category');
+    const descriptionTextarea = document.getElementById('artwork-description');
+    
+    titleInput.value = '';
+    titleInput.placeholder = 'AI正在生成标题...';
+    titleInput.readOnly = true;
+    
+    categorySelect.value = '';
+    categorySelect.disabled = true;
+    
+    descriptionTextarea.value = '';
+    descriptionTextarea.placeholder = 'AI正在创作小故事...';
+    descriptionTextarea.readOnly = true;
+    
+    // 显示加载图标
+    document.getElementById('title-loading').classList.add('active');
+    document.getElementById('category-loading').classList.add('active');
+    document.getElementById('description-loading').classList.add('active');
+    
+    // 调用AI生成作品信息
+    try {
+        const prompt = document.getElementById('creation-prompt').value.trim();
+        
+        const response = await fetch('/api/generate-artwork-info', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt: prompt })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 填充AI生成的信息
+            titleInput.value = result.title;
+            titleInput.placeholder = '给你的作品起个好听的名字';
+            titleInput.readOnly = false;
+            
+            categorySelect.value = result.category;
+            categorySelect.disabled = false;
+            
+            descriptionTextarea.value = result.description;
+            descriptionTextarea.placeholder = '介绍一下你的创作想法和故事...';
+            descriptionTextarea.readOnly = false;
+            
+            console.log('✅ AI生成作品信息成功:', result);
+        } else {
+            throw new Error(result.error || '生成失败');
+        }
+    } catch (error) {
+        console.error('❌ AI生成作品信息失败:', error);
+        // 失败时允许用户手动输入
+        titleInput.placeholder = '请输入作品标题';
+        titleInput.readOnly = false;
+        
+        categorySelect.value = 'other';
+        categorySelect.disabled = false;
+        
+        descriptionTextarea.placeholder = '请输入作品介绍...';
+        descriptionTextarea.readOnly = false;
+        
+        showMessage('AI生成失败，请手动填写', 'warning');
+    } finally {
+        // 隐藏加载图标
+        document.getElementById('title-loading').classList.remove('active');
+        document.getElementById('category-loading').classList.remove('active');
+        document.getElementById('description-loading').classList.remove('active');
+    }
 }
 
 // 关闭保存作品对话框
@@ -1427,8 +1499,6 @@ function closeSaveArtworkDialog() {
     
     // 清空表单
     document.getElementById('artwork-title').value = '';
-    document.getElementById('artist-name').value = '';
-    document.getElementById('artist-age').value = '10';
     document.getElementById('artwork-category').value = 'animals';
     document.getElementById('artwork-description').value = '';
 }
@@ -1436,24 +1506,17 @@ function closeSaveArtworkDialog() {
 // 保存作品到作品集
 async function saveArtworkToGallery() {
     // 保存按钮的原始文本（在外部定义，避免作用域问题）
-    let originalText = '<i class="fas fa-save"></i> 保存到作品集';
+    let originalText = '<i class="fas fa-heart"></i> 保存到作品集';
     
     try {
         // 获取表单数据
         const title = document.getElementById('artwork-title').value.trim();
-        const artistName = document.getElementById('artist-name').value.trim();
-        const artistAge = document.getElementById('artist-age').value;
         const category = document.getElementById('artwork-category').value;
         const description = document.getElementById('artwork-description').value.trim();
         
         // 验证必填字段
         if (!title) {
             showMessage('请输入作品标题', 'error');
-            return;
-        }
-        
-        if (!artistName) {
-            showMessage('请输入创作者姓名', 'error');
             return;
         }
         
@@ -1473,16 +1536,16 @@ async function saveArtworkToGallery() {
         }
         
         // 准备保存数据，处理路径格式
+        // 姓名和年龄从后端session获取，不需要前端传递
         const saveData = {
             session_id: sessionId,
             original_image_path: originalImagePath ? (originalImagePath.startsWith('/') ? originalImagePath.substring(1) : originalImagePath) : null,
             generated_image_path: generatedImageUrl.startsWith('/') ? generatedImageUrl.substring(1) : generatedImageUrl,
             model_path: modelFilePath,
             title: title,
-            artist_name: artistName,
-            artist_age: parseInt(artistAge),
             category: category,
             description: description
+            // artist_name 和 artist_age 将从后端session中获取
         };
         
         // 发送保存请求
@@ -1572,5 +1635,428 @@ function updateImageGenerationSuccess(result) {
     const finalActions = document.getElementById('final-actions');
     if (finalActions) {
         finalActions.style.display = 'flex';
+    }
+}
+
+// ========== 图片添加菜单功能 ==========
+
+// 检测是否是移动设备
+function isMobileDevice() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// 检测是否是Mac电脑
+function isMacComputer() {
+    return navigator.platform.toUpperCase().indexOf('MAC') >= 0 && !isMobileDevice();
+}
+
+// 检测是否支持摄像头API
+function isCameraSupported() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+}
+
+// 切换图片菜单显示/隐藏
+function toggleImageMenu() {
+    const menu = document.getElementById('image-menu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+// 关闭图片菜单
+function closeImageMenu() {
+    const menu = document.getElementById('image-menu');
+    if (menu) {
+        menu.classList.remove('show');
+    }
+}
+
+// 点击页面其他地方关闭菜单
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('image-menu');
+    const addBtn = document.querySelector('.add-image-btn');
+    
+    if (menu && addBtn && !menu.contains(event.target) && !addBtn.contains(event.target)) {
+        menu.classList.remove('show');
+    }
+});
+
+// 拍摄图片（智能调用摄像头）
+async function captureImage() {
+    closeImageMenu();
+    
+    // 方案1: 移动设备 - 使用input capture（最简单）
+    if (isMobileDevice()) {
+        console.log('📱 移动设备: 使用input capture');
+        const cameraInput = document.getElementById('camera-capture');
+        if (cameraInput) {
+            cameraInput.click();
+        }
+        return;
+    }
+    
+    // 方案2: 桌面设备支持摄像头API - 使用getUserMedia
+    if (isCameraSupported()) {
+        console.log('💻 桌面设备: 使用getUserMedia API');
+        try {
+            await openCameraDialog();
+        } catch (error) {
+            console.error('摄像头调用失败，回退到文件选择:', error);
+            // 如果失败，回退到文件选择
+            const cameraInput = document.getElementById('camera-capture');
+            if (cameraInput) {
+                cameraInput.removeAttribute('capture');
+                cameraInput.click();
+            }
+        }
+        return;
+    }
+    
+    // 方案3: 不支持摄像头 - 使用普通文件选择
+    console.log('📁 不支持摄像头: 使用文件选择');
+    const cameraInput = document.getElementById('camera-capture');
+    if (cameraInput) {
+        cameraInput.removeAttribute('capture');
+        cameraInput.click();
+    }
+}
+
+// 打开摄像头对话框（桌面端）
+async function openCameraDialog() {
+    return new Promise(async (resolve, reject) => {
+        let stream = null;
+        
+        try {
+            let videoConstraints = {
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            };
+            
+            // Mac电脑：优先查找FaceTime HD摄像头
+            if (isMacComputer()) {
+                console.log('🍎 检测到Mac电脑，正在查找FaceTime HD摄像头...');
+                
+                try {
+                    // 获取所有视频输入设备
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                    
+                    console.log('📹 可用摄像头列表：', videoDevices.map(d => d.label || d.deviceId));
+                    
+                    // 查找FaceTime HD摄像头
+                    const facetimeCamera = videoDevices.find(device => 
+                        device.label.toLowerCase().includes('facetime') ||
+                        device.label.toLowerCase().includes('built-in')
+                    );
+                    
+                    if (facetimeCamera) {
+                        console.log('✅ 找到FaceTime HD摄像头:', facetimeCamera.label);
+                        videoConstraints.deviceId = { exact: facetimeCamera.deviceId };
+                    } else {
+                        console.log('⚠️ 未找到FaceTime摄像头，使用默认摄像头');
+                    }
+                } catch (enumError) {
+                    console.log('⚠️ 枚举设备失败，使用默认摄像头:', enumError);
+                }
+            } else {
+                // 非Mac设备：使用后置摄像头
+                videoConstraints.facingMode = 'environment';
+            }
+            
+            // 请求摄像头权限
+            console.log('🎥 请求摄像头权限，配置：', videoConstraints);
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: videoConstraints
+            });
+            
+            console.log('✅ 摄像头访问成功');
+            
+            // 创建摄像头对话框
+            const dialog = document.createElement('div');
+            dialog.className = 'camera-dialog';
+            dialog.innerHTML = `
+                <div class="camera-dialog-content">
+                    <div class="camera-dialog-header">
+                        <h3><i class="fas fa-camera"></i> 拍摄图片</h3>
+                        <button class="camera-close-btn" onclick="closeCameraDialog()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="camera-preview-container">
+                        <video id="camera-video" autoplay playsinline></video>
+                        <canvas id="camera-canvas" style="display: none;"></canvas>
+                    </div>
+                    <div class="camera-dialog-footer">
+                        <button class="camera-capture-btn" onclick="takeCameraPhoto()">
+                            <i class="fas fa-camera"></i> 拍摄
+                        </button>
+                        <button class="camera-cancel-btn" onclick="closeCameraDialog()">
+                            取消
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(dialog);
+            
+            // 将视频流连接到video元素
+            const video = document.getElementById('camera-video');
+            video.srcObject = stream;
+            
+            // 保存stream引用以便后续关闭
+            dialog.cameraStream = stream;
+            
+            resolve();
+            
+        } catch (error) {
+            console.error('摄像头访问失败:', error);
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            reject(error);
+        }
+    });
+}
+
+// 拍摄照片
+async function takeCameraPhoto() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    
+    if (!video || !canvas) return;
+    
+    // 设置canvas尺寸
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // 绘制当前帧到canvas
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    
+    // 转换为Blob
+    canvas.toBlob(async (blob) => {
+        try {
+            // 创建File对象
+            const file = new File([blob], `camera_${Date.now()}.jpg`, { type: 'image/jpeg' });
+            
+            // 压缩图片
+            showMessage('正在处理图片...', 'info');
+            const compressedFile = await compressImage(file);
+            
+            // 使用压缩后的文件
+            uploadedImageFile = compressedFile;
+            
+            // 显示预览
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('uploaded-image-preview');
+                const img = document.getElementById('uploaded-image');
+                
+                if (preview && img) {
+                    img.src = e.target.result;
+                    preview.style.display = 'block';
+                    showMessage('图片拍摄成功！', 'success');
+                }
+            };
+            reader.readAsDataURL(compressedFile);
+            
+            // 关闭摄像头对话框
+            closeCameraDialog();
+            
+        } catch (error) {
+            console.error('处理照片失败:', error);
+            showMessage('图片处理失败，请重试', 'error');
+        }
+    }, 'image/jpeg', 0.95);
+}
+
+// 关闭摄像头对话框
+function closeCameraDialog() {
+    const dialog = document.querySelector('.camera-dialog');
+    if (dialog) {
+        // 停止摄像头
+        if (dialog.cameraStream) {
+            dialog.cameraStream.getTracks().forEach(track => track.stop());
+        }
+        // 移除对话框
+        dialog.remove();
+    }
+}
+
+// 处理摄像头拍摄的图片（移动端）
+async function handleCameraCapture(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        // 显示加载状态
+        showMessage('正在处理图片...', 'info');
+
+        // 压缩图片
+        const compressedFile = await compressImage(file);
+        
+        // 使用压缩后的文件
+        uploadedImageFile = compressedFile;
+        
+        // 显示预览
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('uploaded-image-preview');
+            const img = document.getElementById('uploaded-image');
+            
+            if (preview && img) {
+                img.src = e.target.result;
+                preview.style.display = 'block';
+                showMessage('图片拍摄成功！', 'success');
+            }
+        };
+        reader.readAsDataURL(compressedFile);
+
+    } catch (error) {
+        console.error('处理拍摄图片失败:', error);
+        showMessage('图片处理失败，请重试', 'error');
+    }
+}
+
+// 压缩图片
+function compressImage(file, maxWidth = 1024, maxHeight = 1024, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const img = new Image();
+            
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                // 计算缩放比例
+                if (width > maxWidth || height > maxHeight) {
+                    const ratio = Math.min(maxWidth / width, maxHeight / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // 转换为blob
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        // 创建新的File对象
+                        const compressedFile = new File([blob], file.name, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    } else {
+                        reject(new Error('图片压缩失败'));
+                    }
+                }, 'image/jpeg', quality);
+            };
+            
+            img.onerror = function() {
+                reject(new Error('图片加载失败'));
+            };
+            
+            img.src = e.target.result;
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('文件读取失败'));
+        };
+        
+        reader.readAsDataURL(file);
+    });
+}
+
+// 显示图片URL对话框
+function showImageUrlDialog() {
+    closeImageMenu();
+    const modal = document.getElementById('image-url-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+        // 清空输入框
+        const input = document.getElementById('image-url-input');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+    }
+}
+
+// 关闭图片URL对话框
+function closeImageUrlDialog() {
+    const modal = document.getElementById('image-url-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// 从URL加载图片
+async function loadImageFromUrl() {
+    const input = document.getElementById('image-url-input');
+    const url = input ? input.value.trim() : '';
+    
+    if (!url) {
+        showMessage('请输入图片链接', 'error');
+        return;
+    }
+    
+    // 验证URL格式
+    try {
+        new URL(url);
+    } catch (e) {
+        showMessage('请输入有效的图片链接', 'error');
+        return;
+    }
+    
+    try {
+        closeImageUrlDialog();
+        showMessage('正在加载图片...', 'info');
+        
+        // 通过后端代理下载图片
+        const response = await fetch('/api/fetch-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: url })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // 显示预览
+            const preview = document.getElementById('uploaded-image-preview');
+            const img = document.getElementById('uploaded-image');
+            
+            if (preview && img) {
+                img.src = result.image_url;
+                preview.style.display = 'block';
+                showMessage('图片加载成功！', 'success');
+                
+                // 保存图片路径供后续使用
+                originalImagePath = result.image_url;
+            }
+        } else {
+            showMessage(result.error || '图片加载失败', 'error');
+        }
+        
+    } catch (error) {
+        console.error('加载图片失败:', error);
+        showMessage('图片加载失败，请检查链接是否正确', 'error');
+    }
+}
+
+// 关闭图片菜单
+function closeImageMenu() {
+    const menu = document.getElementById('image-menu');
+    if (menu) {
+        menu.classList.remove('show');
     }
 }

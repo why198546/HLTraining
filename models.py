@@ -138,10 +138,19 @@ class Artwork(db.Model):
     
     # 文件路径
     original_sketch = db.Column(db.String(200))  # 原始简笔画
-    colored_image = db.Column(db.String(200))   # AI上色结果
+    colored_image = db.Column(db.String(200))   # AI上色结果（主要展示）
     figurine_image = db.Column(db.String(200))  # 手办风格图片
     model_3d = db.Column(db.String(200))        # 3D模型文件
     video_file = db.Column(db.String(200))      # 生成的视频
+    
+    # 所有版本历史（JSON格式存储文件名列表）
+    all_colored_versions = db.Column(db.JSON)   # 所有AI生成的图片版本
+    all_adjusted_versions = db.Column(db.JSON)  # 所有调整后的图片版本
+    
+    # 创作者信息
+    artist_name = db.Column(db.String(50))      # 创作者姓名
+    artist_age = db.Column(db.Integer)          # 创作者年龄
+    category = db.Column(db.String(50))         # 作品分类
     
     # 创作参数
     style_type = db.Column(db.String(50))       # 风格类型
@@ -186,18 +195,28 @@ class Artwork(db.Model):
             if not filename:
                 return None
             
-            # 优先检查 static/creation_sessions 目录
-            static_path = f"static/creation_sessions/{self.session_id}/{filename}"
-            if os.path.exists(static_path):
-                return f"/static/creation_sessions/{self.session_id}/{filename}"
+            # 如果文件名已经包含路径，直接使用
+            if filename.startswith('/') or filename.startswith('http'):
+                return filename
             
-            # 然后检查 creation_sessions 目录
-            creation_path = f"creation_sessions/{self.session_id}/{filename}"
-            if os.path.exists(creation_path):
-                return f"/creation_sessions/{self.session_id}/{filename}"
+            # 优先检查 uploads 目录（新的保存位置）
+            uploads_path = f"uploads/{filename}"
+            if os.path.exists(uploads_path):
+                return f"/uploads/{filename}"
             
-            # 如果都不存在，返回默认路径
-            return f"/static/creation_sessions/{self.session_id}/{filename}"
+            # 检查 static/creation_sessions 目录
+            if self.session_id:
+                static_path = f"static/creation_sessions/{self.session_id}/{filename}"
+                if os.path.exists(static_path):
+                    return f"/static/creation_sessions/{self.session_id}/{filename}"
+                
+                # 检查 creation_sessions 目录
+                creation_path = f"creation_sessions/{self.session_id}/{filename}"
+                if os.path.exists(creation_path):
+                    return f"/creation_sessions/{self.session_id}/{filename}"
+            
+            # 如果都不存在，尝试 uploads 作为默认路径
+            return f"/uploads/{filename}"
         
         return {
             'original_sketch': get_file_url(self.original_sketch),

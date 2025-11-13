@@ -26,8 +26,17 @@ function showArtworkModal(element) {
         generatedImage: element.dataset.artworkGenerated,
         modelFile: element.dataset.artworkModel,
         likes: element.dataset.artworkLikes,
-        views: element.dataset.artworkViews
+        views: element.dataset.artworkViews,
+        sessionId: element.dataset.artworkSessionId,
+        coloredVersions: JSON.parse(element.dataset.artworkColoredVersions || '[]'),
+        adjustedVersions: JSON.parse(element.dataset.artworkAdjustedVersions || '[]')
     };
+    
+    console.log('Artwork versions:', {
+        colored: artworkData.coloredVersions,
+        adjusted: artworkData.adjustedVersions,
+        sessionId: artworkData.sessionId
+    });
     
     // 设置模态框标题
     const modalTitle = document.getElementById('modalArtworkTitle');
@@ -109,6 +118,48 @@ function showArtworkModal(element) {
         }
     } else {
         console.log('No generated image data available');
+    }
+    
+    // 显示所有版本历史
+    if (artworkData.sessionId && (artworkData.coloredVersions.length > 0 || artworkData.adjustedVersions.length > 0)) {
+        const versionsStep = document.createElement('div');
+        versionsStep.className = 'artwork-detail-step';
+        
+        let versionsHTML = '<h4><i class="fas fa-history"></i> 版本历史</h4><div class="version-gallery">';
+        
+        // 显示上色版本
+        if (artworkData.coloredVersions.length > 0) {
+            versionsHTML += '<div class="version-group"><h5>AI上色版本 (' + artworkData.coloredVersions.length + '个)</h5><div class="version-thumbs">';
+            artworkData.coloredVersions.forEach((filename, index) => {
+                const versionUrl = `/creation_sessions/${artworkData.sessionId}/${filename}`;
+                versionsHTML += `
+                    <div class="version-thumb" onclick="showImageModal('${versionUrl}', '上色版本 ${index + 1}')" title="点击查看大图">
+                        <img src="${versionUrl}" alt="版本 ${index + 1}" onerror="this.parentElement.style.display='none'">
+                        <span class="version-label">版本 ${index + 1}</span>
+                    </div>
+                `;
+            });
+            versionsHTML += '</div></div>';
+        }
+        
+        // 显示调整版本
+        if (artworkData.adjustedVersions.length > 0) {
+            versionsHTML += '<div class="version-group"><h5>调整版本 (' + artworkData.adjustedVersions.length + '个)</h5><div class="version-thumbs">';
+            artworkData.adjustedVersions.forEach((filename, index) => {
+                const versionUrl = `/creation_sessions/${artworkData.sessionId}/${filename}`;
+                versionsHTML += `
+                    <div class="version-thumb" onclick="showImageModal('${versionUrl}', '调整版本 ${index + 1}')" title="点击查看大图">
+                        <img src="${versionUrl}" alt="调整版本 ${index + 1}" onerror="this.parentElement.style.display='none'">
+                        <span class="version-label">调整 ${index + 1}</span>
+                    </div>
+                `;
+            });
+            versionsHTML += '</div></div>';
+        }
+        
+        versionsHTML += '</div>';
+        versionsStep.innerHTML = versionsHTML;
+        showcase.appendChild(versionsStep);
     }
     
     // 3D模型

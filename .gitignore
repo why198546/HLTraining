@@ -35,10 +35,24 @@ env/
 *.key
 api_keys.txt
 secrets.json
+.env.*
+!.env.example
 
 # Flask
 instance/
 .webassets-cache
+
+# 生产环境文件
+logs/
+*.log
+*.pid
+gunicorn.pid
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+artworks.db
 
 # User uploads (可根据需要调整)
 uploads/*
