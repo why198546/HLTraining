@@ -54,8 +54,8 @@ pidfile = os.path.join(BASE_DIR, 'logs/gunicorn.pid')
 # Daemon模式（后台运行）
 daemon = False
 
-# 工作目录
-chdir = os.path.dirname(os.path.abspath(__file__))
+# 工作目录 - 设置为项目根目录
+chdir = BASE_DIR
 
 # 用户和组（需要root权限）
 # user = 'www-data'

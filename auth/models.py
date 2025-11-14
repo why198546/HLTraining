@@ -362,3 +362,52 @@ class ArtworkView(db.Model):
     def __init__(self, artwork_id, viewer_id):
         self.artwork_id = artwork_id
         self.viewer_id = viewer_id
+
+
+class Comment(db.Model):
+    """作品评论模型 - 支持文字和语音评论"""
+    __tablename__ = 'comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    artwork_id = db.Column(db.Integer, db.ForeignKey('artworks.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    
+    # 评论内容
+    content = db.Column(db.Text, nullable=False)  # 文字内容（语音转换后的文字）
+    audio_file = db.Column(db.String(200))  # 音频文件路径（可选）
+    is_voice_comment = db.Column(db.Boolean, default=False)  # 是否通过语音输入
+    
+    # 时间记录
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 状态
+    is_deleted = db.Column(db.Boolean, default=False)  # 软删除标记
+    
+    # 关联关系
+    artwork = db.relationship('Artwork', backref=db.backref('comments', lazy='dynamic'))
+    user = db.relationship('User', backref=db.backref('comments', lazy='dynamic'))
+    
+    def __init__(self, artwork_id, user_id, content, audio_file=None, is_voice_comment=False):
+        self.artwork_id = artwork_id
+        self.user_id = user_id
+        self.content = content
+        self.audio_file = audio_file
+        self.is_voice_comment = is_voice_comment
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'artwork_id': self.artwork_id,
+            'content': self.content,
+            'audio_file': f'/uploads/{self.audio_file}' if self.audio_file else None,
+            'is_voice_comment': self.is_voice_comment,
+            'created_at': self.created_at.isoformat(),
+            'user': {
+                'id': self.user.id,
+                'nickname': self.user.nickname,
+                'avatar_url': self.user.avatar_url,
+                'age': self.user.get_age()
+            }
+        }

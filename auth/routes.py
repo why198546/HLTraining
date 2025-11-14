@@ -595,3 +595,87 @@ def generate_artwork_video(artwork_id):
         'message': '视频生成功能开发中，敬请期待！',
         'status': 'pending'
     })
+
+
+# ============================================================
+# 评论相关路由
+# ============================================================
+
+@auth_bp.route('/artwork/<int:artwork_id>/comments', methods=['GET'])
+def get_artwork_comments(artwork_id):
+    """获取作品的所有评论"""
+    from auth.models import Artwork, Comment
+    
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    # 获取评论，按时间倒序
+    comments = Comment.query.filter_by(
+        artwork_id=artwork_id,
+        is_deleted=False
+    ).order_by(Comment.created_at.desc()).all()
+    
+    return jsonify({
+        'success': True,
+        'comments': [comment.to_dict() for comment in comments],
+        'total': len(comments)
+    })
+
+
+@auth_bp.route('/artwork/<int:artwork_id>/comments', methods=['POST'])
+@login_required
+def create_comment(artwork_id):
+    """发表评论"""
+    from auth.models import Artwork, Comment
+    
+    artwork = Artwork.query.get_or_404(artwork_id)
+    
+    data = request.get_json()
+    content = data.get('content', '').strip()
+    
+    if not content:
+        return jsonify({'success': False, 'message': '评论内容不能为空'}), 400
+    
+    if len(content) > 500:
+        return jsonify({'success': False, 'message': '评论内容不能超过500字'}), 400
+    
+    # 创建评论
+    comment = Comment(
+        artwork_id=artwork_id,
+        user_id=current_user.id,
+        content=content,
+        is_voice_comment=data.get('is_voice_comment', False)
+    )
+    
+    db.session.add(comment)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': '评论发表成功',
+        'comment': comment.to_dict()
+    })
+
+
+@auth_bp.route('/comments/<int:comment_id>', methods=['DELETE'])
+@login_required
+def delete_comment(comment_id):
+    """删除评论（软删除）"""
+    from auth.models import Comment
+    
+    comment = Comment.query.get_or_404(comment_id)
+    
+    # 检查权限：只能删除自己的评论或自己作品的评论
+    from auth.models import Artwork
+    artwork = Artwork.query.get(comment.artwork_id)
+    
+    if comment.user_id != current_user.id and artwork.user_id != current_user.id:
+        return jsonify({'success': False, 'message': '无权限删除此评论'}), 403
+    
+    # 软删除
+    comment.is_deleted = True
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': '评论已删除'
+    })

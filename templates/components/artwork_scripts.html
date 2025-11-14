@@ -4,5 +4,14 @@
 <script src="{{ url_for('static', filename='js/model-viewer-3d.js') }}"></script>
 <!-- 统一的作品模态框功能 -->
 <script src="{{ url_for('static', filename='js/artwork-modal.js') }}"></script>
+<!-- 评论功能模块 -->
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <!-- 画廊页面功能(包含事件绑定) -->
 <script src="{{ url_for('static', filename='js/gallery.js') }}"></script>
+
+<!-- 设置当前用户ID (用于评论权限判断) -->
+{% if current_user.is_authenticated %}
+<script>
+    window.currentUserId = {{ current_user.id }};
+</script>
+{% endif %}

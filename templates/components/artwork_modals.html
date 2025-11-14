@@ -17,6 +17,53 @@
             <div class="artwork-detail-info" id="modalArtworkInfo">
                 <!-- 动态内容 -->
             </div>
+            
+            <!-- 评论区域 -->
+            <div class="artwork-comments-section" id="artworkCommentsSection">
+                <div class="comments-header">
+                    <h3><i class="fas fa-comments"></i> 评论</h3>
+                    <span class="comments-count" id="commentsCount">0</span>
+                </div>
+                
+                <!-- 评论输入框 (仅登录用户可见) -->
+                {% if current_user.is_authenticated %}
+                <div class="comment-input-container">
+                    <div class="comment-input-wrapper">
+                        <textarea 
+                            id="commentInput" 
+                            class="comment-textarea" 
+                            placeholder="说点什么吧...支持语音输入哦！" 
+                            maxlength="500"
+                            rows="3"></textarea>
+                        <div class="comment-char-count">
+                            <span id="commentCharCount">0</span>/500
+                        </div>
+                    </div>
+                    <div class="comment-actions">
+                        <button class="voice-comment-btn" id="voiceCommentBtn" title="语音输入">
+                            <i class="fas fa-microphone"></i>
+                            <span>语音输入</span>
+                        </button>
+                        <button class="submit-comment-btn" id="submitCommentBtn" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                            发表评论
+                        </button>
+                    </div>
+                </div>
+                {% else %}
+                <div class="comment-login-prompt">
+                    <i class="fas fa-lock"></i>
+                    <p>请<a href="{{ url_for('auth.login') }}">登录</a>后发表评论</p>
+                </div>
+                {% endif %}
+                
+                <!-- 评论列表 -->
+                <div class="comments-list" id="commentsList">
+                    <div class="comments-loading">
+                        <i class="fas fa-spinner fa-spin"></i> 加载评论中...
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

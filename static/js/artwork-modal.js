@@ -313,6 +313,13 @@ function showArtworkModal(element) {
     setTimeout(() => {
         artworkModal.classList.add('show');
     }, 10);
+    
+    // 初始化评论功能（如果评论模块已加载）
+    if (typeof initComments === 'function' && artworkData.id) {
+        setTimeout(() => {
+            initComments(artworkData.id);
+        }, 100);
+    }
 }
 
 function closeArtworkModal() {

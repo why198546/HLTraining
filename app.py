@@ -60,10 +60,8 @@ with app.app_context():
         print("数据库表创建成功")
     except Exception as e:
         print(f"数据库创建失败: {e}")
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# 确保上传目录存在
+# 确保上传目录存在（使用之前在第31行设置的绝对路径）
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # 创建数据库表

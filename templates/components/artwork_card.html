@@ -26,11 +26,11 @@
     <div class="artwork-card">
         <div class="artwork-image">
             {% if file_urls.colored_image %}
-                <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" loading="lazy">
+                <img src="{{ file_urls.colored_image }}" alt="{{ artwork.title }}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;placeholder-image&quot;><i class=&quot;fas fa-exclamation-triangle&quot;></i><p>图片加载失败</p></div>'">
             {% elif file_urls.figurine_image %}
-                <img src="{{ file_urls.figurine_image }}" alt="{{ artwork.title }}" loading="lazy">
+                <img src="{{ file_urls.figurine_image }}" alt="{{ artwork.title }}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;placeholder-image&quot;><i class=&quot;fas fa-exclamation-triangle&quot;></i><p>图片加载失败</p></div>'">
             {% elif file_urls.original_sketch %}
-                <img src="{{ file_urls.original_sketch }}" alt="{{ artwork.title }}" loading="lazy">
+                <img src="{{ file_urls.original_sketch }}" alt="{{ artwork.title }}" loading="lazy" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;placeholder-image&quot;><i class=&quot;fas fa-exclamation-triangle&quot;></i><p>图片加载失败</p></div>'">
             {% else %}
                 <div class="placeholder-image">
                     <i class="fas fa-image"></i>

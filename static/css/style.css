@@ -7597,6 +7597,324 @@ main {
     font-size: 1rem;
 }
 
+/* ============================================================
+   评论区域样式
+   ============================================================ */
+
+.artwork-comments-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.comments-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.comments-header h3 {
+    font-size: 1.3rem;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.comments-header h3 i {
+    color: #667eea;
+}
+
+.comments-count {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* 评论输入区域 */
+.comment-input-container {
+    background: rgba(248, 250, 252, 0.8);
+    border: 2px solid rgba(102, 126, 234, 0.2);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.comment-input-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.comment-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.comment-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+.comment-textarea::placeholder {
+    color: #9ca3af;
+}
+
+.comment-char-count {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.comment-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.voice-comment-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 25px;
+    color: #667eea;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.voice-comment-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.voice-comment-btn.recording {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-color: #ef4444;
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+.submit-comment-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-comment-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-comment-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 登录提示 */
+.comment-login-prompt {
+    text-align: center;
+    padding: 2rem;
+    background: rgba(248, 250, 252, 0.8);
+    border: 2px dashed #e5e7eb;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+}
+
+.comment-login-prompt i {
+    font-size: 2rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.comment-login-prompt p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.comment-login-prompt a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.comment-login-prompt a:hover {
+    text-decoration: underline;
+}
+
+/* 评论列表 */
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.comments-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+}
+
+.comments-empty {
+    text-align: center;
+    padding: 3rem;
+    color: #9ca3af;
+}
+
+.comments-empty i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* 单条评论 */
+.comment-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.comment-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.comment-user {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #667eea;
+}
+
+.comment-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.comment-nickname {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.95rem;
+}
+
+.comment-age {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+.comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.comment-time {
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.voice-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.comment-content {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.comment-actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #f3f4f6;
+}
+
+.comment-delete-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.8rem;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.comment-delete-btn:hover {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
 @keyframes modalSlideIn {
     from {
         opacity: 0;
