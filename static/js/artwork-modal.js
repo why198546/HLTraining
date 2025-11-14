@@ -298,8 +298,8 @@ function showArtworkModal(element) {
     `;
     
     // 显示模态框
-    const modal = document.getElementById('artworkModal');
-    if (!modal) {
+    const artworkModal = document.getElementById('artworkModal');
+    if (!artworkModal) {
         console.error('Artwork modal element not found');
         return;
     }
@@ -307,11 +307,11 @@ function showArtworkModal(element) {
     // 禁止背景滚动
     document.body.style.overflow = 'hidden';
     
-    modal.style.display = 'flex';
+    artworkModal.style.display = 'flex';
     
     // 添加显示类来触发CSS动画（使用setTimeout确保display生效后再添加类）
     setTimeout(() => {
-        modal.classList.add('show');
+        artworkModal.classList.add('show');
     }, 10);
 }
 

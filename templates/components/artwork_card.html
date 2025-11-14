@@ -39,11 +39,20 @@
             {% endif %}
             
             {% if show_privacy|default(false) %}
-                <!-- 公开/私密标签 -->
-                <div class="privacy-badge {{ 'public' if artwork.is_public else 'private' }}">
-                    <i class="fas {{ 'fa-globe' if artwork.is_public else 'fa-lock' }}"></i>
-                    {{ '公开' if artwork.is_public else '私密' }}
-                </div>
+                <!-- 公开/私密切换按钮 -->
+                {% if not artwork.is_public %}
+                    <div class="privacy-toggle-btn" 
+                         onclick="setArtworkPublic('{{ artwork.id }}', event)"
+                         title="点击设为公开">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                {% else %}
+                    <div class="privacy-toggle-btn public" 
+                         onclick="setArtworkPrivate('{{ artwork.id }}', event)"
+                         title="点击设为私密">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                {% endif %}
             {% endif %}
             
             {% if artwork.is_featured and show_author|default(true) %}
@@ -75,20 +84,7 @@
             {% if show_actions|default(false) %}
                 <!-- 作品操作按钮 -->
                 <div class="artwork-actions">
-                    {% if not artwork.is_public %}
-                        <button class="action-btn set-public-btn" 
-                                onclick="setArtworkPublic('{{ artwork.id }}', event)"
-                                title="设为公开">
-                            <i class="fas fa-globe"></i>
-                        </button>
-                    {% else %}
-                        <button class="action-btn set-private-btn" 
-                                onclick="setArtworkPrivate('{{ artwork.id }}', event)"
-                                title="设为私密">
-                            <i class="fas fa-lock"></i>
-                        </button>
-                    {% endif %}
-                    <button class="action-btn delete-btn" 
+                    <button class="artwork-delete-btn" 
                             onclick="deleteArtwork('{{ artwork.id }}', event)"
                             title="删除作品">
                         <i class="fas fa-trash"></i>
