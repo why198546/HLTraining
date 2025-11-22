@@ -624,13 +624,16 @@ def get_artwork_comments(artwork_id):
 @auth_bp.route('/artwork/<int:artwork_id>/comments', methods=['POST'])
 @login_required
 def create_comment(artwork_id):
-    """发表评论"""
-    from auth.models import Artwork, Comment
+    """创建评论"""
+    from auth.models import Comment, Artwork
+    from api.text_punctuation import add_punctuation_to_text
     
     artwork = Artwork.query.get_or_404(artwork_id)
     
     data = request.get_json()
     content = data.get('content', '').strip()
+    audio_file = data.get('audio_file')
+    is_voice_comment = data.get('is_voice_comment', False)
     
     if not content:
         return jsonify({'success': False, 'message': '评论内容不能为空'}), 400
@@ -638,21 +641,72 @@ def create_comment(artwork_id):
     if len(content) > 500:
         return jsonify({'success': False, 'message': '评论内容不能超过500字'}), 400
     
+    # 如果是语音评论，优化标点符号
+    if is_voice_comment:
+        try:
+            optimized_content = add_punctuation_to_text(content)
+            content = optimized_content
+            print(f"语音评论标点优化: {data.get('content')[:30]}... -> {content[:30]}...")
+        except Exception as e:
+            print(f"标点优化失败，使用原文: {str(e)}")
+            # 优化失败时使用原文
+    
     # 创建评论
     comment = Comment(
         artwork_id=artwork_id,
         user_id=current_user.id,
         content=content,
-        is_voice_comment=data.get('is_voice_comment', False)
+        audio_file=audio_file,
+        is_voice_comment=is_voice_comment
     )
+
+
+@auth_bp.route('/upload-comment-audio', methods=['POST'])
+@login_required
+def upload_comment_audio():
+    """上传评论音频文件"""
+    import os
+    from werkzeug.utils import secure_filename
     
-    db.session.add(comment)
-    db.session.commit()
+    if 'audio' not in request.files:
+        return jsonify({'success': False, 'message': '未找到音频文件'}), 400
+    
+    audio_file = request.files['audio']
+    
+    if audio_file.filename == '':
+        return jsonify({'success': False, 'message': '文件名为空'}), 400
+    
+    # 根据文件类型确定扩展名
+    content_type = audio_file.content_type
+    if 'webm' in content_type:
+        ext = 'webm'
+    elif 'ogg' in content_type:
+        ext = 'ogg'
+    elif 'mp4' in content_type or 'm4a' in content_type:
+        ext = 'm4a'
+    else:
+        ext = 'webm'  # 默认
+    
+    # 生成唯一文件名
+    timestamp = int(datetime.utcnow().timestamp())
+    filename = f'comment_audio_{current_user.id}_{timestamp}.{ext}'
+    
+    # 保存到uploads目录
+    upload_folder = current_app.config['UPLOAD_FOLDER']
+    filepath = os.path.join(upload_folder, filename)
+    audio_file.save(filepath)
+    
+    # 验证文件已保存
+    if not os.path.exists(filepath):
+        return jsonify({'success': False, 'message': '文件保存失败'}), 500
+    
+    file_size = os.path.getsize(filepath)
+    print(f'✅ 音频文件已保存: {filename}, 大小: {file_size} bytes')
     
     return jsonify({
         'success': True,
-        'message': '评论发表成功',
-        'comment': comment.to_dict()
+        'filename': filename,
+        'size': file_size
     })
 
 

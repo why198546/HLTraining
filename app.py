@@ -387,7 +387,28 @@ def simple_test():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     """提供上传的文件访问"""
-    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    from flask import send_file
+    import mimetypes
+    
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    # 为音频文件设置正确的MIME类型
+    if filename.startswith('comment_audio_'):
+        # 评论音频可能是多种格式
+        if filename.endswith('.m4a') or filename.endswith('.mp4'):
+            mimetype = 'audio/mp4'
+        elif filename.endswith('.webm'):
+            mimetype = 'audio/webm'
+        elif filename.endswith('.ogg'):
+            mimetype = 'audio/ogg'
+        else:
+            mimetype = 'audio/mpeg'
+    elif filename.endswith('.webm'):
+        mimetype = 'audio/webm'
+    else:
+        mimetype = mimetypes.guess_type(filename)[0]
+    
+    return send_file(filepath, mimetype=mimetype)
 
 @app.route('/models/<filename>')
 def model_file(filename):

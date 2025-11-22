@@ -7168,12 +7168,18 @@ main {
 .artwork-modal-body {
     padding: 1rem 2rem 2rem;
     display: flex;
+    flex-direction: column;
     gap: 2rem;
     max-height: 70vh;
     overflow-y: auto;
 }
 
-/* 双栏布局 */
+/* 顶部双栏布局 */
+.artwork-modal-content-wrapper {
+    display: flex;
+    gap: 2rem;
+}
+
 .artwork-detail-showcase {
     flex: 2;
     min-width: 0;
@@ -7602,7 +7608,7 @@ main {
    ============================================================ */
 
 .artwork-comments-section {
-    margin-top: 2rem;
+    width: 100%;
     padding-top: 2rem;
     border-top: 2px solid #e5e7eb;
 }
@@ -7801,32 +7807,34 @@ main {
 .comment-item {
     background: white;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 1.25rem;
+    border-radius: 8px;
+    padding: 0.75rem;
     transition: all 0.3s ease;
 }
 
 .comment-item:hover {
     border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
 .comment-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
 }
 
 .comment-user {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
 }
 
 .comment-avatar {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #667eea;
@@ -7834,56 +7842,156 @@ main {
 
 .comment-user-info {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.comment-content-inline {
+    color: #374151;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-left: 0.5rem;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+/* 行内音频播放器 */
+.comment-audio-inline {
+    margin-left: 0.5rem;
+    flex: 1;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.comment-audio-inline audio {
+    width: 100%;
+    height: 32px;
+    outline: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    filter: hue-rotate(0deg) saturate(1.2) brightness(1.1);
+}
+
+.comment-audio-inline audio::-webkit-media-controls-panel {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.comment-audio-inline audio::-webkit-media-controls-current-time-display,
+.comment-audio-inline audio::-webkit-media-controls-time-remaining-display {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.comment-audio-inline audio::-webkit-media-controls-play-button,
+.comment-audio-inline audio::-webkit-media-controls-mute-button {
+    filter: brightness(10);
+}
+
+.comment-audio-inline audio::-webkit-media-controls-timeline {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.comment-audio-inline audio::-webkit-media-controls-timeline::-webkit-slider-thumb {
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 语音转换的文本内容 */
+.comment-text-content {
+    color: #374151;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+    padding-left: 40px;
+    word-break: break-word;
 }
 
 .comment-nickname {
     font-weight: 600;
     color: #1f2937;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 }
 
 .comment-age {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: #9ca3af;
 }
 
 .comment-meta {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+    flex-shrink: 0;
 }
 
 .comment-time {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #9ca3af;
+}
+
+.comment-delete-btn {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.comment-delete-btn:hover {
+    color: #ef4444;
+    transform: scale(1.1);
 }
 
 .voice-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.4rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border-radius: 12px;
-    font-size: 0.75rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
     font-weight: 600;
 }
 
 .comment-content {
-    color: #374151;
-    line-height: 1.6;
-    margin-bottom: 0.5rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    display: none;
+}
+
+.comment-audio-player {
+    display: none;
+}
+
+.comment-audio-player audio {
+    width: 100%;
+    height: 28px;
+    outline: none;
+}
+
+.comment-voice-transcript {
+    display: none;
+}
+
+.comment-voice-transcript::before {
+    content: '📝 语音转文字：';
+    display: block;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 0.2rem;
+    font-size: 0.7rem;
 }
 
 .comment-actions-bar {
-    display: flex;
-    gap: 1rem;
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
+    display: none;
     border-top: 1px solid #f3f4f6;
 }
 
