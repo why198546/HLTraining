@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     {% include 'components/header.html' %}
 
@@ -53,12 +55,9 @@
 
                         <div class="prompt-input-container">
                             <div class="input-wrapper">
-                                <textarea 
-                                    id="creation-prompt" 
-                                    class="creation-input" 
+                                <textarea id="creation-prompt" class="creation-input"
                                     placeholder="例如：一只可爱的小猫咪，戴着红色的帽子，坐在彩虹上...&#10;&#10;你可以只用文字描述，也可以上传图片作为参考！"
-                                    rows="4"
-                                ></textarea>
+                                    rows="4"></textarea>
                                 <div class="action-buttons">
                                     <button class="add-image-btn" onclick="toggleImageMenu()" title="添加图片">
                                         <i class="fas fa-plus"></i>
@@ -78,12 +77,15 @@
                                             <span>图片链接</span>
                                         </div>
                                     </div>
-                                    <button class="voice-input-btn" id="voice-input-btn" onclick="startVoiceInput()" title="语音输入">
+                                    <button class="voice-input-btn" id="voice-input-btn" onclick="startVoiceInput()"
+                                        title="语音输入">
                                         <i class="fas fa-microphone"></i>
                                     </button>
                                 </div>
-                                <input type="file" id="reference-image" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
-                                <input type="file" id="camera-capture" accept="image/*" capture="environment" style="display: none;" onchange="handleCameraCapture(event)">
+                                <input type="file" id="reference-image" accept="image/*" style="display: none;"
+                                    onchange="handleImageUpload(event)">
+                                <input type="file" id="camera-capture" accept="image/*" capture="environment"
+                                    style="display: none;" onchange="handleCameraCapture(event)">
                             </div>
                             <div class="input-hint">
                                 💡 <strong>创作小贴士：</strong>可以描述颜色、形状、表情、背景等细节，或上传线稿图片
@@ -91,42 +93,48 @@
                             <div class="input-hint safari-voice-hint" id="safari-voice-hint" style="display: none;">
                                 🎤 <strong>Safari用户提示：</strong>由于浏览器安全策略，每次使用语音功能都需要点击"允许"。推荐使用Chrome浏览器获得更好体验。
                             </div>
-                            
+
                             <!-- 提示词示例 -->
                             <div class="prompt-examples">
                                 <h4><i class="fas fa-lightbulb"></i> 热门角色提示词</h4>
                                 <div class="examples-grid">
-                                    <div class="example-card" onclick="fillPrompt('一个勇敢的奥特曼战士，身穿银色和红色战斗服，胸前有彩色计时器，双手摆出战斗姿势，背景是蓝天白云')">
+                                    <div class="example-card"
+                                        onclick="fillPrompt('一个勇敢的奥特曼战士，身穿银色和红色战斗服，胸前有彩色计时器，双手摆出战斗姿势，背景是蓝天白云')">
                                         <div class="example-icon">🦸‍♂️</div>
                                         <h5>奥特曼</h5>
                                         <p>勇敢的宇宙战士</p>
                                     </div>
-                                    
-                                    <div class="example-card" onclick="fillPrompt('汪汪队的Chase警犬，穿着蓝色警察制服，戴着警帽，坐在警车旁边，表情认真专注，阳光明媚的冒险湾背景')">
+
+                                    <div class="example-card"
+                                        onclick="fillPrompt('汪汪队的Chase警犬，穿着蓝色警察制服，戴着警帽，坐在警车旁边，表情认真专注，阳光明媚的冒险湾背景')">
                                         <div class="example-icon">🐕‍🦺</div>
                                         <h5>汪汪队</h5>
                                         <p>英勇的救援小狗</p>
                                     </div>
-                                    
-                                    <div class="example-card" onclick="fillPrompt('名侦探柯南，穿着蓝色西装和红色领结，戴着眼镜，手持放大镜，表情聪明自信，神秘的侦探场景背景')">
+
+                                    <div class="example-card"
+                                        onclick="fillPrompt('名侦探柯南，穿着蓝色西装和红色领结，戴着眼镜，手持放大镜，表情聪明自信，神秘的侦探场景背景')">
                                         <div class="example-icon">🔍</div>
                                         <h5>柯南</h5>
                                         <p>聪明的小侦探</p>
                                     </div>
-                                    
-                                    <div class="example-card" onclick="fillPrompt('皮卡丘，黄色的身体，红色脸颊，尖尖的耳朵，可爱的大眼睛，开心的笑容，在绿色草地上奔跑，蓝天白云背景')">
+
+                                    <div class="example-card"
+                                        onclick="fillPrompt('皮卡丘，黄色的身体，红色脸颊，尖尖的耳朵，可爱的大眼睛，开心的笑容，在绿色草地上奔跑，蓝天白云背景')">
                                         <div class="example-icon">⚡</div>
                                         <h5>皮卡丘</h5>
                                         <p>电气小精灵</p>
                                     </div>
-                                    
-                                    <div class="example-card" onclick="fillPrompt('HelloKitty，白色的小猫咪，粉色的蝴蝶结，圆圆的大眼睛，甜美的笑容，坐在粉色的花朵中，梦幻的彩虹背景')">
+
+                                    <div class="example-card"
+                                        onclick="fillPrompt('HelloKitty，白色的小猫咪，粉色的蝴蝶结，圆圆的大眼睛，甜美的笑容，坐在粉色的花朵中，梦幻的彩虹背景')">
                                         <div class="example-icon">🎀</div>
                                         <h5>HelloKitty</h5>
                                         <p>可爱的小猫咪</p>
                                     </div>
-                                    
-                                    <div class="example-card" onclick="fillPrompt('超级马里奥，红色帽子和衣服，蓝色背带裤，棕色胡子，跳跃的姿势，手里拿着金币，蘑菇王国的城堡背景')">
+
+                                    <div class="example-card"
+                                        onclick="fillPrompt('超级马里奥，红色帽子和衣服，蓝色背带裤，棕色胡子，跳跃的姿势，手里拿着金币，蘑菇王国的城堡背景')">
                                         <div class="example-icon">🍄</div>
                                         <h5>马里奥</h5>
                                         <p>超级水管工</p>
@@ -136,7 +144,7 @@
                         </div>
 
                         <!-- 上传的图片预览 -->
-                        
+
                         <div class="generation-options">
                             <div class="option-group">
                                 <label>图片风格：</label>
@@ -145,6 +153,7 @@
                                     <option value="realistic">写实风格</option>
                                     <option value="anime">动漫风格</option>
                                     <option value="fantasy">奇幻风格</option>
+                                    <option value="model_3d">3D模型专用</option>
                                 </select>
                             </div>
                             <div class="option-group">
@@ -175,8 +184,19 @@
                                     <option value="9:16">竖长屏 (9:16)</option>
                                 </select>
                             </div>
+                            <div class="option-group" id="3d-mode-group" style="display: none;">
+                                <label>3D生成模式：</label>
+                                <select id="3d-mode" class="style-select">
+                                    <option value="single">单图模式（仅正视图）</option>
+                                    <option value="multi">多视角模式（正反左右）</option>
+                                </select>
+                                <small style="display: block; margin-top: 4px; color: #666; font-size: 0.85em;">
+                                    单图模式：生成1张正视图，纯色背景<br>
+                                    多视角模式：生成4张图（正、反、左、右），保证角色一致性
+                                </small>
+                            </div>
                         </div>
-                        
+
                         <button id="generate-image" class="generate-btn">
                             <i class="fas fa-wand-magic-sparkles"></i>
                             生成图片
@@ -197,7 +217,7 @@
                         <div class="generated-image-container">
                             <img id="generated-image" src="" alt="AI生成的图片">
                         </div>
-                        
+
                         <!-- 右侧版本缩略图网格 -->
                         <div class="thumbnails-grid">
                             <div class="thumbnail-slot">
@@ -220,7 +240,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- 版本管理面板 -->
                     <div class="versions-panel-inline">
                         <div class="versions-panel-header">
@@ -242,7 +262,7 @@
                             点击选择你最喜欢的版本，然后继续到下一步
                         </div>
                     </div>
-                    
+
                     <!-- 全宽生成更多按钮（已移至缩略图第6个槽位） -->
                     <div class="full-width-generate" style="display: none;">
                         <button class="full-width-generate-btn" onclick="generateMoreImages()">
@@ -250,7 +270,7 @@
                             生成更多
                         </button>
                     </div>
-                    
+
                     <!-- 快速调整按钮 -->
                     <div class="quick-adjust-buttons">
                         <h4><i class="fas fa-magic"></i> 快速调整</h4>
@@ -285,12 +305,8 @@
                     <!-- 自定义调整输入 -->
                     <div class="custom-adjust-section">
                         <h4><i class="fas fa-edit"></i> 自定义调整</h4>
-                        <textarea 
-                            id="adjustment-prompt" 
-                            class="adjustment-input" 
-                            placeholder="例如：让颜色更鲜艳一些，改变背景为森林，添加彩虹效果..."
-                            rows="3"
-                        ></textarea>
+                        <textarea id="adjustment-prompt" class="adjustment-input"
+                            placeholder="例如：让颜色更鲜艳一些，改变背景为森林，添加彩虹效果..." rows="3"></textarea>
                     </div>
 
                     <!-- 主要操作按钮 -->
@@ -320,12 +336,8 @@
                     <!-- 3D模型提示词输入 -->
                     <div class="model-prompt-section">
                         <h4><i class="fas fa-magic"></i> 3D模型生成提示词（可选）</h4>
-                        <textarea 
-                            id="model-prompt" 
-                            class="model-prompt-input" 
-                            placeholder="例如：制作成Q版风格，增加金属质感，让姿态更加动感..."
-                            rows="2"
-                        ></textarea>
+                        <textarea id="model-prompt" class="model-prompt-input"
+                            placeholder="例如：制作成Q版风格，增加金属质感，让姿态更加动感..." rows="2"></textarea>
                         <div class="prompt-tips">
                             <i class="fas fa-lightbulb"></i>
                             <span>提示：可以描述希望的风格、材质、姿态等特征来优化3D模型效果</span>
@@ -337,7 +349,9 @@
                         <div class="final-image-section">
                             <h4><i class="fas fa-image"></i> 原始图片</h4>
                             <div class="image-preview-container">
-                                <img id="final-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3E正在加载图片...%3C/text%3E%3C/svg%3E" alt="最终确认的图片" style="display: block;">
+                                <img id="final-image"
+                                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3E正在加载图片...%3C/text%3E%3C/svg%3E"
+                                    alt="最终确认的图片" style="display: block;">
                             </div>
                         </div>
 
@@ -362,7 +376,7 @@
                                             <i class="fas fa-braille"></i>
                                         </button>
                                     </div>
-                                    
+
                                     <!-- 材质设置 -->
                                     <div class="control-group-vertical">
                                         <div class="control-title">
@@ -380,7 +394,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 3D模型容器 -->
                                 <div class="model-container" id="modelContainer">
                                     <div class="model-placeholder">
@@ -388,7 +402,7 @@
                                         <p>点击下方按钮生成3D模型</p>
                                     </div>
                                 </div>
-                                
+
                                 <!-- 右侧控制面板 -->
                                 <div class="right-controls-panel" id="rightControlsPanel" style="display: none;">
                                     <!-- 环境设置 -->
@@ -402,11 +416,11 @@
                                         </button>
                                         <div class="light-control">
                                             <i class="fas fa-lightbulb"></i>
-                                            <input type="range" id="lightIntensity" min="0" max="2" step="0.1" value="0.8" 
-                                                   class="vertical-slider" title="光照强度">
+                                            <input type="range" id="lightIntensity" min="0" max="2" step="0.1"
+                                                value="0.8" class="vertical-slider" title="光照强度">
                                         </div>
                                     </div>
-                                    
+
                                     <!-- 模型操作 -->
                                     <div class="control-group-vertical">
                                         <div class="control-title">
@@ -437,7 +451,7 @@
                             <i class="fas fa-cube"></i>
                             生成3D模型
                         </button>
-                        
+
                         <div class="model-actions" id="model-actions" style="display: none;">
                             <button class="control-btn" id="rotateModel">
                                 <i class="fas fa-sync-alt"></i>
@@ -461,36 +475,36 @@
                     </div>
                 </div>
 
-                    <!-- 完成操作 -->
-                    <div class="final-actions" style="display: none;" id="final-actions">
-                        <div class="action-buttons-grid">
-                            <!-- 主要操作 -->
-                            <div class="primary-actions">
-                                <button class="save-artwork-btn primary-action" onclick="showSaveArtworkDialog()">
-                                    <i class="fas fa-heart"></i>
-                                    <span>保存到作品集</span>
-                                </button>
-                                <button class="share-btn primary-action" onclick="shareCreation()">
-                                    <i class="fas fa-share-alt"></i>
-                                    <span>分享我的创作</span>
-                                </button>
-                            </div>
-                            
-                            <!-- 辅助操作 -->
-                            <div class="secondary-actions">
-                                <button class="download-btn secondary-action" onclick="downloadImage()">
-                                    <i class="fas fa-download"></i>
-                                    <span>下载图片</span>
-                                </button>
-                                <button class="new-creation-btn secondary-action" onclick="startNewCreation()">
-                                    <i class="fas fa-plus-circle"></i>
-                                    <span>创建新作品</span>
-                                </button>
-                            </div>
+                <!-- 完成操作 -->
+                <div class="final-actions" style="display: none;" id="final-actions">
+                    <div class="action-buttons-grid">
+                        <!-- 主要操作 -->
+                        <div class="primary-actions">
+                            <button class="save-artwork-btn primary-action" onclick="showSaveArtworkDialog()">
+                                <i class="fas fa-heart"></i>
+                                <span>保存到作品集</span>
+                            </button>
+                            <button class="share-btn primary-action" onclick="shareCreation()">
+                                <i class="fas fa-share-alt"></i>
+                                <span>分享我的创作</span>
+                            </button>
+                        </div>
+
+                        <!-- 辅助操作 -->
+                        <div class="secondary-actions">
+                            <button class="download-btn secondary-action" onclick="downloadImage()">
+                                <i class="fas fa-download"></i>
+                                <span>下载图片</span>
+                            </button>
+                            <button class="new-creation-btn secondary-action" onclick="startNewCreation()">
+                                <i class="fas fa-plus-circle"></i>
+                                <span>创建新作品</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </main>
 
@@ -500,7 +514,7 @@
             <div class="loading-spinner"></div>
             <div class="loading-text">AI正在创作中...</div>
             <div class="loading-subtitle">请稍等片刻，好作品值得等待 ✨</div>
-            
+
             <!-- 3D模型生成进度条 -->
             <div id="progress-container" style="display: none;">
                 <div class="progress-bar-container">
@@ -528,7 +542,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div class="modal-body">
                 <div class="artwork-preview">
                     <div class="preview-item">
@@ -540,16 +554,17 @@
                         <img id="preview-generated" src="" alt="生成图片">
                     </div>
                 </div>
-                
+
                 <div class="artwork-form">
                     <div class="form-group">
                         <label for="artwork-title">作品标题 *</label>
                         <div class="input-with-loading">
-                            <input type="text" id="artwork-title" placeholder="AI正在生成标题..." maxlength="50" required readonly>
+                            <input type="text" id="artwork-title" placeholder="AI正在生成标题..." maxlength="50" required
+                                readonly>
                             <i class="fas fa-spinner fa-spin loading-icon" id="title-loading"></i>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="artwork-category">作品分类</label>
                         <div class="input-with-loading">
@@ -565,18 +580,19 @@
                         </div>
                         <small>AI建议的分类，可以手动修改</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="artwork-description">作品介绍</label>
                         <div class="input-with-loading">
-                            <textarea id="artwork-description" placeholder="AI正在创作小故事..." maxlength="500" rows="5"></textarea>
+                            <textarea id="artwork-description" placeholder="AI正在创作小故事..." maxlength="500"
+                                rows="5"></textarea>
                             <i class="fas fa-spinner fa-spin loading-icon" id="description-loading"></i>
                         </div>
                         <small>AI生成的创意小故事，可以自由编辑，最多500字</small>
                     </div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button class="secondary-btn" onclick="closeSaveArtworkDialog()">取消</button>
                 <button class="primary-btn" onclick="saveArtworkToGallery()">
@@ -599,13 +615,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="image-url-input">图片链接地址</label>
-                    <input 
-                        type="url" 
-                        id="image-url-input" 
-                        class="url-input" 
-                        placeholder="https://example.com/image.jpg"
-                        onkeypress="if(event.key==='Enter') loadImageFromUrl()"
-                    >
+                    <input type="url" id="image-url-input" class="url-input" placeholder="https://example.com/image.jpg"
+                        onkeypress="if(event.key==='Enter') loadImageFromUrl()">
                     <small style="color: #666; display: block; margin-top: 0.5rem;">
                         请粘贴图片的完整网址，支持 JPG、PNG、GIF 等格式
                     </small>
@@ -627,10 +638,10 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
+
     <!-- 语音输入模块 -->
     <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
-    
+
     <!-- 内联版本管理器 -->
     <script src="{{ url_for('static', filename='js/inline-version-manager.js') }}"></script>
     <!-- 3D模型查看器模块 -->
@@ -638,4 +649,5 @@
     <!-- 创作页面JavaScript -->
     <script src="{{ url_for('static', filename='js/create.js') }}"></script>
 </body>
+
 </html>

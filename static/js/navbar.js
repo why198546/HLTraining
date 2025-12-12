@@ -64,4 +64,31 @@ document.addEventListener('DOMContentLoaded', function() {
         
         lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
     }, false);
+    
+    // 自动高亮当前页面的导航链接
+    function setActiveNavLink() {
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        navLinks.forEach(link => {
+            const linkPath = new URL(link.href).pathname;
+            
+            // 移除所有active类
+            link.classList.remove('active');
+            
+            // 精确匹配或首页特殊处理
+            if (linkPath === currentPath || 
+                (currentPath === '/' && linkPath === '/') ||
+                (currentPath.startsWith('/create') && linkPath.includes('create')) ||
+                (currentPath.startsWith('/gallery') && linkPath.includes('gallery')) ||
+                (currentPath.startsWith('/tutorial') && linkPath.includes('tutorial')) ||
+                (currentPath.startsWith('/video') && linkPath.includes('video')) ||
+                (currentPath.startsWith('/auth') && linkPath.includes('auth'))) {
+                link.classList.add('active');
+            }
+        });
+    }
+    
+    // 页面加载时设置激活状态
+    setActiveNavLink();
 });

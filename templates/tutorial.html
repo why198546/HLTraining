@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body>
     {% include 'components/header.html' %}
 
@@ -64,13 +66,14 @@
                         <i class="fas fa-book"></i>
                         详细教程
                     </h2>
-                    
+
                     <div class="tutorial-tabs">
                         <button class="tab-button active" data-tab="creation">创作方式</button>
                         <button class="tab-button" data-tab="drawing">绘制技巧</button>
                         <button class="tab-button" data-tab="upload">上传指南</button>
                         <button class="tab-button" data-tab="ai">AI处理</button>
                         <button class="tab-button" data-tab="video">视频生成</button>
+                        <button class="tab-button" data-tab="styles">风格指南</button>
                     </div>
 
                     <div class="tab-content active" id="creation">
@@ -376,6 +379,107 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="tab-content" id="styles">
+                        <h3>图片风格指南</h3>
+                        <p class="section-intro">我们在创作时提供了四种独特的艺术风格，同一种描述在不同风格下会有完全不同的视觉效果。来看看它们的区别吧！</p>
+
+                        <div class="style-comparison-grid">
+                            <div class="style-card">
+                                <div class="style-image">
+                                    <img src="{{ url_for('static', filename='images/styles/style_cute_ultraman.png') }}"
+                                        alt="可爱卡通风格示例">
+                                    <div class="style-badge">可爱卡通</div>
+                                </div>
+                                <div class="style-info">
+                                    <h4>Cute Cartoon</h4>
+                                    <p>色彩明亮，线条简单圆润，充满童趣。适合创作可爱的动物、Q版角色和温馨的场景。</p>
+                                    <div class="style-tags">
+                                        <span>#童趣</span>
+                                        <span>#明亮</span>
+                                        <span>#Q版</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="style-card">
+                                <div class="style-image">
+                                    <img src="{{ url_for('static', filename='images/styles/style_realistic_ultraman.png') }}"
+                                        alt="写实风格示例">
+                                    <div class="style-badge">写实风格</div>
+                                </div>
+                                <div class="style-info">
+                                    <h4>Realistic</h4>
+                                    <p>追求真实的光影和质感，像照片一样逼真。适合创作风景、建筑和真实的动物肖像。</p>
+                                    <div class="style-tags">
+                                        <span>#逼真</span>
+                                        <span>#光影</span>
+                                        <span>#细节</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="style-card">
+                                <div class="style-image">
+                                    <img src="{{ url_for('static', filename='images/styles/style_anime_ultraman.png') }}"
+                                        alt="动漫风格示例">
+                                    <div class="style-badge">动漫风格</div>
+                                </div>
+                                <div class="style-info">
+                                    <h4>Anime</h4>
+                                    <p>典型的日式动漫风格，色彩鲜艳，人物美型，具有独特的二次元美感。适合创作角色插画。</p>
+                                    <div class="style-tags">
+                                        <span>#二次元</span>
+                                        <span>#鲜艳</span>
+                                        <span>#插画</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="style-card">
+                                <div class="style-image">
+                                    <img src="{{ url_for('static', filename='images/styles/style_fantasy_ultraman.png') }}"
+                                        alt="奇幻风格示例">
+                                    <div class="style-badge">奇幻风格</div>
+                                </div>
+                                <div class="style-info">
+                                    <h4>Fantasy</h4>
+                                    <p>充满魔法和想象力的风格，常带有发光效果和梦幻的氛围。适合创作魔法生物和异世界场景。</p>
+                                    <div class="style-tags">
+                                        <span>#魔法</span>
+                                        <span>#梦幻</span>
+                                        <span>#特效</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="style-card">
+                                <div class="style-image">
+                                    <img src="{{ url_for('static', filename='images/styles/style_3d_model_ultraman.png') }}"
+                                        alt="3D模型专用风格示例">
+                                    <div class="style-badge">3D模型专用</div>
+                                </div>
+                                <div class="style-info">
+                                    <h4>3D Model Ready</h4>
+                                    <p>专为3D建模优化的风格，特点是纯色背景、单一主体、无干扰元素。适合后续生成高质量3D模型。</p>
+                                    <div class="style-tags">
+                                        <span>#纯净背景</span>
+                                        <span>#单主体</span>
+                                        <span>#3D准备</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="style-tips-box">
+                            <h4><i class="fas fa-lightbulb"></i> 选择建议</h4>
+                            <ul>
+                                <li>想要画可爱的宠物？首选 <strong>可爱卡通</strong></li>
+                                <li>想要设计游戏角色？尝试 <strong>动漫风格</strong> 或 <strong>奇幻风格</strong></li>
+                                <li>想要描绘真实的风景？使用 <strong>写实风格</strong></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 常见问题 -->
@@ -579,4 +683,5 @@
 
     <script src="{{ url_for('static', filename='js/tutorial.js') }}"></script>
 </body>
+
 </html>

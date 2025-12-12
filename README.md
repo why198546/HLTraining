@@ -8,7 +8,10 @@
 - **简笔画上传** - 支持多种图片格式，拖拽式上传体验
 - **AI智能上色** - 使用Google Gemini 2.5 Flash Image为简笔画智能上色
 - **手办风格转换** - 生成精美的手办风格图片
-- **3D模型生成** - 通过Hunyuan3D API将2D图像转换为3D模型
+- **3D模型生成** - 支持两种引擎：
+  - **SAM 3D (Meta)** - 最新的单图3D重建技术
+  - **Hunyuan3D** - 稳定可靠的3D生成引擎
+- **智能引擎切换** - 自动降级和并行对比功能
 - **交互式3D预览** - 使用Three.js技术实现360度模型查看
 - **作品展示** - 精美的作品画廊和社区分享功能
 - **教育内容** - 寓教于乐的AI知识学习模块
@@ -16,12 +19,14 @@
 ## 📚 文档
 
 - [Nano Banana 实现文档](NANO_BANANA_IMPLEMENTATION.md) - 详细的功能实现和使用指南
+- [SAM 3D 集成文档](docs/SAM3D_INTEGRATION.md) - SAM 3D 集成指南和API使用说明
 - [API 设置指南](GEMINI_API_SETUP.md) - Gemini API 配置说明
 - [项目完成报告](PROJECT_COMPLETION_REPORT.md) - 项目成就和升级总结
 
 ## 🚀 技术栈
 
 ### 后端
+
 - **Python Flask** - Web应用框架
 - **Google Generative AI** - Gemini 2.5 Flash Image (Nano Banana) API 集成
 - **Pillow** - 图像处理库
@@ -30,14 +35,17 @@
 - **Python Dotenv** - 环境变量管理
 
 ### 前端
+
 - **HTML5** - 语义化结构
 - **CSS3** - 现代样式设计
 - **JavaScript (ES6+)** - 交互逻辑
 - **Three.js** - 3D图形渲染
 
 ### AI服务
+
 - **Google Gemini 2.5 Flash Image (Nano Banana)** - 智能图像生成、上色和风格转换
 - **OpenCV** - 本地图像处理（备用方案）
+- **SAM 3D (Meta)** - 单图3D物体重建（实验性）
 - **Hunyuan3D API** - 基于轮廓的3D模型生成
 
 ## ✅ Nano Banana 功能状态
@@ -105,12 +113,14 @@ python app.py
 ### 详细步骤
 
 ### 1. 克隆项目
+
 ```bash
 git clone https://github.com/why198546/HLTraining.git
 cd HLTraining
 ```
 
 ### 2. 创建虚拟环境（推荐）
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
@@ -119,12 +129,15 @@ venv\Scripts\activate     # Windows
 ```
 
 ### 3. 安装依赖
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### 4. 配置API密钥
+
 设置环境变量：
+
 ```bash
 # 获取 Gemini API 密钥: https://aistudio.google.com/app/apikey
 export GEMINI_API_KEY="your-gemini-api-key-here"
@@ -137,6 +150,7 @@ cp .env.example .env
 **注意:** 没有 API 密钥时，系统会自动使用备用方案（基于 OpenCV 的本地处理）。
 
 ### 5. 运行应用
+
 ```bash
 python app.py
 ```
@@ -144,6 +158,7 @@ python app.py
 应用将在 `http://localhost:5001` 启动。
 
 ### 6. 运行测试（可选）
+
 ```bash
 # 测试 Nano Banana 功能
 python test_nano_banana_functionality.py
@@ -155,6 +170,7 @@ python test_api_endpoints.py
 ## 🎯 使用指南
 
 ### 儿童用户
+
 1. **准备简笔画** - 在纸上画一个简单的图案
 2. **拍照上传** - 用手机或相机拍摄简笔画并上传
 3. **等待AI处理** - 系统自动进行图像预处理、上色和3D生成
@@ -162,6 +178,7 @@ python test_api_endpoints.py
 5. **下载分享** - 保存作品并与朋友分享
 
 ### 开发者
+
 - 查看 `api/` 目录了解AI服务集成
 - 修改 `static/css/style.css` 调整界面样式
 - 编辑 `templates/` 目录下的HTML文件修改页面结构
@@ -170,13 +187,16 @@ python test_api_endpoints.py
 ## 🔧 API集成
 
 ### Google Gemini 2.5 Flash Image API
+
 使用最先进的Gemini模型进行智能图像处理：
+
 - `colorize_sketch()` - 智能为简笔画上色，理解图像内容
 - `generate_figurine_style()` - 生成逼真的手办风格图片
 - **配置要求**：需要Google AI API密钥
 - **备用方案**：如果Gemini不可用，自动切换到OpenCV本地处理
 
 #### 设置Gemini API密钥
+
 ```bash
 # 方法1: 环境变量（推荐）
 export GEMINI_API_KEY='your-api-key-here'
@@ -186,7 +206,9 @@ python setup_gemini_api.py
 ```
 
 ### Hunyuan3D API  
+
 基于图像轮廓生成3D模型：
+
 - `generate_3d_model()` - 从2D图像轮廓生成GLTF 3D模型
 - `optimize_for_web()` - 优化模型以适合Web显示
 - 支持Three.js实时预览
@@ -194,18 +216,21 @@ python setup_gemini_api.py
 ## 🎨 设计理念
 
 ### 儿童友好
+
 - 色彩鲜明的界面设计
 - 简单直观的操作流程
 - 有趣的动画效果
 - 友好的错误提示
 
 ### 教育性
+
 - AI技术知识普及
 - 创作过程可视化
 - 激发创造力和想象力
 - 培养对技术的兴趣
 
 ### 安全性
+
 - 文件类型和大小限制
 - 用户输入验证
 - 错误处理和恢复
@@ -223,18 +248,21 @@ python setup_gemini_api.py
 ## 🌟 主要功能
 
 ### 主页 (index.html)
+
 - 项目介绍和功能展示
 - 文件上传界面
 - 处理进度显示
 - 结果展示区域
 
 ### 作品展示 (gallery.html)
+
 - 精选作品展示
 - 分类筛选功能
 - 互动点赞系统
 - 创作灵感分享
 
 ### 使用教程 (tutorial.html)
+
 - 详细使用指南
 - AI技术科普
 - 常见问题解答
@@ -243,16 +271,19 @@ python setup_gemini_api.py
 ## 🚧 注意事项
 
 ### 开发环境
-- Python 3.8+ 
+
+- Python 3.8+
 - 现代浏览器 (Chrome, Firefox, Safari)
 - 稳定的网络连接（用于API调用）
 
 ### API限制
+
 - 请确保有效的API密钥
 - 注意API调用频率限制
 - 处理超时和失败情况
 
 ### 文件管理
+
 - 定期清理uploads和models目录
 - 监控磁盘空间使用
 - 实现文件过期删除机制
@@ -272,6 +303,7 @@ python setup_gemini_api.py
 ## 📞 联系我们
 
 如有问题或建议，请通过以下方式联系：
+
 - 创建 Issue
 - 发送邮件至技术支持团队
 - 查看项目Wiki获取更多信息

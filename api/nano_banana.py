@@ -47,7 +47,8 @@ class NanoBananaAPI:
                     'cute': '可爱卡通风格',
                     'realistic': '写实风格',
                     'anime': '日式动漫风格',
-                    'fantasy': '奇幻风格'
+                    'fantasy': '奇幻风格',
+                    'model_3d': '3D模型专用风格，单独的主体，纯色背景，不含零碎的干扰物，高清晰度，三视图风格'
                 }
                 
                 # 色彩偏好映射
@@ -415,7 +416,8 @@ class NanoBananaAPI:
                     'cute': '可爱卡通风格',
                     'realistic': '写实风格',
                     'anime': '日式动漫风格',
-                    'fantasy': '奇幻风格'
+                    'fantasy': '奇幻风格',
+                    'model_3d': '3D模型专用风格，单独的主体，纯色背景，不含零碎的干扰物，高清晰度，三视图风格'
                 }
                 
                 # 色彩偏好映射
@@ -429,8 +431,26 @@ class NanoBananaAPI:
                 style_desc = style_prompts.get(style, style_prompts['cute'])
                 color_desc = color_prompts.get(color_preference, color_prompts['colorful'])
                 
-                # 简化的提示词构建，保持原始意图
-                image_prompt = f"{text_prompt}, {style_desc}, {color_desc}, 适合儿童观看的内容"
+                # 对于3D模型风格，强制移除背景描述
+                if style == 'model_3d':
+                    # 移除常见的背景关键词
+                    background_keywords = ['背景', '场景', '环境', '在...上', '在...里', '周围', '旁边']
+                    clean_prompt = text_prompt
+                    for keyword in background_keywords:
+                        if keyword in clean_prompt:
+                            # 简单处理：如果包含背景关键词，尝试提取主体
+                            parts = clean_prompt.split('，')
+                            clean_parts = [p for p in parts if not any(k in p for k in background_keywords)]
+                            if clean_parts:
+                                clean_prompt = '，'.join(clean_parts)
+                            break
+                    
+                    # 强制纯白色背景
+                    image_prompt = f"{clean_prompt}, {style_desc}, 纯白色背景，完全没有任何背景元素，角色居中，完整身体，正面视角"
+                    print(f"🎯 3D模式 - 清理后的提示词: {image_prompt}")
+                else:
+                    # 简化的提示词构建，保持原始意图
+                    image_prompt = f"{text_prompt}, {style_desc}, {color_desc}, 适合儿童观看的内容"
             
             print(f"📝 最终提示词: {image_prompt}")
             
@@ -674,4 +694,209 @@ class NanoBananaAPI:
             if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg or "quota" in error_msg.lower():
                 print("⚠️ API配额已耗尽，请稍后再试")
             
+            return None
+
+    def split_multi_view_image(self, image_path):
+        """将2x2网格图片分割成4个独立的视角图片
+        
+        Args:
+            image_path: 包含4个视角的网格图片路径
+            
+        Returns:
+            dict: {'front': path, 'back': path, 'left': path, 'right': path}
+        """
+        try:
+            print(f"🔪 开始分割多视角网格图片: {image_path}")
+            
+            # 加载图片
+            img = Image.open(image_path)
+            width, height = img.size
+            print(f"📐 原图尺寸: {width}x{height}")
+            
+            # 计算每个象限的尺寸
+            half_width = width // 2
+            half_height = height // 2
+            
+            # 定义裁剪区域 (left, top, right, bottom)
+            # 2x2布局：左上=正面，右上=背面，左下=左侧，右下=右侧
+            crop_boxes = {
+                'front': (0, 0, half_width, half_height),                    # 左上
+                'back': (half_width, 0, width, half_height),                 # 右上
+                'left': (0, half_height, half_width, height),                # 左下
+                'right': (half_width, half_height, width, height)            # 右下
+            }
+            
+            results = {}
+            timestamp = int(time.time())
+            
+            for view_name, box in crop_boxes.items():
+                print(f"✂️ 裁剪{view_name}视角: {box}")
+                
+                # 裁剪象限
+                quadrant = img.crop(box)
+                
+                # 保存裁剪后的图片
+                filename = f"view_{view_name}_{timestamp}.png"
+                output_path = os.path.join(self.upload_folder, filename)
+                quadrant.save(output_path)
+                
+                results[view_name] = output_path
+                print(f"💾 {view_name}视角已保存: {output_path}")
+            
+            print(f"✅ 成功分割为4个视角图片")
+            return results
+            
+        except Exception as e:
+            print(f"❌ 图片分割错误: {str(e)}")
+            return None
+
+    def generate_multi_view_images(self, text_prompt, color_preference="colorful", aspect_ratio="1:1"):
+        """生成多视角图片（正、反、左、右）用于3D建模
+        
+        新方法：生成一张2x2网格图片包含所有4个视角，然后自动分割
+        这样可以确保角色完美一致性
+        
+        Args:
+            text_prompt: 角色描述（背景描述会被忽略）
+            color_preference: 色彩偏好
+            aspect_ratio: 高宽比（将被设置为1:1以适应2x2网格）
+            
+        Returns:
+            dict: {'front': path, 'back': path, 'left': path, 'right': path} 或 None
+        """
+        try:
+            print(f"🎨 开始生成多视角网格图片用于3D建模...")
+            print(f"📝 角色描述: {text_prompt}")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 提取角色主体描述，忽略背景
+            background_keywords = ['背景', '场景', '环境', '在...上', '在...里', '周围', '旁边']
+            clean_prompt = text_prompt
+            for keyword in background_keywords:
+                if keyword in clean_prompt:
+                    parts = clean_prompt.split('，')
+                    clean_parts = [p for p in parts if not any(k in p for k in background_keywords)]
+                    if clean_parts:
+                        clean_prompt = '，'.join(clean_parts)
+                    break
+            
+            print(f"🎯 清理后的角色描述: {clean_prompt}")
+            
+            # 构建2x2网格布局提示词
+            grid_prompt = f"""Character turnaround reference sheet in 2x2 grid layout.
+{clean_prompt}
+
+LAYOUT REQUIREMENTS:
+- 2x2 grid showing the SAME SINGLE character from 4 different angles
+- Top-left: front view (正面视角)
+- Top-right: back view (背面视角)
+- Bottom-left: left side view (左侧面视角)
+- Bottom-right: right side view (右侧面视角)
+
+CHARACTER REQUIREMENTS:
+- ONLY ONE character, same character in all 4 views
+- Solo figure, isolated subject, no duplicates, no group
+- Pure white background for all 4 views
+- Professional 3D model reference sheet style
+- Character centered in each view, full body visible
+- Maintain perfect character consistency across all views
+
+STYLE:
+- 3D模型专用风格
+- 纯白色背景，完全没有任何背景元素
+- 高清晰度，专业角色设定集风格
+- 适合3D建模使用
+
+CRITICAL: All 4 views must show the EXACT SAME character, just from different angles.
+禁止出现多个不同的角色，必须是同一个角色的4个视角。"""
+            
+            print(f"📝 网格提示词: {grid_prompt}")
+            
+            # 生成2x2网格图片
+            max_retries = 3
+            retry_count = 0
+            last_error = None
+            image_data = None
+            
+            while retry_count < max_retries and not image_data:
+                try:
+                    retry_count += 1
+                    print(f"🔥 尝试生成网格图片 {retry_count}/{max_retries}...")
+                    
+                    contents = [
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_text(text=grid_prompt),
+                            ],
+                        ),
+                    ]
+                    
+                    # 使用1:1比例以适应2x2网格
+                    generate_content_config = types.GenerateContentConfig(
+                        response_modalities=["IMAGE"],
+                        image_config=types.ImageConfig(
+                            aspect_ratio="1:1",
+                        ),
+                    )
+                    
+                    # 使用stream方式获取响应
+                    for chunk in self.client.models.generate_content_stream(
+                        model="gemini-2.5-flash-image",
+                        contents=contents,
+                        config=generate_content_config,
+                    ):
+                        if (
+                            chunk.candidates is None
+                            or chunk.candidates[0].content is None
+                            or chunk.candidates[0].content.parts is None
+                        ):
+                            continue
+                        
+                        # 检查是否有图像数据
+                        if (chunk.candidates[0].content.parts[0].inline_data and 
+                            chunk.candidates[0].content.parts[0].inline_data.data):
+                            inline_data = chunk.candidates[0].content.parts[0].inline_data
+                            image_data = inline_data.data
+                            print(f"✅ 网格图片生成成功!")
+                            break
+                    
+                    if image_data:
+                        # 保存网格图片
+                        timestamp = int(time.time())
+                        grid_filename = f"multiview_grid_{timestamp}.png"
+                        grid_path = os.path.join(self.upload_folder, grid_filename)
+                        
+                        with open(grid_path, 'wb') as f:
+                            f.write(image_data)
+                        
+                        print(f"💾 网格图片已保存: {grid_path}")
+                        
+                        # 分割网格图片为4个独立视角
+                        split_results = self.split_multi_view_image(grid_path)
+                        
+                        if split_results:
+                            print(f"🎉 多视角图片生成完成!")
+                            return split_results
+                        else:
+                            last_error = "图片分割失败"
+                    else:
+                        last_error = "响应中没有图像数据"
+                        
+                except Exception as e:
+                    last_error = str(e)
+                    print(f"⚠️ 尝试 {retry_count} 失败: {last_error}")
+                    if retry_count < max_retries:
+                        print(f"⏳ 等待3秒后重试...")
+                        time.sleep(3)
+            
+            # 所有重试都失败
+            print(f"❌ 多视角图片生成失败: {last_error}")
+            return None
+            
+        except Exception as e:
+            print(f"❌ 多视角图片生成错误: {str(e)}")
             return None

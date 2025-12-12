@@ -137,6 +137,163 @@ class Hunyuan3DGenerator:
             print(f"❌ AI3D API调用错误: {str(e)}")
             return None
     
+    def generate_3d_model_multi_view(self, view_images):
+        """从多视角图片生成3D模型（使用专业版API）
+        
+        Args:
+            view_images: dict with keys 'front', 'back', 'left', 'right'
+        
+        Returns:
+            str: 3D模型文件路径
+        """
+        try:
+            print("🎯 开始生成3D模型（多视角模式）...")
+            
+            # 检查AI3D API是否可用
+            if not self.client:
+                raise Exception("❌ 腾讯云AI3D服务不可用，请检查API密钥配置")
+            
+            # 使用腾讯云AI3D Pro API生成3D模型
+            model_path = self._generate_with_ai3d_pro_api(view_images)
+            if model_path:
+                return model_path
+            
+            # API调用失败，抛出错误
+            raise Exception("❌ 腾讯云AI3D Pro服务调用失败，请稍后重试")
+            
+        except Exception as e:
+            print(f"❌ 多视角3D模型生成错误: {str(e)}")
+            raise e
+    
+    def _generate_with_ai3d_pro_api(self, view_images):
+        """使用腾讯云AI3D Pro API生成3D模型（多视角）"""
+        try:
+            print("🚀 调用腾讯云AI3D Pro API（多视角）...")
+            
+            # 检查客户端和模型是否可用
+            if not self.client or not hasattr(self, 'models'):
+                raise Exception("AI3D客户端未初始化")
+            
+            # 准备ViewImages数组
+            view_images_array = []
+            view_type_mapping = {
+                'front': 'Front',
+                'back': 'Back',
+                'left': 'Left',
+                'right': 'Right'
+            }
+            
+            # 获取服务器地址用于构建图片URL
+            # 假设图片已经在uploads文件夹中，可以通过HTTP访问
+            base_url = "http://127.0.0.1:8088"  # 根据实际服务器地址调整
+            
+            for view_key, view_type in view_type_mapping.items():
+                image_path = view_images.get(view_key)
+                if not image_path:
+                    raise Exception(f"缺少{view_key}视角图片")
+                
+                # 将本地路径转换为URL
+                # image_path格式: uploads/view_front_xxx.png
+                if image_path.startswith('uploads/'):
+                    image_url = f"{base_url}/{image_path}"
+                elif image_path.startswith('/uploads/'):
+                    image_url = f"{base_url}{image_path}"
+                else:
+                    image_url = f"{base_url}/uploads/{os.path.basename(image_path)}"
+                
+                view_images_array.append({
+                    "ViewType": view_type,
+                    "ImageUrl": image_url
+                })
+            
+            print(f"✅ 已准备{len(view_images_array)}个视角的图片")
+            print(f"📝 ViewImages: {view_images_array}")
+            
+            # 创建请求对象（专业版）
+            req = self.models.SubmitHunyuanTo3DProJobRequest()
+            params = {
+                "ViewImages": view_images_array,
+                "ResultFormat": "GLB"  # 生成模型的格式
+            }
+            req.from_json_string(json.dumps(params))
+            
+            # 提交3D生成任务
+            resp = self.client.SubmitHunyuanTo3DProJob(req)
+            result = json.loads(resp.to_json_string())
+            
+            if 'JobId' in result:
+                job_id = result['JobId']
+                print(f"✅ 多视角3D生成任务已提交，JobId: {job_id}")
+                
+                # 轮询任务状态（使用Pro版本的查询接口）
+                model_url = self._poll_pro_job_status(job_id)
+                if model_url:
+                    # 下载模型文件
+                    return self._download_3d_model(model_url, view_images['front'])
+            
+            return None
+            
+        except TencentCloudSDKException as e:
+            print(f"❌ 腾讯云SDK错误: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ AI3D Pro API调用错误: {str(e)}")
+            return None
+    
+    def _poll_pro_job_status(self, job_id, max_attempts=30):
+        """轮询专业版任务状态"""
+        try:
+            # 检查客户端和模型是否可用
+            if not self.client or not hasattr(self, 'models'):
+                raise Exception("AI3D客户端未初始化")
+            
+            for attempt in range(max_attempts):
+                print(f"⏳ 检查任务状态... ({attempt + 1}/{max_attempts})")
+                
+                # 查询任务状态（专业版）
+                req = self.models.QueryHunyuanTo3DProJobRequest()
+                params = {"JobId": job_id}
+                req.from_json_string(json.dumps(params))
+                
+                resp = self.client.QueryHunyuanTo3DProJob(req)
+                result = json.loads(resp.to_json_string())
+                
+                if 'Status' in result:
+                    status = result['Status']
+                    print(f"📊 任务状态: {status}")
+                    
+                    if status in ['SUCCESS', 'DONE']:
+                        # 检查是否有模型文件
+                        result_files = result.get('ResultFile3Ds', [])
+                        if result_files:
+                            model_url = result_files[0].get('Url', '')
+                            print(f"🎉 多视角3D模型生成完成: {model_url}")
+                            return model_url
+                        else:
+                            model_url = result.get('ModelUrl', '')
+                            if model_url:
+                                print(f"🎉 多视角3D模型生成完成: {model_url}")
+                                return model_url
+                            else:
+                                print("❌ 3D模型生成完成但未找到下载链接")
+                                return None
+                    elif status in ['FAILED', 'ERROR']:
+                        error_msg = result.get('ErrorMessage', '生成失败')
+                        print(f"❌ 多视角3D模型生成失败: {error_msg}")
+                        return None
+                    elif status in ['PROCESSING', 'PENDING', 'RUN', 'RUNNING']:
+                        time.sleep(10)  # 等待10秒后重试
+                        continue
+                
+                time.sleep(5)  # 短暂等待
+            
+            print("⏰ 任务查询超时")
+            return None
+            
+        except Exception as e:
+            print(f"❌ 任务状态查询错误: {str(e)}")
+            return None
+    
     def _poll_job_status(self, job_id, max_attempts=30):
         """轮询任务状态"""
         try:

@@ -5,6 +5,10 @@ let currentStage = 1;
 let generatedImageUrl = '';
 let uploadedImageFile = null;
 
+// 多视角图片存储（用于3D模型生成）
+let multiViewImages = null; // {front: url, back: url, left: url, right: url}
+let selectedViewForEdit = null; // 当前选中要编辑的视角 ('front', 'back', 'left', 'right')
+
 // 3D模型相关全局变量
 let createModelViewer = null;
 
@@ -159,6 +163,19 @@ function initializeCreatePage() {
 
     // 绑定3D模型控制面板事件
     initModelControlsPanel();
+
+    // 监听风格选择器变化，显示/隐藏3D模式选择器
+    const styleSelect = document.getElementById('image-style');
+    const mode3DGroup = document.getElementById('3d-mode-group');
+    if (styleSelect && mode3DGroup) {
+        styleSelect.addEventListener('change', function() {
+            if (this.value === 'model_3d') {
+                mode3DGroup.style.display = 'block';
+            } else {
+                mode3DGroup.style.display = 'none';
+            }
+        });
+    }
 
     // 设置初始阶段
     showStage(1);
@@ -321,8 +338,9 @@ async function generateImage() {
     const prompt = document.getElementById('creation-prompt').value.trim();
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
-    const expertMode = document.getElementById('expert-mode').checked; // 获取expert模式状态
-    const aspectRatio = document.getElementById('aspect-ratio').value; // 获取高宽比
+    const expertMode = document.getElementById('expert-mode').checked;
+    const aspectRatio = document.getElementById('aspect-ratio').value;
+    const mode3D = document.getElementById('3d-mode')?.value; // 获取3D模式
 
     // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
     if (!prompt && !uploadedImageFile && !originalImagePath) {
@@ -330,6 +348,14 @@ async function generateImage() {
         return;
     }
 
+    // 检查是否是多视角模式
+    if (style === 'model_3d' && mode3D === 'multi') {
+        // 调用多视角生成
+        await generateMultiViewImages(prompt, colorPreference, aspectRatio);
+        return;
+    }
+
+    // 单图模式（包括普通风格和3D单图模式）
     showLoadingOverlay('AI正在创作中...');
 
     try {
@@ -337,8 +363,8 @@ async function generateImage() {
         formData.append('prompt', prompt);
         formData.append('style', style);
         formData.append('color_preference', colorPreference);
-        formData.append('expert_mode', expertMode); // 添加expert模式参数
-        formData.append('aspect_ratio', aspectRatio); // 添加高宽比参数
+        formData.append('expert_mode', expertMode);
+        formData.append('aspect_ratio', aspectRatio);
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
@@ -426,6 +452,96 @@ async function generateImage() {
     }
 }
 
+// 生成多视角图片
+async function generateMultiViewImages(prompt, colorPreference, aspectRatio) {
+    showLoadingOverlay('正在生成多视角图片（正、反、左、右）...');
+
+    try {
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('color_preference', colorPreference);
+        formData.append('aspect_ratio', aspectRatio);
+        
+        // 添加会话ID
+        if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
+            formData.append('session_id', window.inlineVersionManager.currentSessionId);
+        } else if (window.versionManager && window.versionManager.currentSessionId) {
+            formData.append('session_id', window.versionManager.currentSessionId);
+        }
+
+        const response = await fetch('/generate-multi-view', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.images) {
+            // 显示多视角结果
+            displayMultiViewResults(result.images);
+            
+            hideLoadingOverlay();
+            showMessage('多视角图片生成成功！', 'success');
+            showStage(2);
+        } else {
+            hideLoadingOverlay();
+            showMessage(`生成失败: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        hideLoadingOverlay();
+        showMessage('网络错误，请重试', 'error');
+        console.error('Error:', error);
+    }
+}
+
+// 显示多视角结果
+function displayMultiViewResults(images) {
+    const generatedImageEl = document.getElementById('generated-image');
+    if (!generatedImageEl) return;
+    
+    // 存储多视角图片用于3D模型生成
+    multiViewImages = {
+        front: images.front,
+        back: images.back,
+        left: images.left,
+        right: images.right
+    };
+    console.log('✅ 多视角图片已存储:', multiViewImages);
+    
+    // 创建多视角网格显示 - 添加可点击功能
+    const multiViewHTML = `
+        <div class="multi-view-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div class="view-item" data-view="front" onclick="selectViewForEdit('front')" style="cursor: pointer; position: relative;">
+                <img src="${images.front}" alt="正面视角" style="width: 100%; border-radius: 8px; border: 3px solid transparent; transition: border-color 0.3s;">
+                <p style="text-align: center; margin-top: 0.5rem; font-weight: bold;">正面</p>
+            </div>
+            <div class="view-item" data-view="back" onclick="selectViewForEdit('back')" style="cursor: pointer; position: relative;">
+                <img src="${images.back}" alt="背面视角" style="width: 100%; border-radius: 8px; border: 3px solid transparent; transition: border-color 0.3s;">
+                <p style="text-align: center; margin-top: 0.5rem; font-weight: bold;">背面</p>
+            </div>
+            <div class="view-item" data-view="left" onclick="selectViewForEdit('left')" style="cursor: pointer; position: relative;">
+                <img src="${images.left}" alt="左侧视角" style="width: 100%; border-radius: 8px; border: 3px solid transparent; transition: border-color 0.3s;">
+                <p style="text-align: center; margin-top: 0.5rem; font-weight: bold;">左侧</p>
+            </div>
+            <div class="view-item" data-view="right" onclick="selectViewForEdit('right')" style="cursor: pointer; position: relative;">
+                <img src="${images.right}" alt="右侧视角" style="width: 100%; border-radius: 8px; border: 3px solid transparent; transition: border-color 0.3s;">
+                <p style="text-align: center; margin-top: 0.5rem; font-weight: bold;">右侧</p>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                <i class="fas fa-info-circle"></i> 提示：点击任意视角图片可选中并单独调整
+            </p>
+        </div>
+    `;
+    
+    // 替换单图显示为多视角网格
+    generatedImageEl.outerHTML = `<div id="generated-image">${multiViewHTML}</div>`;
+    
+    // 保存第一张图片URL用于后续操作
+    generatedImageUrl = images.front;
+}
+
 // 重新生成图片
 function regenerateImage() {
     generateImage();
@@ -448,11 +564,39 @@ function showAdjustPanel() {
 
 // 确认图片（进入3D模型生成）
 function confirmImage() {
-    // 确保final-image显示当前生成的图片
-    const finalImageEl = document.getElementById('final-image');
-    if (finalImageEl && generatedImageUrl) {
-        finalImageEl.src = generatedImageUrl;
-        finalImageEl.style.display = 'block';
+    // 检查是否有多视角图片
+    if (multiViewImages) {
+        // 多视角模式：显示所有4张图片
+        const finalImageSection = document.querySelector('.final-image-section .image-preview-container');
+        if (finalImageSection) {
+            finalImageSection.innerHTML = `
+                <div class="multi-view-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div class="view-item">
+                        <img src="${multiViewImages.front}" alt="正面视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">正面</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.back}" alt="背面视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">背面</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.left}" alt="左侧视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">左侧</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.right}" alt="右侧视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">右侧</p>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        // 单图模式：确保final-image显示当前生成的图片
+        const finalImageEl = document.getElementById('final-image');
+        if (finalImageEl && generatedImageUrl) {
+            finalImageEl.src = generatedImageUrl;
+            finalImageEl.style.display = 'block';
+        }
     }
     
     // 显示final-actions（包含保存按钮）
@@ -510,6 +654,42 @@ function skipAdjustment() {
     showStage(3);
 }
 
+// 选择要编辑的视角
+function selectViewForEdit(viewName) {
+    if (!multiViewImages) {
+        showMessage('没有多视角图片', 'error');
+        return;
+    }
+    
+    selectedViewForEdit = viewName;
+    console.log(`✅ 选中视角: ${viewName}`);
+    
+    // 更新视觉反馈 - 高亮选中的视角
+    const viewItems = document.querySelectorAll('.view-item');
+    viewItems.forEach(item => {
+        const img = item.querySelector('img');
+        if (item.dataset.view === viewName) {
+            // 选中状态：蓝色边框
+            img.style.borderColor = '#4CAF50';
+            img.style.boxShadow = '0 0 10px rgba(76, 175, 80, 0.5)';
+        } else {
+            // 未选中状态：透明边框
+            img.style.borderColor = 'transparent';
+            img.style.boxShadow = 'none';
+        }
+    });
+    
+    // 更新提示信息
+    const viewNameMap = {
+        'front': '正面',
+        'back': '背面',
+        'left': '左侧',
+        'right': '右侧'
+    };
+    showMessage(`已选中${viewNameMap[viewName]}视角，可在下方输入调整提示`, 'info');
+}
+
+// 应用调整
 // 应用调整
 async function applyAdjustment() {
     const adjustmentPrompt = document.getElementById('adjustment-prompt').value.trim();
@@ -519,6 +699,14 @@ async function applyAdjustment() {
         return;
     }
 
+    // 检查是否是多视角模式且有选中的视角
+    if (multiViewImages && selectedViewForEdit) {
+        // 多视角单独编辑模式
+        await adjustSingleView(selectedViewForEdit, adjustmentPrompt);
+        return;
+    }
+
+    // 单图模式
     if (!generatedImageUrl) {
         showMessage('没有找到要调整的图片', 'error');
         console.error('❌ generatedImageUrl 为空');
@@ -528,12 +716,12 @@ async function applyAdjustment() {
     showLoadingOverlay('正在调整图片...');
 
     try {
-        const expertMode = document.getElementById('expert-mode').checked; // 获取expert模式状态
+        const expertMode = document.getElementById('expert-mode').checked;
         
         const formData = new FormData();
         formData.append('current_image', generatedImageUrl);
         formData.append('adjust_prompt', adjustmentPrompt);
-        formData.append('expert_mode', expertMode); // 添加expert模式参数
+        formData.append('expert_mode', expertMode);
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
@@ -590,6 +778,85 @@ async function applyAdjustment() {
     }
 }
 
+// 调整单个视角
+async function adjustSingleView(viewName, adjustmentPrompt) {
+    if (!multiViewImages || !multiViewImages[viewName]) {
+        showMessage('视角图片不存在', 'error');
+        return;
+    }
+
+    const viewNameMap = {
+        'front': '正面',
+        'back': '背面',
+        'left': '左侧',
+        'right': '右侧'
+    };
+
+    showLoadingOverlay(`正在调整${viewNameMap[viewName]}视角...`);
+
+    try {
+        const expertMode = document.getElementById('expert-mode').checked;
+        
+        const formData = new FormData();
+        formData.append('current_image', multiViewImages[viewName]);
+        formData.append('adjust_prompt', adjustmentPrompt);
+        formData.append('expert_mode', expertMode);
+        
+        // 添加会话ID
+        if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
+            formData.append('session_id', window.inlineVersionManager.currentSessionId);
+        } else if (window.versionManager && window.versionManager.currentSessionId) {
+            formData.append('session_id', window.versionManager.currentSessionId);
+        }
+        
+        // 添加版本备注
+        const versionNote = `调整${viewNameMap[viewName]}：${adjustmentPrompt}`;
+        formData.append('version_note', versionNote);
+
+        const response = await fetch('/adjust-image', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 更新multiViewImages中的对应视角
+            multiViewImages[viewName] = result.image_url;
+            
+            // 更新显示
+            const viewItem = document.querySelector(`.view-item[data-view="${viewName}"]`);
+            if (viewItem) {
+                const img = viewItem.querySelector('img');
+                if (img) {
+                    img.src = result.image_url;
+                }
+            }
+            
+            // 通知版本管理器刷新
+            if (window.inlineVersionManager) {
+                window.inlineVersionManager.onGenerationComplete();
+            } else if (window.versionManager) {
+                window.versionManager.onGenerationComplete();
+            }
+            
+            hideLoadingOverlay();
+            showMessage(`${viewNameMap[viewName]}视角调整成功！`, 'success');
+            
+            // 清空调整输入
+            document.getElementById('adjustment-prompt').value = '';
+            
+        } else {
+            hideLoadingOverlay();
+            showMessage(`调整失败: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        hideLoadingOverlay();
+        showMessage('网络错误，请重试', 'error');
+        console.error('Error:', error);
+    }
+}
+
 // 生成3D模型
 async function generate3DModel() {
     if (!generatedImageUrl) {
@@ -600,11 +867,39 @@ async function generate3DModel() {
     // 切换到第3阶段（3D模型生成阶段）
     showStage(3);
     
-    // 确保final-image在开始3D生成时就显示正确的图片
-    const finalImageEl = document.getElementById('final-image');
-    if (finalImageEl && generatedImageUrl) {
-        finalImageEl.src = generatedImageUrl;
-        finalImageEl.style.display = 'block';
+    // 检查是否有多视角图片并显示
+    if (multiViewImages) {
+        // 多视角模式：显示所有4张图片
+        const finalImageSection = document.querySelector('.final-image-section .image-preview-container');
+        if (finalImageSection) {
+            finalImageSection.innerHTML = `
+                <div class="multi-view-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                    <div class="view-item">
+                        <img src="${multiViewImages.front}" alt="正面视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">正面</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.back}" alt="背面视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">背面</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.left}" alt="左侧视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">左侧</p>
+                    </div>
+                    <div class="view-item">
+                        <img src="${multiViewImages.right}" alt="右侧视角" style="width: 100%; border-radius: 8px;">
+                        <p style="text-align: center; margin-top: 0.25rem; font-size: 0.85em; font-weight: bold;">右侧</p>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        // 单图模式：确保final-image显示正确的图片
+        const finalImageEl = document.getElementById('final-image');
+        if (finalImageEl && generatedImageUrl) {
+            finalImageEl.src = generatedImageUrl;
+            finalImageEl.style.display = 'block';
+        }
     }
 
     showLoadingOverlay('正在生成3D模型，预计需要2-3分钟...');
@@ -612,7 +907,21 @@ async function generate3DModel() {
 
     try {
         const formData = new FormData();
-        formData.append('image_path', generatedImageUrl);
+        
+        // 检查是否有多视角图片
+        if (multiViewImages) {
+            console.log('🎨 使用多视角模式生成3D模型');
+            // 传递所有4个视角的图片
+            formData.append('multi_view', 'true');
+            formData.append('front_image', multiViewImages.front);
+            formData.append('back_image', multiViewImages.back);
+            formData.append('left_image', multiViewImages.left);
+            formData.append('right_image', multiViewImages.right);
+        } else {
+            console.log('🎨 使用单图模式生成3D模型');
+            // 单图模式
+            formData.append('image_path', generatedImageUrl);
+        }
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {

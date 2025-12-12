@@ -19,3 +19,9 @@ PyMySQL>=1.1.0
 oss2>=2.18.0
 openai>=1.0.0
 
+# SAM 3D Integration (Hugging Face方案)
+huggingface-hub>=0.20.0
+gradio-client>=0.10.0
+trimesh>=4.0.0
+pygltflib>=1.16.0
+
