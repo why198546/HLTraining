@@ -2,8 +2,10 @@
 <header class="header">
     <nav class="navbar">
         <div class="nav-brand">
-            <i class="fas fa-magic"></i>
-            <span>AI创意工坊</span>
+            <span class="nav-logo-text">
+                <img src="{{ url_for('static', filename='image/logo.gif') }}" alt="松果AI" class="nav-logo-img">
+                <span class="logo-text">松果AI</span>
+            </span>
         </div>
         <ul class="nav-menu">
             <li><a href="{{ url_for('index') }}" class="nav-link {{ 'active' if request.endpoint == 'index' }}">首页</a></li>

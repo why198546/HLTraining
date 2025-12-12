@@ -6,6 +6,7 @@ let currentStep = 0; // 0: 输入, 1: 图片生成, 2: 调整, 3: 3D模型生成
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+    setupSplash();
 });
 
 // 初始化应用
@@ -13,6 +14,32 @@ function initializeApp() {
     setupEventListeners();
     updateFlowSteps();
     console.log('应用初始化完成');
+}
+
+// 设置首页GIF引导页
+function setupSplash() {
+    const splash = document.getElementById('splash');
+    const splashGif = document.getElementById('splash-gif');
+    const mainContent = document.getElementById('main-content');
+
+    if (!splash || !splashGif || !mainContent) return;
+
+    // 如果本会话已经看过引导页，则直接显示主内容
+    const seen = sessionStorage.getItem('splashSeen');
+    if (seen === '1') {
+        splash.style.display = 'none';
+        mainContent.style.display = 'block';
+        return;
+    }
+
+    // 点击GIF本身隐藏引导页，显示主页内容，并记录本会话
+    splashGif.addEventListener('click', () => {
+        sessionStorage.setItem('splashSeen', '1');
+        // Remove splash from DOM so it doesn't interfere with layout or events
+        splash.remove();
+        mainContent.style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    });
 }
 
 // 设置事件监听器

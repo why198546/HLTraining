@@ -2064,7 +2064,7 @@ if __name__ == '__main__':
     
     # 只在主进程显示启动信息（避免调试模式重复输出）
     if not os.environ.get('WERKZEUG_RUN_MAIN'):
-        print("🚀 儿童AI培训网站启动中...")
+        print("🚀 松果AI平台启动中...")
         print("📝 功能特色:")
         print("   - 用户管理系统：注册、登录、家长验证")
         print("   - 统一创作界面：文字+图片混合输入")

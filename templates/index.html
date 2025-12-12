@@ -3,163 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI创意工坊 - 儿童版</title>
+    <title>松果AI - 儿童版</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     {% include 'components/header.html' %}
 
-    <main>
+    <!-- 全屏GIF引导页 -->
+    <div id="splash" class="splash" aria-hidden="false">
+        <img src="{{ url_for('static', filename='image/banner.gif') }}" alt="松果AI 欢迎动画" class="splash-gif" id="splash-gif">
+    </div>
+
+    <main id="main-content" style="display:none;">
         <!-- 首页介绍 -->
         <section id="home" class="hero">
             <div class="hero-content">
-                <h1 class="hero-title">欢迎来到AI创意工坊！</h1>
+                <img src="{{ url_for('static', filename='image/banner.gif') }}" alt="松果AI 动画" class="hero-banner hero-banner-large">
+                <h1 class="hero-title">欢迎来到松果AI！</h1>
                 <p class="hero-subtitle">让AI帮你将创意变为现实，简单几步创作精美作品</p>
-                
-                <!-- 功能介绍卡片 -->
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">🎨</div>
-                        <h3>AI绘图</h3>
-                        <p>用文字描述你的想法，AI帮你画出来</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <div class="color-palette-icon">
-                                <div class="palette-base">
-                                    <div class="color-dot color-red"></div>
-                                    <div class="color-dot color-blue"></div>
-                                    <div class="color-dot color-yellow"></div>
-                                    <div class="color-dot color-green"></div>
-                                    <div class="color-dot color-purple"></div>
-                                    <div class="palette-brush">
-                                        <i class="fas fa-paint-brush"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <h3>线稿上色</h3>
-                        <p>上传手绘线稿，AI自动上色美化</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">🧊</div>
-                        <h3>3D模型</h3>
-                        <p>从2D图片生成立体3D模型</p>
-                    </div>
+
+                <!-- 课程入口、练习入口、作品展示、松果简介 -->
+                <div class="hero-actions">
+                    <a class="hero-card hero-course" href="{{ url_for('tutorial') }}">
+                        <span class="card-icon"><i class="fas fa-book-open"></i></span>
+                        <span class="card-title">课程入口</span>
+                        <span class="card-desc">从入门到进阶的AI课程</span>
+                    </a>
+                    <a class="hero-card hero-practice" href="{{ url_for('create') }}">
+                        <span class="card-icon"><i class="fas fa-pencil-alt"></i></span>
+                        <span class="card-title">练习入口</span>
+                        <span class="card-desc">上传线稿，开始AI创作练习</span>
+                    </a>
+                    <a class="hero-card hero-gallery" href="{{ url_for('gallery') }}">
+                        <span class="card-icon"><i class="fas fa-images"></i></span>
+                        <span class="card-title">作品展示</span>
+                        <span class="card-desc">浏览大家的精彩AI作品</span>
+                    </a>
+                    <a class="hero-card hero-about" href="#about">
+                        <span class="card-icon"><i class="fas fa-info-circle"></i></span>
+                        <span class="card-title">松果简介</span>
+                        <span class="card-desc">了解松果AI与项目特色</span>
+                    </a>
                 </div>
                 
-                <!-- 开始创作按钮 -->
-                <div class="cta-section">
-                    <button class="start-creation-btn" onclick="goToCreatePage()">
-                        <i class="fas fa-magic"></i>
-                        开始创作
-                    </button>
-                    <p class="cta-subtitle">点击开始你的AI创作之旅</p>
-                </div>
+                <!-- 功能介绍卡片（已移除，根据需求隐藏） -->
+                
+                <!-- 中间部分仅保留四个入口，移除CTA按钮 -->
             </div>
         </section>
 
-        <!-- 作品展示区域 -->
-        <section id="gallery-preview" class="gallery-section">
-            <div class="container">
-                <h2 class="section-title">
-                    <i class="fas fa-images"></i>
-                    精彩作品展示
-                </h2>
-                <p class="section-subtitle">看看其他小朋友用AI创作的精美作品</p>
-                
-                <div class="gallery-grid">
-                    {% if latest_artworks %}
-                        {% for artwork in latest_artworks %}
-                        {% set file_urls = artwork.get_file_urls() %}
-                        <div class="gallery-item">
-                            <div class="gallery-image">
-                                {% if file_urls.colored_image %}
-                                <img src="{{ file_urls.colored_image }}" 
-                                     alt="{{ artwork.title }}"
-                                     loading="lazy">
-                                {% elif file_urls.figurine_image %}
-                                <img src="{{ file_urls.figurine_image }}" 
-                                     alt="{{ artwork.title }}"
-                                     loading="lazy">
-                                {% else %}
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                    <span>{{ artwork.title }}</span>
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class="gallery-info">
-                                <h4>{{ artwork.title }}</h4>
-                                <p>{{ artwork.author.nickname }}，{{ artwork.author.age }}岁</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <!-- 默认展示示例作品 -->
-                        <div class="gallery-item">
-                            <div class="gallery-image">
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                    <span>示例作品1</span>
-                                </div>
-                            </div>
-                            <div class="gallery-info">
-                                <h4>可爱的彩虹猫咪</h4>
-                                <p>小明，8岁</p>
-                            </div>
-                        </div>
-                        
-                        <div class="gallery-item">
-                            <div class="gallery-image">
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                    <span>示例作品2</span>
-                                </div>
-                            </div>
-                            <div class="gallery-info">
-                                <h4>梦幻城堡</h4>
-                                <p>小红，10岁</p>
-                            </div>
-                        </div>
-                        
-                        <div class="gallery-item">
-                            <div class="gallery-image">
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                    <span>示例作品3</span>
-                                </div>
-                            </div>
-                            <div class="gallery-info">
-                                <h4>太空飞船</h4>
-                                <p>小刚，12岁</p>
-                            </div>
-                        </div>
-                        
-                        <div class="gallery-item">
-                            <div class="gallery-image">
-                                <div class="placeholder-image">
-                                    <i class="fas fa-image"></i>
-                                    <span>示例作品4</span>
-                                </div>
-                            </div>
-                            <div class="gallery-info">
-                                <h4>神奇森林</h4>
-                                <p>小花，9岁</p>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-                
-                <div class="gallery-more">
-                    <a href="/gallery" class="view-more-btn">
-                        <i class="fas fa-arrow-right"></i>
-                        查看更多作品
-                    </a>
-                </div>
-            </div>
-        </section>
+        <!-- 作品展示区域移除，仅保留中间部分 -->
                 
 
             </div>

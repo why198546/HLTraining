@@ -1,8 +1,115 @@
+/* Fullscreen splash overlay */
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: linear-gradient(180deg, #5b6bd9 0%, #5a86e3 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-gif {
+    width: 100%;
+    height: 100vh;
+    object-fit: contain;
+    cursor: pointer;
+}
+
+#main-content {
+    display: none;
+}
 /* 全局样式 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* Hero横幅GIF样式 */
+.hero-banner {
+    width: 100%;
+    height: auto;
+    margin: 0 0 20px 0;
+    border-radius: 0;
+    display: block;
+}
+
+/* Enlarged hero GIF */
+.hero-banner-large {
+    width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+}
+
+/* Hero action cards under GIF */
+.hero-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.hero-card {
+    background: #ffffff;
+    color: #333;
+    border-radius: 16px;
+    padding: 16px 20px;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.hero-card .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.hero-card .card-desc {
+    font-size: 14px;
+    color: #666;
+}
+
+.hero-card .card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.hero-course .card-icon { background: #6C9EFF; }
+.hero-practice .card-icon { background: #FF7BA9; }
+.hero-gallery .card-icon { background: #7CD197; }
+.hero-about .card-icon { background: #FDBD4D; }
+
+.hero-course:hover { box-shadow: 0 10px 24px rgba(108,158,255,0.35); }
+.hero-practice:hover { box-shadow: 0 10px 24px rgba(255,123,169,0.35); }
+.hero-gallery:hover { box-shadow: 0 10px 24px rgba(124,209,151,0.35); }
+.hero-about:hover { box-shadow: 0 10px 24px rgba(253,189,77,0.35); }
+
+@media (max-width: 992px) {
+    .hero-actions { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+    .hero-actions { grid-template-columns: 1fr; }
 }
 
 body {
@@ -53,10 +160,48 @@ body {
 }
 
 .nav-brand:hover {
-    color: #5a6fd8;
+    opacity: 0.8;
 }
 
-.nav-brand i {
+.nav-logo-img {
+    height: 28px;
+    width: auto;
+    margin-right: 8px;
+    display: inline-block;
+    /* Make white logos visible on light backgrounds */
+    filter: invert(1) drop-shadow(0 0 1px rgba(0,0,0,0.35));
+    /* In case GIF has transparency, ensure slight contrast */
+    mix-blend-mode: normal;
+}
+
+.nav-logo-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.logo-text {
+    display: inline-block;
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.nav-brand-text {
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.nav-brand-text i {
     margin-right: 0.5rem;
     font-size: 1.8rem;
 }
