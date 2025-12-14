@@ -346,7 +346,7 @@ function createPlaceholderImages() {
         }
         
         .action-btn {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 10px 15px;
@@ -357,7 +357,7 @@ function createPlaceholderImages() {
         }
         
         .action-btn:hover {
-            background: #5a6fd8;
+            background: var(--primary-color-dark);
         }
         
         .action-btn i {
@@ -365,7 +365,7 @@ function createPlaceholderImages() {
         }
         
         .inspiration-section {
-            background: #f8f9ff;
+            background: white;
             padding: 4rem 0;
         }
         
@@ -391,7 +391,7 @@ function createPlaceholderImages() {
         
         .inspiration-card i {
             font-size: 3rem;
-            color: #667eea;
+            color: var(--primary-color);
             margin-bottom: 1rem;
         }
         
@@ -406,7 +406,7 @@ function createPlaceholderImages() {
         }
         
         .gallery-hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--page-gradient);
             color: white;
             padding: 6rem 0 4rem;
             text-align: center;
@@ -437,8 +437,8 @@ function createPlaceholderImages() {
         
         .filter-btn {
             background: transparent;
-            border: 2px solid #667eea;
-            color: #667eea;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
             padding: 10px 20px;
             border-radius: 25px;
             cursor: pointer;
@@ -447,7 +447,7 @@ function createPlaceholderImages() {
         
         .filter-btn:hover,
         .filter-btn.active {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
         }
         
@@ -459,7 +459,7 @@ function createPlaceholderImages() {
         }
         
         .gallery-item {
-            background: #f8f9ff;
+            background: white;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -507,7 +507,7 @@ function createPlaceholderImages() {
         .artist-info i,
         .creation-date i {
             margin-right: 0.5rem;
-            color: #667eea;
+            color: var(--primary-color);
         }
         
         .artwork-stats {
@@ -538,7 +538,7 @@ function createPlaceholderImages() {
         }
         
         .load-more-btn {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             border: none;
             padding: 15px 30px;
@@ -549,7 +549,7 @@ function createPlaceholderImages() {
         }
         
         .load-more-btn:hover:not(:disabled) {
-            background: #5a6fd8;
+            background: var(--primary-color-dark);
             transform: translateY(-2px);
         }
         
@@ -608,7 +608,7 @@ function showMessage(message, type = 'info') {
         position: fixed;
         top: 100px;
         right: 20px;
-        background: ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#4CAF50' : '#667eea'};
+        background: ${type === 'error' ? '#ff6b6b' : type === 'success' ? '#4CAF50' : 'var(--primary-color)'};
         color: white;
         padding: 15px 20px;
         border-radius: 5px;

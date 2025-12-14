@@ -32,6 +32,46 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+@app.route('/sunguo-class')
+@login_required
+def sunguo_class():
+    """松果课堂导航页"""
+    return render_template('sunguo_class.html')
+
+
+@app.route('/sunguo-class/<lesson_key>')
+@login_required
+def sunguo_lesson(lesson_key):
+    """松果课堂单节课/综合练习页面"""
+    lessons = {
+        'character': {
+            'title': '第 1 节课：人物',
+            'desc': '从五官、发型、衣着等要素开始，组合出清晰的人物描述。',
+            'section': 'character'
+        },
+        'action': {
+            'title': '第 2 节课：动作',
+            'desc': '学会用动词描述姿势与状态，让画面更生动。',
+            'section': 'action'
+        },
+        'scene': {
+            'title': '第 3 节课：场景',
+            'desc': '选择环境与地点，给人物一个“发生故事”的舞台。',
+            'section': 'scene'
+        },
+        'practice': {
+            'title': '综合练习',
+            'desc': '把人物 + 动作 + 场景组合成一句完整提示词，挑战更复杂的画面。',
+            'section': 'mix'
+        }
+    }
+
+    lesson = lessons.get(lesson_key)
+    if not lesson:
+        return "Not Found", 404
+
+    return render_template('sunguo_lesson.html', lesson_key=lesson_key, lesson=lesson)
+
 # 数据库配置
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///hltraining.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

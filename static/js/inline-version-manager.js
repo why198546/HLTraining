@@ -318,7 +318,7 @@ class InlineVersionManager {
                 slot.className = 'thumbnail-slot generate-more-btn';
                 slot.onclick = () => this.generateMore();
                 slot.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: #667eea; font-size: 14px; font-weight: 500;">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--primary-color); font-size: 14px; font-weight: 500;">
                         <i class="fas fa-plus-circle" style="font-size: 24px; margin-bottom: 5px;"></i>
                         <span>生成更多</span>
                     </div>

@@ -1,12 +1,18 @@
 <!-- 认证页面专用导航栏 -->
 <header class="header">
     <nav class="navbar">
-        <div class="nav-brand">
+        <a class="nav-brand" href="{{ url_for('index') }}" aria-label="AI松果之术">
             <span class="nav-logo-text">
-                <img src="{{ url_for('static', filename='image/logo.gif') }}" alt="松果AI" class="nav-logo-img">
-                <span class="logo-text">松果AI</span>
+                <img
+                    src="{{ url_for('static', filename='image/static-logo-horizontal.png') }}"
+                    alt="AI松果之术"
+                    class="nav-logo-img"
+                    loading="lazy"
+                    onerror="this.style.display='none'; this.parentElement.querySelector('.logo-text-fallback').style.display='inline-block';"
+                >
+                <span class="logo-text-fallback">AI松果之术</span>
             </span>
-        </div>
+        </a>
         <ul class="nav-menu">
             <li><a href="{{ url_for('index') }}" class="nav-link">首页</a></li>
             <li><a href="{{ url_for('create') }}" class="nav-link">开始创作</a></li>

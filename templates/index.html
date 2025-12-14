@@ -19,31 +19,24 @@
         <!-- 首页介绍 -->
         <section id="home" class="hero">
             <div class="hero-content">
-                <img src="{{ url_for('static', filename='image/banner.gif') }}" alt="松果AI 动画" class="hero-banner hero-banner-large">
-                <h1 class="hero-title">欢迎来到松果AI！</h1>
-                <p class="hero-subtitle">让AI帮你将创意变为现实，简单几步创作精美作品</p>
+                <h1 class="hero-title">松果AI！</h1>
 
-                <!-- 课程入口、练习入口、作品展示、松果简介 -->
+                <!-- 三个入口卡片：松果课堂、松果创意、松果生活 -->
                 <div class="hero-actions">
-                    <a class="hero-card hero-course" href="{{ url_for('tutorial') }}">
+                    <a class="hero-card hero-course" href="{{ url_for('sunguo_class') }}">
                         <span class="card-icon"><i class="fas fa-book-open"></i></span>
-                        <span class="card-title">课程入口</span>
-                        <span class="card-desc">从入门到进阶的AI课程</span>
+                        <span class="card-title">松果课堂</span>
+                        <span class="card-desc">美术+AI主题课程，分人物、动作、场景、综合四大板块</span>
                     </a>
                     <a class="hero-card hero-practice" href="{{ url_for('create') }}">
                         <span class="card-icon"><i class="fas fa-pencil-alt"></i></span>
-                        <span class="card-title">练习入口</span>
+                        <span class="card-title">松果创意</span>
                         <span class="card-desc">上传线稿，开始AI创作练习</span>
                     </a>
                     <a class="hero-card hero-gallery" href="{{ url_for('gallery') }}">
                         <span class="card-icon"><i class="fas fa-images"></i></span>
-                        <span class="card-title">作品展示</span>
+                        <span class="card-title">松果生活</span>
                         <span class="card-desc">浏览大家的精彩AI作品</span>
-                    </a>
-                    <a class="hero-card hero-about" href="#about">
-                        <span class="card-icon"><i class="fas fa-info-circle"></i></span>
-                        <span class="card-title">松果简介</span>
-                        <span class="card-desc">了解松果AI与项目特色</span>
                     </a>
                 </div>
                 
@@ -76,10 +69,7 @@
                         <li>AI技术学习</li>
                     </ul>
                 </div>
-                <div class="footer-section">
-                    <h4>联系我们</h4>
-                    <p>如有问题或建议，请联系我们的技术支持团队。</p>
-                </div>
+                
             </div>
             <div class="footer-bottom">
                 <p>&copy; 2024 AI创意工坊. 专为10-14岁儿童设计.</p>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" role="img" aria-label="场景示例：教室">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f5f3ff"/>
+      <stop offset="1" stop-color="#eef2ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" rx="28" fill="url(#bg)"/>
+  <rect x="120" y="90" width="360" height="180" rx="16" fill="#0f766e"/>
+  <path d="M160 125h180" stroke="#d1fae5" stroke-width="10" stroke-linecap="round"/>
+  <path d="M160 165h240" stroke="#d1fae5" stroke-width="10" stroke-linecap="round"/>
+  <rect x="110" y="275" width="380" height="24" rx="12" fill="#92400e"/>
+  <rect x="160" y="300" width="90" height="38" rx="14" fill="#f59e0b"/>
+  <rect x="350" y="300" width="90" height="38" rx="14" fill="#f59e0b"/>
+  <text x="28" y="50" font-size="22" fill="#374151" font-family="system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial">场景示例</text>
+</svg>

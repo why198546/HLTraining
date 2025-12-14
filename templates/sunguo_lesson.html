@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ lesson.title }} - 松果课堂</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  {% include 'components/header.html' %}
+
+  <main class="classroom-page">
+    <div class="classroom-container">
+      <div class="classroom-breadcrumb">
+        <a href="{{ url_for('sunguo_class') }}" class="breadcrumb-link">&larr; 返回松果课堂</a>
+      </div>
+
+      <h1 class="classroom-title">{{ lesson.title }}</h1>
+      <p class="classroom-subtitle">{{ lesson.desc }}</p>
+
+      <div class="classroom-sections">
+        <div class="class-section">
+          {% if lesson.section == 'character' %}
+            <div class="lesson-layout">
+              <aside class="lesson-tips" aria-label="提示">
+                <h3 class="tips-title">Tips（注意事项）</h3>
+                <ul class="tips-list">
+                  <li>一句话先写清楚：是谁（年龄/身份）+ 长什么样（特征）+ 风格（卡通/插画）</li>
+                  <li>建议加上：表情、发型、衣服颜色、背景干净，让画面更稳定</li>
+                  <li>避免：过于复杂的句子、同时写太多角色、或出现不适合儿童的内容</li>
+                  <li>如果效果不满意：先只改一处（比如“发型”或“表情”），再生成一次</li>
+                </ul>
+              </aside>
+
+              <form class="prompt-form lesson-manual-form" data-section="manual" data-lesson="character">
+                <label>请输入提示词（人物）:
+                  <textarea name="prompt" rows="6" placeholder="示例：一个10岁的小朋友，短发，圆脸，大眼睛，微笑，穿蓝色校服，卡通插画，干净背景"></textarea>
+                </label>
+                <button type="button" class="generate-btn">生成图片</button>
+              </form>
+            </div>
+
+            <div class="lesson-examples" aria-label="参考示例">
+              <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
+              <div class="example-grid">
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_kid.svg') }}" alt="人物示例图 1" />
+                  <div class="example-prompt">一个10岁的小朋友，短发，圆脸，大眼睛，微笑，穿蓝色校服，卡通插画，干净背景</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_robot.svg') }}" alt="人物示例图 2" />
+                  <div class="example-prompt">一个可爱的小机器人，圆润外形，发光眼睛，配色清爽，卡通插画，简洁背景</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_kid.svg') }}" alt="人物示例图 3" />
+                  <div class="example-prompt">一个勇敢的小探险家，戴红色帽子，背小背包，表情自信，卡通插画，明亮色彩</div>
+                </div>
+              </div>
+            </div>
+          {% elif lesson.section == 'action' %}
+            <div class="lesson-layout">
+              <aside class="lesson-tips" aria-label="提示">
+                <h3 class="tips-title">Tips（注意事项）</h3>
+                <ul class="tips-list">
+                  <li>动作要具体：怎么动（方向/幅度/速度）+ 表情（开心/专注）</li>
+                  <li>建议加上：身体姿势（手臂/腿部）、镜头（全身/半身）、背景（简单）</li>
+                  <li>避免：一句话里堆太多动作（跑步+跳跃+转圈），先选一个</li>
+                  <li>如果人物比例怪：在提示词里加“全身、姿势自然、四肢完整”</li>
+                </ul>
+              </aside>
+
+              <form class="prompt-form lesson-manual-form" data-section="manual" data-lesson="action">
+                <label>请输入提示词（动作）:
+                  <textarea name="prompt" rows="6" placeholder="示例：一个小朋友在操场上跑步，全身，姿势自然，表情开心，卡通插画，色彩明亮"></textarea>
+                </label>
+                <button type="button" class="generate-btn">生成图片</button>
+              </form>
+            </div>
+
+            <div class="lesson-examples" aria-label="参考示例">
+              <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
+              <div class="example-grid">
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="动作示例图 1" />
+                  <div class="example-prompt">一个小朋友在操场上跑步，全身，姿势自然，四肢完整，表情开心，卡通插画，干净背景</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_jump.svg') }}" alt="动作示例图 2" />
+                  <div class="example-prompt">一个小朋友跳跃起来，双手举高，全身，动作夸张但自然，卡通插画，明亮色彩</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="动作示例图 3" />
+                  <div class="example-prompt">一个可爱的小机器人挥手打招呼，半身，动作清晰，表情友好，卡通插画，简洁背景</div>
+                </div>
+              </div>
+            </div>
+          {% elif lesson.section == 'scene' %}
+            <div class="lesson-layout">
+              <aside class="lesson-tips" aria-label="提示">
+                <h3 class="tips-title">Tips（注意事项）</h3>
+                <ul class="tips-list">
+                  <li>场景要写：地点 + 时间（白天/傍晚）+ 天气 + 光线（柔和/明亮）</li>
+                  <li>建议加上：前景/中景/背景（比如树、路、天空），画面更丰富</li>
+                  <li>避免：一次写太多元素（十几样道具），先写 3-5 个关键物体</li>
+                  <li>如果画面太乱：加“简洁、背景干净、主体突出”</li>
+                </ul>
+              </aside>
+
+              <form class="prompt-form lesson-manual-form" data-section="manual" data-lesson="scene">
+                <label>请输入提示词（场景）:
+                  <textarea name="prompt" rows="6" placeholder="示例：明亮的教室，黑板、课桌、窗户，阳光照进来，色彩丰富，卡通插画，画面简洁"></textarea>
+                </label>
+                <button type="button" class="generate-btn">生成图片</button>
+              </form>
+            </div>
+
+            <div class="lesson-examples" aria-label="参考示例">
+              <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
+              <div class="example-grid">
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="场景示例图 1" />
+                  <div class="example-prompt">明亮的教室，黑板、课桌、窗户，阳光照进来，色彩丰富，卡通插画，画面简洁</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_park.svg') }}" alt="场景示例图 2" />
+                  <div class="example-prompt">阳光明媚的公园，草地、大树、小路，天空有白云，色彩明亮，卡通插画，主体突出</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="场景示例图 3" />
+                  <div class="example-prompt">温馨的家里客厅，沙发、地毯、窗帘，暖色灯光，画面干净，卡通插画，细节适中</div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="lesson-layout">
+              <aside class="lesson-tips" aria-label="提示">
+                <h3 class="tips-title">Tips（注意事项）</h3>
+                <ul class="tips-list">
+                  <li>综合练习建议写成 4 句：人物 → 动作 → 场景 → 风格（卡通插画/色彩明亮）</li>
+                  <li>想更稳定：加“全身、姿势自然、四肢完整、主体突出、背景干净”</li>
+                  <li>想更好看：加“柔和光线、明亮配色、细节适中、适合儿童观看”</li>
+                  <li>不满意就别大改：一次只改一个点（动作/场景/表情），更容易找到原因</li>
+                </ul>
+              </aside>
+
+              <form class="prompt-form lesson-manual-form" data-section="manual" data-lesson="practice">
+                <label>请输入提示词（综合练习）:
+                  <textarea name="prompt" rows="7" placeholder="示例：一个10岁的小朋友，短发，圆脸，大眼睛，穿蓝色校服；正在操场上跑步；背景是学校操场和看台，阳光明亮；卡通插画，色彩丰富，主体突出，四肢完整"></textarea>
+                </label>
+                <button type="button" class="generate-btn">生成图片</button>
+              </form>
+            </div>
+
+            <div class="lesson-examples" aria-label="参考示例">
+              <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
+              <div class="example-grid">
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="综合示例图 1" />
+                  <div class="example-prompt">一个小朋友，短发，微笑，穿蓝色校服；正在操场上跑步，全身，姿势自然，四肢完整；背景简单；卡通插画，色彩明亮</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_park.svg') }}" alt="综合示例图 2" />
+                  <div class="example-prompt">一个可爱的小机器人；挥手打招呼，半身；背景是阳光明媚的公园，有草地和大树；卡通插画，清爽配色，主体突出</div>
+                </div>
+                <div class="example-card">
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="综合示例图 3" />
+                  <div class="example-prompt">一个认真听课的小朋友，表情专注；坐在课桌前；明亮的教室里有黑板和窗户，阳光照进来；卡通插画，细节适中，画面干净</div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="classroom-result" class="classroom-result"></div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+</body>
+</html>

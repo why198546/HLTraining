@@ -111,7 +111,7 @@ function addTutorialStyles() {
     style.textContent = `
         /* 教程页面特定样式 */
         .tutorial-hero {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--page-gradient);
             color: white;
             padding: 6rem 0 4rem;
             text-align: center;
@@ -146,7 +146,7 @@ function addTutorialStyles() {
         
         .tutorial-section-title i {
             margin-right: 1rem;
-            color: #667eea;
+            color: var(--primary-color);
         }
         
         /* 快速开始步骤 */
@@ -159,7 +159,7 @@ function addTutorialStyles() {
         .quick-step {
             display: flex;
             align-items: flex-start;
-            background: #f8f9ff;
+            background: white;
             padding: 2rem;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -178,7 +178,7 @@ function addTutorialStyles() {
         }
         
         .step-number {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             width: 40px;
             height: 40px;
@@ -222,12 +222,12 @@ function addTutorialStyles() {
         }
         
         .tab-button:hover {
-            color: #667eea;
+            color: var(--primary-color);
         }
         
         .tab-button.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
         }
         
         .tab-content {
@@ -253,7 +253,7 @@ function addTutorialStyles() {
         }
         
         .tutorial-card {
-            background: #f8f9ff;
+            background: white;
             padding: 2rem;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
@@ -272,7 +272,7 @@ function addTutorialStyles() {
         }
         
         .card-icon {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             width: 60px;
             height: 60px;
@@ -297,8 +297,8 @@ function addTutorialStyles() {
         }
         
         .tip-box {
-            background: #e8f4fd;
-            border-left: 4px solid #667eea;
+            background: var(--primary-color-soft);
+            border-left: 4px solid var(--primary-color);
             padding: 1rem;
             border-radius: 5px;
             font-size: 0.9rem;
@@ -334,7 +334,7 @@ function addTutorialStyles() {
         }
         
         .format-list span {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             padding: 0.3rem 0.8rem;
             border-radius: 15px;
@@ -366,7 +366,7 @@ function addTutorialStyles() {
         }
         
         .process-step {
-            background: #f8f9ff;
+            background: white;
             padding: 2rem;
             border-radius: 15px;
             text-align: center;
@@ -383,7 +383,7 @@ function addTutorialStyles() {
         }
         
         .process-icon {
-            background: #667eea;
+            background: var(--primary-color);
             color: white;
             width: 80px;
             height: 80px;
@@ -402,7 +402,7 @@ function addTutorialStyles() {
         }
         
         .process-arrow {
-            color: #667eea;
+            color: var(--primary-color);
             font-size: 1.5rem;
         }
         
@@ -459,7 +459,7 @@ function addTutorialStyles() {
         
         .faq-question {
             padding: 1.5rem;
-            background: #f8f9ff;
+            background: white;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
@@ -468,7 +468,7 @@ function addTutorialStyles() {
         }
         
         .faq-question:hover {
-            background: #f0f2ff;
+            background: rgba(0, 0, 0, 0.02);
         }
         
         .faq-question h4 {
@@ -478,7 +478,7 @@ function addTutorialStyles() {
         }
         
         .faq-question i {
-            color: #667eea;
+            color: var(--primary-color);
             transition: transform 0.3s ease;
         }
         
@@ -512,12 +512,12 @@ function addTutorialStyles() {
         }
         
         .knowledge-card {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--page-gradient);
             color: white;
             padding: 2rem;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 10px 30px var(--primary-shadow);
             transition: transform 0.3s ease;
             opacity: 0;
             transform: translateY(30px);
