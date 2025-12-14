@@ -1988,6 +1988,63 @@ def test_content_indicators():
     """测试内容类型指示器页面"""
     return render_template('test_content_indicators.html')
 
+# 图片生成接口（供前端调用）
+@app.route('/generate-image', methods=['POST'])
+def api_generate_image():
+    """生成图片的后端接口。
+    输入：可选的文本提示 `prompt` 和/或上传的线稿文件 `sketch`
+    输出：JSON，包含生成结果图片的相对路径。
+    """
+    try:
+        prompt_text = request.form.get('prompt', '').strip()
+        sketch_file = request.files.get('sketch')
+
+        if not prompt_text and not sketch_file:
+            return jsonify({
+                'success': False,
+                'error': '请提供提示词或上传线稿图片'
+            }), 400
+
+        # 创建会话ID用于文件归档
+        session_id = request.form.get('session_id') or str(uuid.uuid4())
+        session_dir = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
+        os.makedirs(session_dir, exist_ok=True)
+
+        saved_sketch_path = None
+        if sketch_file and allowed_file(sketch_file.filename):
+            filename = secure_filename(sketch_file.filename)
+            saved_sketch_path = os.path.join(session_dir, filename)
+            sketch_file.save(saved_sketch_path)
+
+        # 简化版生成逻辑
+        output_path = None
+        if saved_sketch_path:
+            processed = preprocess_sketch(saved_sketch_path)
+            output_path = processed or saved_sketch_path
+        else:
+            # 仅文字：生成一张占位图
+            output_path = os.path.join(session_dir, 'generated_placeholder.png')
+            img = np.zeros((512, 512, 3), dtype=np.uint8)
+            img[:] = (200, 180, 255)  # 淡紫底
+            cv2.putText(img, 'AI 生成占位图', (40, 260), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (50, 50, 50), 2, cv2.LINE_AA)
+            cv2.imwrite(output_path, img)
+
+        # 转为前端可访问的URL
+        public_url = output_path.replace(BASE_DIR + os.sep, '')
+        public_url = '/' + public_url.replace('\\', '/').replace('uploads', 'uploads')
+
+        return jsonify({
+            'success': True,
+            'image_path': public_url,
+            'session_id': session_id
+        })
+    except Exception as e:
+        print(f"/generate-image 错误: {e}")
+        return jsonify({
+            'success': False,
+            'error': '服务器内部错误，请稍后重试'
+        }), 500
+
 @app.route('/api/fetch-image', methods=['POST'])
 @login_required
 def fetch_image_from_url():
