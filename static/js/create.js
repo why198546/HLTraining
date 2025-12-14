@@ -335,15 +335,19 @@ function removeUploadedImage() {
 
 // 生成图片
 async function generateImage() {
+    console.log('🚀 generateImage 函数被调用');
     const prompt = document.getElementById('creation-prompt').value.trim();
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
     const expertMode = document.getElementById('expert-mode').checked;
     const aspectRatio = document.getElementById('aspect-ratio').value;
     const mode3D = document.getElementById('3d-mode')?.value; // 获取3D模式
+    
+    console.log(`📝 参数: prompt="${prompt}", style="${style}", file=${uploadedImageFile ? 'yes' : 'no'}, originalPath=${originalImagePath}`);
 
     // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
     if (!prompt && !uploadedImageFile && !originalImagePath) {
+        console.log('❌ 验证失败：缺少必要输入');
         showMessage('请输入创意描述或上传参考图片', 'error');
         return;
     }
@@ -356,6 +360,7 @@ async function generateImage() {
     }
 
     // 单图模式（包括普通风格和3D单图模式）
+    console.log('📤 准备发送请求到 /generate-image');
     showLoadingOverlay('AI正在创作中...');
 
     try {
@@ -385,12 +390,15 @@ async function generateImage() {
             formData.append('original_image_path', originalImagePath);
         }
 
+        console.log('🌐 发送 fetch 请求...');
         const response = await fetch('/generate-image', {
             method: 'POST',
             body: formData
         });
-
+        
+        console.log(`📥 收到响应: status=${response.status}`);
         const result = await response.json();
+        console.log('📦 响应数据:', result);
 
         if (result.success) {
             generatedImageUrl = result.image_url;

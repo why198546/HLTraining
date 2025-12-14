@@ -7,17 +7,30 @@ import base64
 import io
 from google import genai
 from google.genai import types
+from dotenv import load_dotenv
+
+# 确保环境变量在模块导入时就加载
+load_dotenv()
 
 class NanoBananaAPI:
     """Nano Banana API类 - 使用Gemini 2.5 Flash Image (真正的Nano Banana模型)"""
     
     def __init__(self):
+        # 确保环境变量加载
+        load_dotenv(override=True)  # 强制重新加载
+        
         # 从环境变量获取API密钥，优先使用Gemini密钥
         self.api_key = os.getenv('GEMINI_API_KEY') or os.getenv('NANO_BANANA_API_KEY', 'your-nano-banana-api-key-here')
         self.upload_folder = 'uploads'
         
+        print(f"🔑 API密钥检查: GEMINI_API_KEY={'已设置' if os.getenv('GEMINI_API_KEY') else '未设置'}")
+        print(f"🔑 环境变量值前10个字符: {os.getenv('GEMINI_API_KEY')[:10] if os.getenv('GEMINI_API_KEY') else 'None'}")
+        print(f"🔑 最终API密钥长度: {len(self.api_key) if self.api_key else 0}")
+        
         # 初始化新的Google Gen AI客户端
         try:
+            if not self.api_key or self.api_key == 'your-nano-banana-api-key-here':
+                raise Exception("API密钥未配置或使用默认值")
             self.client = genai.Client(api_key=self.api_key)
             print("✅ Google Gen AI 客户端初始化成功 (Gemini 2.5 Flash Image)")
         except Exception as e:

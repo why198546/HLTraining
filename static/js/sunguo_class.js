@@ -57,15 +57,18 @@ document.querySelectorAll('.prompt-form').forEach(form => {
       });
 
       const data = await resp.json();
+      console.log('松果课堂生成响应:', data);
       if (data.success && data.image_url) {
+        console.log('图片URL:', data.image_url);
         resultDiv.innerHTML = `
           <div class="classroom-result-inner">
             <div class="classroom-prompt">本次提示词：${escapeHtml(prompt)}</div>
-            <img src="${data.image_url}?t=${Date.now()}" alt="AI生成图片" class="ai-image" />
+            <img src="${data.image_url}?t=${Date.now()}" alt="AI生成图片" class="ai-image" onerror="console.error('图片加载失败:', this.src)" onload="console.log('图片加载成功:', this.src)" />
           </div>
         `;
       } else {
         const errorMsg = data.error || '生成失败，请重试';
+        console.error('生成失败:', errorMsg);
         resultDiv.innerHTML = `<div class="error">${escapeHtml(errorMsg)}</div>`;
       }
     } catch (e) {

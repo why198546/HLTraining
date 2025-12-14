@@ -5,14 +5,18 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import cv2
 import numpy as np
+from dotenv import load_dotenv
+from datetime import datetime
+
+# 加载环境变量（必须在导入其他模块之前）
+load_dotenv()
+
 from api.nano_banana import NanoBananaAPI
 from api.hunyuan3d import Hunyuan3DGenerator
 from api.sam3d_api import SAM3DAPI
 from managers.gallery_manager import GalleryManager
 from managers.creation_session_manager import CreationSessionManager
 import json
-from dotenv import load_dotenv
-from datetime import datetime
 
 # 用户管理系统导入
 from flask_login import LoginManager, login_required, current_user
@@ -21,11 +25,40 @@ from auth import auth_bp
 from auth.routes import *
 from utils.email_service import init_mail
 
-# 加载环境变量
-load_dotenv()
-
 # 获取项目根目录
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def normalize_path_for_url(file_path):
+    """
+    将文件系统路径转换为URL路径（跨平台）
+    
+    Args:
+        file_path: 文件系统路径，可能包含 \ 或 /
+        
+    Returns:
+        标准化的URL路径，以 / 开头，使用 / 作为分隔符
+        
+    Examples:
+        Windows: 'uploads\\file.png' -> '/uploads/file.png'
+        Linux/Mac: 'uploads/file.png' -> '/uploads/file.png'
+    """
+    if not file_path:
+        return ''
+    
+    # 统一使用正斜杠（URL标准）
+    url_path = file_path.replace('\\', '/')
+    
+    # 确保 uploads 目录路径以 /uploads/ 开头
+    if 'uploads/' in url_path and not url_path.startswith('/'):
+        # 找到 uploads/ 的位置
+        idx = url_path.find('uploads/')
+        url_path = '/' + url_path[idx:]
+    
+    # 如果还没有 /，添加 /
+    if not url_path.startswith('/'):
+        url_path = '/' + url_path
+    
+    return url_path
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
@@ -155,7 +188,7 @@ def generate_3d_model_from_image(image_path):
     model_path = generator_3d.generate_3d_model(image_path)
     
     print(f"✅ 3D模型生成成功: {model_path}")
-    return model_path.replace('uploads/', '/uploads/')
+    return normalize_path_for_url(model_path)
 
 def generate_3d_model_from_multi_view(view_images):
     """从多视角图片生成3D模型的辅助函数
@@ -176,7 +209,7 @@ def generate_3d_model_from_multi_view(view_images):
     model_path = generator_3d.generate_3d_model_multi_view(view_images)
     
     print(f"✅ 多视角3D模型生成成功: {model_path}")
-    return model_path.replace('uploads/', '/uploads/')
+    return normalize_path_for_url(model_path)
 
 def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, prompt=None):
     """自动保存作品到数据库"""
@@ -583,6 +616,12 @@ def delete_version(session_id):
 @app.route('/generate-image', methods=['POST'])
 def generate_image():
     """统一的图片生成接口 - 支持文字和图片混合输入，支持会话版本管理"""
+    import sys
+    sys.stdout.flush()
+    sys.stderr.write("=" * 80 + "\n")
+    sys.stderr.write("🚀 收到图片生成请求\n")
+    sys.stderr.flush()
+    app.logger.error("🚀🚀🚀 收到图片生成请求")
     try:
         prompt = request.form.get('prompt', '').strip()
         style = request.form.get('style', 'cute')
@@ -594,7 +633,10 @@ def generate_image():
         session_id = request.form.get('session_id')
         version_note = request.form.get('version_note', '')
         
+        print(f"📝 输入参数: prompt={prompt}, style={style}, uploaded_file={uploaded_file.filename if uploaded_file else None}")
+        
         if not prompt and not uploaded_file and not original_image_path:
+            print("❌ 缺少必要参数")
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
         print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}, Expert模式: {expert_mode}, 高宽比: {aspect_ratio}")
@@ -649,8 +691,9 @@ def generate_image():
             print(f"❌ 图片生成失败，不保存到数据库")
             return jsonify({'error': '图片生成失败，请重试'}), 500
         
-        # 返回相对路径用于前端显示
-        relative_path = generated_image_path.replace('uploads/', '/uploads/')
+        # 返回相对路径用于前端显示（跨平台处理）
+        relative_path = normalize_path_for_url(generated_image_path)
+        print(f"📍 返回图片URL: {relative_path}")
         
         # 如果有会话ID，添加到会话版本管理
         version_id = None
@@ -692,13 +735,14 @@ def generate_image():
         
         # 如果有上传的图片，也返回原始图片路径
         if sketch_path:
-            original_relative_path = sketch_path.replace('uploads/', '/uploads/')
-            response_data['original_image_url'] = original_relative_path
+            response_data['original_image_url'] = normalize_path_for_url(sketch_path)
         
         return jsonify(response_data)
             
     except Exception as e:
         print(f"❌ 图片生成错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'生成失败: {str(e)}'}), 500
 
 @app.route('/adjust-image', methods=['POST'])
@@ -728,8 +772,8 @@ def adjust_image():
         
         print(f"✅ 图片调整完成: {adjusted_image_path}")
         
-        # 返回相对路径用于前端显示
-        relative_path = adjusted_image_path.replace('uploads/', '/uploads/')
+        # 返回相对路径用于前端显示（跨平台处理）
+        relative_path = normalize_path_for_url(adjusted_image_path)
         
         # 如果有会话ID，添加到会话版本管理
         version_id = None
@@ -791,11 +835,10 @@ def generate_multi_view():
         if not result:
             return jsonify({'error': '多视角图片生成失败，请重试'}), 500
         
-        # 转换为相对路径
+        # 转换为相对路径（跨平台处理）
         image_urls = {}
         for view_name, path in result.items():
-            relative_path = path.replace('uploads/', '/uploads/')
-            image_urls[view_name] = relative_path
+            image_urls[view_name] = normalize_path_for_url(path)
         
         print(f"✅ 多视角图片生成完成: {image_urls}")
         
@@ -933,8 +976,8 @@ def generate_3d_model_sam():
         
         print(f"✅ 3D模型生成完成 (引擎: {engine_used}): {model_path}")
         
-        # 转换为相对路径
-        model_url = model_path.replace('models/', '/models/')
+        # 转换为相对路径（跨平台处理）
+        model_url = normalize_path_for_url(model_path.replace('models/', 'uploads/models/'))
         
         # 如果有会话ID，添加到会话版本管理
         version_id = None
@@ -970,7 +1013,7 @@ def generate_3d_model_sam():
         try:
             print("🔄 尝试降级到Hunyuan3D...")
             model_path = generate_3d_model_from_image(image_path)
-            model_url = model_path.replace('models/', '/models/')
+            model_url = normalize_path_for_url(model_path.replace('models/', 'uploads/models/'))
             return jsonify({
                 'success': True,
                 'model_url': model_url,

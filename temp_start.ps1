@@ -1,0 +1,3 @@
+﻿$env:GEMINI_API_KEY='AIzaSyCkZ81kYFlN-fMXJMI1SdL77UUPtlwTQeg'
+$env:PYTHONIOENCODING='utf-8'
+python app.py
