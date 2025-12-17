@@ -5747,13 +5747,19 @@ main {
 
 /* 加载动画 */
 .loading {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 20px;
+}
+
+.loading-logo {
+    max-width: 360px;
+    max-height: 360px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    animation: spin 2s linear infinite;
 }
 
 @keyframes spin {

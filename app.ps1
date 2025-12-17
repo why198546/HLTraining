@@ -12,7 +12,6 @@ param(
 $APP_NAME = "松果AI平台"
 $PID_FILE = "app.pid"
 $LOG_DIR = "logs"
-$API_KEY = "AIzaSyCkZ81kYFlN-fMXJMI1SdL77UUPtlwTQeg"
 
 function Show-Help {
     Write-Host ""
@@ -65,9 +64,8 @@ function Start-Service {
     $logFile = Join-Path $LOG_DIR "app_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     $errorLog = Join-Path $LOG_DIR "error.log"
     
-    # 创建启动脚本（设置环境变量和编码）
+    # 创建启动脚本（设置编码，API key 从 .env 文件读取）
     $startScript = @"
-`$env:GEMINI_API_KEY='$API_KEY'
 `$env:PYTHONIOENCODING='utf-8'
 python app.py
 "@

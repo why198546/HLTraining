@@ -639,6 +639,16 @@ def generate_image():
             print("❌ 缺少必要参数")
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
+        # 如果提示词中包含人物但未指定国籍，默认添加"中国人形象"
+        if prompt:
+            import re
+            has_nationality = bool(re.search(r'外国|美国|日本|韩国|欧洲|英国|法国|德国|俄罗斯|印度|非洲|澳大利亚|加拿大|意大利|西班牙|巴西|墨西哥|阿拉伯|泰国|越南|新加坡|马来西亚|菲律宾', prompt, re.IGNORECASE))
+            has_person = bool(re.search(r'人|小朋友|孩子|儿童|少年|青年|男孩|女孩|学生|老师', prompt))
+            
+            if not has_nationality and has_person and '中国' not in prompt:
+                prompt = '中国人形象，' + prompt
+                print(f"✅ 自动添加中国人形象，新提示词: {prompt}")
+        
         print(f"🎨 生成参数 - 风格: {style}, 色彩: {color_preference}, Expert模式: {expert_mode}, 高宽比: {aspect_ratio}")
         
         # 初始化Nano Banana API
