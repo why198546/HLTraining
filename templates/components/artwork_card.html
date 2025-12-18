@@ -99,7 +99,10 @@
             {% if show_author|default(true) %}
                 <div class="artwork-author">
                     <i class="fas fa-user"></i> 
-                    {{ artwork.author.nickname }} ({{ artwork.author.age }}岁)
+                    {{ artwork.author.nickname }}
+                    {% if artwork.author.privacy_settings and artwork.author.privacy_settings.get('show_age', False) %}
+                        ({{ artwork.author.age }}岁)
+                    {% endif %}
                 </div>
             {% endif %}
             

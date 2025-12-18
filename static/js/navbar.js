@@ -1,23 +1,47 @@
 // 统一导航栏JavaScript功能
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 导航栏JS加载完成');
+    
     // 移动端导航切换
     const navToggle = document.querySelector('.nav-toggle');
     const navMenu = document.querySelector('.nav-menu');
     
+    console.log('导航元素:', { navToggle, navMenu });
+    
     if (navToggle && navMenu) {
-        navToggle.addEventListener('click', function() {
+        console.log('✅ 找到导航元素，添加点击事件');
+        
+        navToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🖱️ 点击汉堡菜单按钮');
+            
+            const wasActive = navMenu.classList.contains('active');
             navMenu.classList.toggle('active');
             this.classList.toggle('active');
-        });
-        
-        // 点击菜单项后关闭移动端菜单
-        const navLinks = document.querySelectorAll('.nav-link');
-        navLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                navMenu.classList.remove('active');
-                navToggle.classList.remove('active');
+            
+            console.log('菜单状态切换:', wasActive ? '关闭' : '打开');
+            console.log('当前classes:', {
+                menu: navMenu.className,
+                toggle: this.className
             });
         });
+        
+        // 点击菜单项后关闭移动端菜单（排除下拉菜单触发器和下拉菜单内的链接）
+        const navLinks = document.querySelectorAll('.nav-link:not(.nav-dropdown > .nav-link)');
+        console.log(`找到 ${navLinks.length} 个导航链接`);
+        
+        navLinks.forEach(link => {
+            // 只有非下拉菜单的链接才关闭导航
+            if (!link.closest('.nav-dropdown')) {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                    console.log('🔗 点击导航链接，关闭菜单');
+                });
+            }
+        });
+    } else {
+        console.error('❌ 未找到导航元素！', { navToggle, navMenu });
     }
     
     // 用户下拉菜单
@@ -26,9 +50,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdownToggle = dropdown.querySelector('.nav-link');
         const dropdownMenu = dropdown.querySelector('.dropdown-menu');
         
+        // 下拉菜单触发器点击只切换下拉，不关闭整个导航
         dropdownToggle.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             dropdown.classList.toggle('active');
+            console.log('🔽 切换用户下拉菜单');
+        });
+        
+        // 下拉菜单内的链接点击后关闭整个导航
+        const dropdownLinks = dropdownMenu.querySelectorAll('a');
+        dropdownLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (navMenu && navToggle) {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                    console.log('🔗 点击下拉菜单项，关闭导航');
+                }
+            });
         });
         
         // 点击外部关闭下拉菜单

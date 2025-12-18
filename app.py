@@ -440,7 +440,17 @@ def gallery():
         is_public=True
     ).join(User).order_by(desc(Artwork.created_at)).all()
     
-    return render_template('gallery.html', artworks=artworks)
+    # 过滤掉作者隐私设置不允许在作品展示中显示的作品
+    filtered_artworks = []
+    for artwork in artworks:
+        if artwork.author and artwork.author.privacy_settings:
+            if artwork.author.privacy_settings.get('show_in_gallery', True):
+                filtered_artworks.append(artwork)
+        else:
+            # 如果没有隐私设置，默认显示
+            filtered_artworks.append(artwork)
+    
+    return render_template('gallery.html', artworks=filtered_artworks)
 
 @app.route('/tutorial')
 def tutorial():

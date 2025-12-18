@@ -59,8 +59,8 @@ class User(UserMixin, db.Model):
         self.verification_token = str(uuid.uuid4())
         self.privacy_settings = {
             'show_in_gallery': True,
-            'allow_sharing': True,
-            'parental_controls': True
+            'show_age': False,
+            'allow_parent_reports': True
         }
     
     def get_age(self):

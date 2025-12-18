@@ -221,12 +221,14 @@ def profile():
     
     # 处理POST请求（表单提交）
     if request.method == 'POST':
+        print("=" * 50)
+        print("DEBUG: POST REQUEST RECEIVED")
+        print(f"DEBUG: Request method: {request.method}")
+        print(f"DEBUG: Request path: {request.path}")
         form_type = request.form.get('form_type')
         print(f"DEBUG: Form type: {form_type}")
-        print(f"DEBUG: Form data: {request.form}")
-        print(f"DEBUG: Form validation result: {form.validate_on_submit()}")
-        if not form.validate_on_submit():
-            print(f"DEBUG: Form errors: {form.errors}")
+        print(f"DEBUG: Form data: {dict(request.form)}")
+        print("=" * 50)
         
         if form_type == 'profile' and form.validate_on_submit():
             print("DEBUG: Processing profile update")
@@ -257,26 +259,44 @@ def profile():
             
             return redirect(url_for('auth.profile'))
             
-        elif form_type == 'privacy' and privacy_form.validate_on_submit():
-            # 处理隐私设置更新
-            if hasattr(current_user, 'privacy_settings') and current_user.privacy_settings:
-                privacy_settings = current_user.privacy_settings
-            else:
-                privacy_settings = {}
+        elif form_type == 'privacy':
+            print("DEBUG: Processing privacy update")
+            # 直接从request.form读取值，因为我们使用了自定义的隐藏input
+            show_in_gallery = request.form.get('show_in_gallery', 'n') == 'y'
+            show_age = request.form.get('show_age', 'n') == 'y'
+            allow_parent_reports = request.form.get('allow_parent_reports', 'y') == 'y'
             
-            privacy_settings.update({
-                'show_in_gallery': privacy_form.show_in_gallery.data,
-                'show_age': privacy_form.show_age.data,
-                'allow_parent_reports': privacy_form.allow_parent_reports.data
-            })
+            print(f"DEBUG: Privacy values: show_in_gallery={show_in_gallery}, show_age={show_age}, allow_parent_reports={allow_parent_reports}")
             
+            # 处理隐私设置更新 - 创建新字典来触发SQLAlchemy的change tracking
+            privacy_settings = {
+                'show_in_gallery': show_in_gallery,
+                'show_age': show_age,
+                'allow_parent_reports': allow_parent_reports
+            }
+            
+            # 直接赋值新字典，确保SQLAlchemy检测到变化
             current_user.privacy_settings = privacy_settings
+            
+            # 使用flag_modified确保SQLAlchemy知道这个字段已修改
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(current_user, 'privacy_settings')
             
             try:
                 db.session.commit()
+                print(f"DEBUG: Privacy settings committed successfully: {current_user.privacy_settings}")
+                # 如果是AJAX请求，返回JSON响应
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'multipart/form-data':
+                    from flask import jsonify
+                    return jsonify({'success': True, 'message': '隐私设置更新成功！'})
                 flash('隐私设置更新成功！', 'success')
             except Exception as e:
                 db.session.rollback()
+                print(f"DEBUG: Privacy settings commit error: {e}")
+                # 如果是AJAX请求，返回JSON响应
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'multipart/form-data':
+                    from flask import jsonify
+                    return jsonify({'success': False, 'message': '隐私设置更新失败，请重试'}), 400
                 flash('隐私设置更新失败，请重试', 'error')
             
             return redirect(url_for('auth.profile'))
