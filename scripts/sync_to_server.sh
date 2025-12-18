@@ -15,10 +15,12 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 # 配置
-SERVER_HOST="wordpress"  # SSH配置中的主机名
+SERVER_HOST="47.95.214.47"
 SERVER_USER="root"
 SERVER_PATH="/var/www/hltraining"
 LOCAL_PATH="."
+SSH_KEY="$HOME/.ssh/wordpress_openssh"
+SSH_CMD="ssh -i $SSH_KEY -o StrictHostKeyChecking=no"
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}  🚀 HLTraining 代码同步到服务器${NC}"
@@ -33,11 +35,11 @@ fi
 
 # 步骤1: 测试SSH连接
 echo -e "${YELLOW}📡 步骤1/4: 测试服务器连接...${NC}"
-if ssh -o ConnectTimeout=5 $SERVER_HOST "echo '连接成功'" > /dev/null 2>&1; then
+if eval "$SSH_CMD $SERVER_USER@$SERVER_HOST 'echo 连接成功'" > /dev/null 2>&1; then
     echo -e "${GREEN}✅ 服务器连接正常${NC}"
 else
     echo -e "${RED}❌ 无法连接到服务器 $SERVER_HOST${NC}"
-    echo "   请检查SSH配置或网络连接"
+    echo "   请检查SSH密钥或网络连接"
     exit 1
 fi
 echo ""
@@ -57,7 +59,7 @@ echo "   • 日志文件 (logs/)"
 echo ""
 
 # 使用rsync同步，排除不需要的文件
-rsync -avz --delete \
+rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" --delete \
     --exclude='.git/' \
     --exclude='.venv/' \
     --exclude='venv/' \
@@ -81,7 +83,7 @@ rsync -avz --delete \
     --exclude='static/gallery/*' \
     --exclude='static/uploads/*' \
     --exclude='.playwright-mcp/' \
-    $LOCAL_PATH/ $SERVER_HOST:$SERVER_PATH/
+    $LOCAL_PATH/ $SERVER_USER@$SERVER_HOST:$SERVER_PATH/
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ 代码同步完成${NC}"
@@ -93,13 +95,16 @@ echo ""
 
 # 步骤3: 服务器端更新操作
 echo -e "${YELLOW}🔧 步骤3/4: 服务器端更新...${NC}"
-ssh $SERVER_HOST "bash -s" << 'ENDSSH'
+$SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" << 'ENDSSH'
     set -e
     cd /var/www/hltraining
     
+    # 升级 pip
+    python3 -m pip install --upgrade pip setuptools wheel
+    
     # 激活虚拟环境并更新依赖
     source venv/bin/activate
-    pip install -r requirements.txt --quiet
+    pip install -r requirements.txt --quiet || pip install -r requirements.txt
     
     # 确保必要目录存在且权限正确
     mkdir -p uploads creation_sessions static/uploads instance logs models
@@ -121,7 +126,7 @@ echo ""
 
 # 步骤4: 重启服务
 echo -e "${YELLOW}🔄 步骤4/4: 重启服务...${NC}"
-ssh $SERVER_HOST << 'ENDSSH'
+$SSH_CMD $SERVER_USER@$SERVER_HOST << 'ENDSSH'
     # 重启Gunicorn服务
     if systemctl is-active --quiet hltraining; then
         sudo systemctl restart hltraining
