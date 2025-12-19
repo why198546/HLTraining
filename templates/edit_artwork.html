@@ -101,7 +101,7 @@
                 </div>
 
                 <div class="edit-form">
-                    <form method="POST" action="{{ url_for('update_artwork', artwork_id=artwork.id) }}">
+                    <form method="POST" action="{{ url_for('create.update_artwork', artwork_id=artwork.id) }}">
                         <div class="form-group">
                             <label for="title">作品标题 <span class="required">*</span></label>
                             <input type="text" id="title" name="title" 

@@ -5841,6 +5841,58 @@ main {
     box-shadow: none;
 }
 
+/* 参考图快捷操作区域 */
+.reference-quick-actions {
+    margin-top: 1rem;
+    display: none; /* 默认隐藏 */
+    flex-direction: row;
+    gap: 1rem;
+    width: 100%;
+}
+
+.reference-quick-actions[style*="display: block"],
+.reference-quick-actions.show {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.quick-actions-hint {
+    display: none; /* 隐藏提示文字 */
+}
+
+.quick-action-btn {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.25);
+    min-width: 0;
+    max-width: 50%;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.35);
+}
+
+.quick-action-btn:active {
+    transform: translateY(0);
+}
+
+.quick-action-btn i {
+    font-size: 1.2rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     .creation-modes {
@@ -5879,6 +5931,17 @@ main {
     .generate-btn {
         padding: 0.9rem 1.5rem;
         font-size: 0.95rem;
+    }
+    
+    .reference-quick-actions {
+        margin-top: 0.75rem;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .quick-action-btn {
+        font-size: 0.9rem;
+        padding: 0.85rem 1.25rem;
     }
 }
 

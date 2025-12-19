@@ -18,10 +18,66 @@
 
 ## 📚 文档
 
+- **[🚀 快速启动指南](docs/快速启动指南.md)** - 虚拟环境配置和启动说明
+- **[🤖 智能助手功能](docs/智能助手多图生成功能.md)** - 多图生成功能详解
 - [Nano Banana 实现文档](NANO_BANANA_IMPLEMENTATION.md) - 详细的功能实现和使用指南
 - [SAM 3D 集成文档](docs/SAM3D_INTEGRATION.md) - SAM 3D 集成指南和API使用说明
 - [API 设置指南](GEMINI_API_SETUP.md) - Gemini API 配置说明
 - [项目完成报告](PROJECT_COMPLETION_REPORT.md) - 项目成就和升级总结
+
+## ⚡ 快速开始
+
+### 1. 激活虚拟环境
+
+项目已配置自动激活虚拟环境：
+
+```powershell
+# 方式1: 使用快捷脚本（推荐）
+.\activate.ps1
+
+# 方式2: 直接激活
+.\.venv\Scripts\Activate.ps1
+
+# 方式3: VS Code 会自动激活（已配置）
+```
+
+看到 `✅ 虚拟环境已激活` 表示成功！
+
+### 2. 安装依赖（首次运行）
+
+```powershell
+pip install -r requirements.txt
+```
+
+### 3. 配置环境变量
+
+创建 `.env` 文件：
+
+```env
+GEMINI_API_KEY=your_api_key_here
+FLASK_SECRET_KEY=your_secret_key
+```
+
+### 4. 启动应用
+
+**开发模式：**
+```powershell
+python run.py
+```
+
+**生产模式：**
+```powershell
+.\app.ps1 start    # 启动服务（后台）
+.\app.ps1 status   # 查看状态
+.\app.ps1 log      # 查看日志
+.\app.ps1 stop     # 停止服务
+```
+
+### 5. 访问应用
+
+打开浏览器访问：http://127.0.0.1:5000
+
+📖 **详细说明请查看：** [快速启动指南](docs/快速启动指南.md)
 
 ## 🚀 技术栈
 

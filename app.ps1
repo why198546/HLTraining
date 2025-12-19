@@ -64,9 +64,12 @@ function Start-Service {
     $logFile = Join-Path $LOG_DIR "app_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     $errorLog = Join-Path $LOG_DIR "error.log"
     
-    # 创建启动脚本（设置编码，API key 从 .env 文件读取）
+    # 创建启动脚本（激活虚拟环境并启动应用）
     $startScript = @"
 `$env:PYTHONIOENCODING='utf-8'
+# 激活虚拟环境
+& .\.venv\Scripts\Activate.ps1
+# 启动应用
 python app.py
 "@
     $startScript | Out-File -FilePath "temp_start.ps1" -Encoding UTF8

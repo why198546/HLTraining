@@ -319,9 +319,11 @@ function handleImageUpload(event) {
         reader.onload = function(e) {
             document.getElementById('uploaded-image').src = e.target.result;
             document.getElementById('uploaded-image-preview').style.display = 'block';
+            // 显示快捷操作按钮
+            document.getElementById('reference-quick-actions').style.display = 'block';
         };
         reader.readAsDataURL(file);
-        showMessage('图片上传成功！', 'success');
+        showMessage('图片上传成功！可以直接生成视频或3D模型', 'success');
     }
 }
 
@@ -330,7 +332,139 @@ function removeUploadedImage() {
     uploadedImageFile = null;
     document.getElementById('uploaded-image-preview').style.display = 'none';
     document.getElementById('reference-image').value = '';
+    // 隐藏快捷操作按钮
+    document.getElementById('reference-quick-actions').style.display = 'none';
     showMessage('已移除参考图片', 'info');
+}
+
+// 从参考图直接生成视频
+async function generateVideoFromReference() {
+    if (!uploadedImageFile) {
+        showMessage('请先上传参考图片', 'error');
+        return;
+    }
+    
+    showLoadingOverlay('正在准备视频生成...');
+    
+    try {
+        // 先上传参考图到服务器
+        const formData = new FormData();
+        formData.append('reference_image', uploadedImageFile);
+        
+        const response = await fetch('/upload-reference-image', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+            throw new Error(result.error || '上传失败');
+        }
+        
+        hideLoadingOverlay();
+        
+        // 构建视频生成页面的URL参数
+        const params = new URLSearchParams({
+            image_url: result.image_url,
+            from_reference: 'true'
+        });
+        
+        // 跳转到视频生成页面
+        window.location.href = `/video?${params.toString()}`;
+        
+    } catch (error) {
+        hideLoadingOverlay();
+        showMessage(`上传失败：${error.message}`, 'error');
+        console.error('上传参考图失败:', error);
+    }
+}
+
+// 从参考图直接生成3D模型
+async function generate3DFromReference() {
+    if (!uploadedImageFile) {
+        showMessage('请先上传参考图片', 'error');
+        return;
+    }
+    
+    showLoadingOverlay('正在生成3D模型...');
+    
+    try {
+        const formData = new FormData();
+        formData.append('image', uploadedImageFile);
+        
+        // 添加3D模型提示词（如果有）
+        const prompt = document.getElementById('creation-prompt').value.trim();
+        if (prompt) {
+            formData.append('prompt', prompt);
+        }
+        
+        // 启动进度模拟
+        startProgressSimulation();
+        
+        const response = await fetch('/generate-3d-model', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        // 停止进度模拟
+        stopProgressSimulation();
+
+        if (result.success) {
+            // 完成进度条到100%
+            updateProgress(100, '生成完成！');
+            
+            setTimeout(() => {
+                hideLoadingOverlay();
+                showMessage('3D模型生成成功！', 'success');
+                
+                // 设置生成的图片URL（用于显示）
+                generatedImageUrl = URL.createObjectURL(uploadedImageFile);
+                
+                // 显示第三阶段（3D模型预览）
+                const finalImageEl = document.getElementById('final-image');
+                if (finalImageEl) {
+                    finalImageEl.src = generatedImageUrl;
+                    finalImageEl.style.display = 'block';
+                }
+                
+                // 显示3D模型相关区域
+                const modelActionsEl = document.getElementById('model-actions');
+                if (modelActionsEl) {
+                    modelActionsEl.style.display = 'block';
+                }
+                
+                // 显示final-actions（包含保存按钮）
+                const finalActions = document.getElementById('final-actions');
+                if (finalActions) {
+                    finalActions.style.display = 'flex';
+                }
+                
+                // 记录3D模型文件路径
+                if (result.model_url) {
+                    modelFilePath = result.model_url;
+                }
+                
+                // 加载3D模型
+                if (result.model_url) {
+                    load3DModel(result.model_url);
+                }
+                
+                // 切换到第三阶段
+                showStage(3);
+                
+            }, 500);
+        } else {
+            throw new Error(result.error || '生成失败');
+        }
+    } catch (error) {
+        stopProgressSimulation();
+        hideLoadingOverlay();
+        showMessage(`3D模型生成失败：${error.message}`, 'error');
+        console.error('生成3D模型失败:', error);
+    }
 }
 
 // 生成图片
@@ -360,7 +494,7 @@ async function generateImage() {
     }
 
     // 单图模式（包括普通风格和3D单图模式）
-    console.log('📤 准备发送请求到 /generate-image');
+    console.log('📤 准备发送请求到 /api/generate-image');
     showLoadingOverlay('AI正在创作中...');
 
     try {
@@ -391,7 +525,7 @@ async function generateImage() {
         }
 
         console.log('🌐 发送 fetch 请求...');
-        const response = await fetch('/generate-image', {
+        const response = await fetch('/api/generate-image', {
             method: 'POST',
             body: formData
         });

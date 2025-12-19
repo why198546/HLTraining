@@ -411,3 +411,77 @@ class Comment(db.Model):
                 'age': self.user.get_age()
             }
         }
+
+
+class CanvasProject(db.Model):
+    """画布项目模型 - 存储用户的画布项目"""
+    __tablename__ = 'canvas_projects'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.String(36), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # 项目信息
+    title = db.Column(db.String(200), default='未命名项目')
+    description = db.Column(db.Text)
+    thumbnail = db.Column(db.String(500))  # 项目缩略图
+    
+    # 画布数据
+    canvas_data = db.Column(db.JSON)  # 存储画布中的所有图片及其位置、尺寸
+    chat_history = db.Column(db.JSON)  # 存储对话历史
+    
+    # 时间戳
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 统计信息
+    image_count = db.Column(db.Integer, default=0)
+    is_deleted = db.Column(db.Boolean, default=False)
+    
+    # 关联用户
+    user = db.relationship('User', backref='canvas_projects')
+    
+    def __init__(self, project_id, user_id, title='未命名项目'):
+        self.project_id = project_id
+        self.user_id = user_id
+        self.title = title
+        self.canvas_data = {'images': []}
+        self.chat_history = []
+        self.image_count = 0
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'project_id': self.project_id,
+            'title': self.title,
+            'description': self.description,
+            'thumbnail': self.thumbnail,
+            'canvas_data': self.canvas_data,
+            'chat_history': self.chat_history,
+            'image_count': self.image_count,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat(),
+            'last_accessed': self.last_accessed.isoformat()
+        }
+    
+    def update_canvas_data(self, canvas_data):
+        """更新画布数据"""
+        self.canvas_data = canvas_data
+        self.image_count = len(canvas_data.get('images', []))
+        self.updated_at = datetime.utcnow()
+    
+    def add_chat_message(self, role, content, metadata=None):
+        """添加对话记录"""
+        if self.chat_history is None:
+            self.chat_history = []
+        message = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'role': role,  # 'user' or 'assistant'
+            'content': content,
+            'metadata': metadata or {}
+        }
+        self.chat_history.append(message)
+        self.updated_at = datetime.utcnow()
+

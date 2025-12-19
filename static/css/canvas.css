@@ -1,0 +1,705 @@
+/* AI画布页面样式 */
+.canvas-container {
+    display: flex;
+    height: calc(100vh - 70px);
+    margin-top: 70px;
+    background: #f5f5f5;
+    overflow: hidden;
+}
+
+/* 左侧画布区域 */
+.canvas-gallery {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    overflow: hidden;
+}
+
+.canvas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e0e0e0;
+    background: white;
+}
+
+.canvas-header h2 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin: 0;
+    font-weight: 600;
+}
+
+.canvas-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: rgba(0, 98, 65, 0.1);
+    color: var(--primary-color);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.btn-icon svg {
+    stroke-width: 2;
+}
+
+.canvas-grid {
+    flex: 1;
+    overflow: hidden;
+    padding: 2rem;
+    position: relative;
+    background: #fafafa;
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.empty-canvas {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: #999;
+}
+
+.empty-canvas svg {
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+.empty-canvas p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.empty-canvas .hint {
+    font-size: 0.9rem;
+    color: #bbb;
+}
+
+.canvas-item {
+    position: absolute;
+    background: white;
+    border-radius: 8px;
+    overflow: visible;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: box-shadow 0.2s ease;
+    cursor: move;
+    border: 2px solid transparent;
+}
+
+.canvas-item.selected {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 24px rgba(0, 98, 65, 0.3);
+    z-index: 100;
+}
+
+.canvas-item:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* 图片容器 */
+.canvas-item-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.canvas-item-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+/* 图片信息叠加层 */
+.canvas-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent);
+    color: white;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.canvas-item.selected .canvas-item-overlay,
+.canvas-item:hover .canvas-item-overlay {
+    opacity: 1;
+}
+
+.canvas-item-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.canvas-item-resolution {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+/* 选中徽章 */
+.selected-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 98, 65, 0.4);
+    z-index: 10;
+}
+
+.canvas-item.selected .selected-badge {
+    display: block;
+}
+
+/* 调整大小控制点 */
+.resize-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    display: none;
+    z-index: 11;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.canvas-item.selected .resize-handle {
+    display: block;
+}
+
+.resize-handle.nw {
+    top: -6px;
+    left: -6px;
+    cursor: nw-resize;
+}
+
+.resize-handle.ne {
+    top: -6px;
+    right: -6px;
+    cursor: ne-resize;
+}
+
+.resize-handle.sw {
+    bottom: -6px;
+    left: -6px;
+    cursor: sw-resize;
+}
+
+.resize-handle.se {
+    bottom: -6px;
+    right: -6px;
+    cursor: se-resize;
+}
+
+/* 编辑工具栏 */
+.canvas-item-toolbar {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 8px;
+    padding: 6px;
+    display: none;
+    gap: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 11;
+}
+
+.canvas-item.selected .canvas-item-toolbar {
+    display: flex;
+}
+
+.canvas-item-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #666;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.canvas-item-toolbar button:hover {
+    background: rgba(0, 98, 65, 0.1);
+    color: var(--primary-color);
+}
+
+.canvas-item-toolbar button.delete:hover {
+    background: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+}
+
+/* 右侧对话区域 */
+.chat-panel {
+    width: 420px;
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-left: 1px solid #e0e0e0;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    background: var(--primary-color);
+    color: white;
+}
+
+.chat-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.chat-header .btn-icon {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.chat-header .btn-icon:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: #fafafa;
+}
+
+.message {
+    display: flex;
+    gap: 0.75rem;
+    animation: messageSlide 0.3s ease;
+}
+
+@keyframes messageSlide {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message.user {
+    flex-direction: row-reverse;
+}
+
+.message-content {
+    max-width: 85%;
+    padding: 0.875rem 1.125rem;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.message.assistant .message-content {
+    background: white;
+    color: #333;
+    border: 1px solid #e0e0e0;
+}
+
+.message.user .message-content {
+    background: var(--primary-color);
+    color: white;
+}
+
+.message-content p {
+    margin: 0.5rem 0;
+}
+
+.message-content p:first-child {
+    margin-top: 0;
+}
+
+.message-content p:last-child {
+    margin-bottom: 0;
+}
+
+.message-content ul {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.message-content li {
+    margin: 0.25rem 0;
+}
+
+.message-content .hint-text {
+    font-size: 0.85rem;
+    opacity: 0.8;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+.message.loading .message-content {
+    background: white;
+    border: 1px solid #e0e0e0;
+}
+
+.typing-indicator {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.5rem 0;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #999;
+    animation: typing 1.4s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.5;
+    }
+    30% {
+        transform: translateY(-10px);
+        opacity: 1;
+    }
+}
+
+.chat-input-container {
+    border-top: 1px solid #e0e0e0;
+    background: white;
+    padding: 1rem;
+    position: relative;
+    z-index: 10;
+}
+
+.command-menu {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    left: 1rem;
+    right: 1rem;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.15);
+    display: none;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 200;
+    margin-bottom: 0.5rem;
+}
+
+.command-menu.active {
+    display: block;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.command-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.command-item:last-child {
+    border-bottom: none;
+}
+
+.command-item:hover {
+    background: #f8f8f8;
+}
+
+.command-item.selected {
+    background: rgba(0, 98, 65, 0.05);
+}
+
+.command-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.command-info {
+    flex: 1;
+}
+
+.command-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+}
+
+.command-desc {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 0.15rem;
+}
+
+.chat-input-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.chat-input-form textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.875rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s ease;
+}
+
+.chat-input-form textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.input-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.char-count {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.btn-send {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-send:hover:not(:disabled) {
+    background: var(--primary-color-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 98, 65, 0.25);
+}
+
+.btn-send:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 图片预览模态框 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    animation: zoomIn 0.3s ease;
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-close {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    font-size: 2rem;
+    color: white;
+    cursor: pointer;
+    z-index: 2001;
+    transition: transform 0.2s ease;
+}
+
+.modal-close:hover {
+    transform: scale(1.1);
+}
+
+#modalImage {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.btn-modal {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: white;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-modal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .chat-panel {
+        width: 360px;
+    }
+    
+    .canvas-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .canvas-container {
+        flex-direction: column;
+    }
+    
+    .chat-panel {
+        width: 100%;
+        height: 50vh;
+        border-left: none;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .canvas-gallery {
+        height: 50vh;
+    }
+    
+    .canvas-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .canvas-header {
+        padding: 1rem;
+    }
+    
+    .chat-header {
+        padding: 1rem;
+    }
+    
+    .chat-messages {
+        padding: 1rem;
+    }
+}

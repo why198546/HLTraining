@@ -123,7 +123,7 @@
                         <h2>暂无推荐作品</h2>
                         <p>快去创作并设置你的推荐作品吧！</p>
                         {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('create_page') }}" class="btn-primary">
+                            <a href="{{ url_for('create.create') }}" class="btn-primary">
                                 <i class="fas fa-plus"></i> 开始创作
                             </a>
                         {% endif %}

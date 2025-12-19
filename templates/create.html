@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI创作工坊 - 开始创作</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20251219-3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
@@ -201,6 +201,18 @@
                             <i class="fas fa-wand-magic-sparkles"></i>
                             生成图片
                         </button>
+                        
+                        <!-- 上传参考图后的快捷操作按钮 -->
+                        <div id="reference-quick-actions" class="reference-quick-actions" style="display: none;">
+                            <button class="quick-action-btn" onclick="generateVideoFromReference()">
+                                <i class="fas fa-video"></i>
+                                <span>直接生成视频</span>
+                            </button>
+                            <button class="quick-action-btn" onclick="generate3DFromReference()">
+                                <i class="fas fa-cube"></i>
+                                <span>直接生成3D模型</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

@@ -23,17 +23,17 @@
 
                 <!-- 三个入口卡片：松果课堂、松果创意、松果生活 -->
                 <div class="hero-actions">
-                    <a class="hero-card hero-course" href="{{ url_for('sunguo_class') }}">
+                    <a class="hero-card hero-course" href="{{ url_for('main.sunguo_class') }}">
                         <span class="card-icon"><i class="fas fa-book-open"></i></span>
                         <span class="card-title">松果课堂</span>
                         <span class="card-desc">美术+AI主题课程，分人物、动作、场景、综合四大板块</span>
                     </a>
-                    <a class="hero-card hero-practice" href="{{ url_for('create') }}">
+                    <a class="hero-card hero-practice" href="{{ url_for('create.create') }}">
                         <span class="card-icon"><i class="fas fa-pencil-alt"></i></span>
                         <span class="card-title">松果创意</span>
                         <span class="card-desc">上传线稿，开始AI创作练习</span>
                     </a>
-                    <a class="hero-card hero-gallery" href="{{ url_for('gallery') }}">
+                    <a class="hero-card hero-gallery" href="{{ url_for('gallery.gallery') }}">
                         <span class="card-icon"><i class="fas fa-images"></i></span>
                         <span class="card-title">松果生活</span>
                         <span class="card-desc">浏览大家的精彩AI作品</span>

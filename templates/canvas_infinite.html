@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI画布 - 无限创作空间</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_infinite.css') }}?v=3.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+<!-- 简单的后退按钮 -->
+<a href="{{ url_for('main.index') }}" class="back-button" title="返回首页">
+    <i class="fas fa-arrow-left"></i>
+</a>
+
+<div class="canvas-page">
+    <!-- 无限画布容器 -->
+    <div class="infinite-canvas-container">
+        <!-- 画布视口 -->
+        <div class="canvas-viewport" id="canvasViewport">
+            <!-- 网格背景 -->
+            <div class="canvas-grid"></div>
+            <!-- 辅助线 -->
+            <div class="align-guide align-guide-v" id="guideVertical" style="display: none;"></div>
+            <div class="align-guide align-guide-h" id="guideHorizontal" style="display: none;"></div>
+            <!-- 图片会动态添加到这里 -->
+        </div>
+        
+        <!-- 工具栏 - 选中图片时显示 -->
+        <div class="image-toolbar" id="imageToolbar" style="display: none;">
+            <button class="toolbar-btn" data-action="upscale" title="高清放大">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <polyline points="9 21 3 21 3 15"></polyline>
+                    <line x1="21" y1="3" x2="14" y2="10"></line>
+                    <line x1="3" y1="21" x2="10" y2="14"></line>
+                </svg>
+                <span>放大</span>
+            </button>
+            <button class="toolbar-btn" data-action="regenerate" title="重新生成">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>重生成</span>
+            </button>
+            <button class="toolbar-btn" data-action="modify" title="修改图片">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>修改</span>
+            </button>
+            <button class="toolbar-btn" data-action="download" title="下载图片">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>下载</span>
+            </button>
+            <button class="toolbar-btn toolbar-btn-danger" data-action="delete" title="删除图片">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>删除</span>
+            </button>
+        </div>
+        
+        <!-- 控制面板 -->
+        <div class="canvas-controls">
+            <button class="control-btn" id="btnAutoArrangeAll" title="自动排列所有图片">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                重排全部
+            </button>
+            <button class="control-btn" id="btnAutoArrangeSelected" title="重排选中的图片" disabled>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-dasharray="3 3"></rect>
+                    <rect x="7" y="7" width="4" height="4"></rect>
+                    <rect x="13" y="7" width="4" height="4"></rect>
+                    <rect x="7" y="13" width="4" height="4"></rect>
+                    <rect x="13" y="13" width="4" height="4"></rect>
+                </svg>
+                重排选中
+            </button>
+            <button class="control-btn" id="btnFitToScreen" title="适应屏幕">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+                适应屏幕
+            </button>
+            <span class="zoom-level" id="zoomLevel">100%</span>
+        </div>
+        
+        <!-- 浮动聊天面板 -->
+        <div class="floating-chat-panel" id="floatingChat">
+            <div class="chat-panel-header">
+                <span class="chat-panel-title">💬 AI助手</span>
+                <div class="chat-panel-actions">
+                    <button class="btn-icon" id="btnMinimizeChat" title="最小化">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chat-panel-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p><strong>👋 欢迎来到无限画布！</strong></p>
+                        <p>你可以：</p>
+                        <ul>
+                            <li>🎨 描述想要的图片，我会生成在画布上</li>
+                            <li>🖱️ 拖拽画布移动，鼠标滚轮缩放</li>
+                            <li>📦 点击图片选中，拖动调整位置</li>
+                            <li>🔧 选中后使用工具栏编辑图片</li>
+                            <li>📐 一键自动重排整理图片</li>
+                        </ul>
+                        <p class="hint">输入 <code>/</code> 可快速切换模式</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-panel-input">
+                <form id="chatForm">
+                    <!-- 命令菜单 -->
+                    <div class="command-menu" id="commandMenu">
+                        <div class="command-item" data-command="生成" data-mode="generate">
+                            <span class="command-icon">🎨</span>
+                            <span class="command-name">生成</span>
+                            <span class="command-desc">生成新图片</span>
+                        </div>
+                        <div class="command-item" data-command="多图" data-mode="multi">
+                            <span class="command-icon">🖼️</span>
+                            <span class="command-name">多图</span>
+                            <span class="command-desc">批量生成图片</span>
+                        </div>
+                        <div class="command-item" data-command="对话" data-mode="chat">
+                            <span class="command-icon">💬</span>
+                            <span class="command-name">对话</span>
+                            <span class="command-desc">聊天交流</span>
+                        </div>
+                        <div class="command-item" data-command="修改" data-mode="modify">
+                            <span class="command-icon">✨</span>
+                            <span class="command-name">修改</span>
+                            <span class="command-desc">修改选中图片</span>
+                        </div>
+                    </div>
+                    
+                    <textarea 
+                        id="promptInput" 
+                        name="prompt" 
+                        placeholder="输入 / 查看命令，或直接描述你的需求..." 
+                        rows="1"
+                        maxlength="1000"
+                    ></textarea>
+                    <div class="input-footer">
+                        <span class="char-count"><span id="charCount">0</span>/1000</span>
+                        <button type="submit" class="btn-send" id="btnSend">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 最小化后的聊天按钮 -->
+        <button class="floating-chat-btn" id="floatingChatBtn" style="display: none;">
+            💬
+        </button>
+    </div>
+</div>
+
+<!-- 图片预览模态框 -->
+<div class="modal" id="imageModal">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+        <button class="modal-close" id="modalClose">&times;</button>
+        <img id="modalImage" src="" alt="预览">
+    </div>
+</div>
+
+    <script src="{{ url_for('static', filename='js/canvas_infinite.js') }}?v=2.9"></script>
+</body>
+</html>

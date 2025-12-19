@@ -396,7 +396,7 @@ class InlineVersionManager {
     // 创建会话
     async createSession() {
         try {
-            const response = await fetch('/create-session', {
+            const response = await fetch('/api/create-session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -437,14 +437,14 @@ class InlineVersionManager {
 
     // 获取版本列表
     async fetchVersions(type) {
-        const response = await fetch(`/session/${this.currentSessionId}/versions?type=${type}`);
+        const response = await fetch(`/api/session/${this.currentSessionId}/versions?type=${type}`);
         const result = await response.json();
         return result.success ? result.versions : [];
     }
 
     // 加载选中的版本
     async loadSelectedVersions() {
-        const response = await fetch(`/session/${this.currentSessionId}/selected-versions`);
+        const response = await fetch(`/api/session/${this.currentSessionId}/selected-versions`);
         const result = await response.json();
         if (result.success) {
             this.selectedVersions = result.selected;
@@ -454,7 +454,7 @@ class InlineVersionManager {
     // 选择版本
     async selectVersion(versionId) {
         try {
-            const response = await fetch(`/session/${this.currentSessionId}/select-version`, {
+            const response = await fetch(`/api/session/${this.currentSessionId}/select-version`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ version_id: versionId })

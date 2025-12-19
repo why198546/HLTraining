@@ -21,7 +21,7 @@
             <h3>{{ empty_message|default('暂无作品') }}</h3>
             {% if show_actions|default(false) %}
                 <p>赶快开始你的第一件AI创作吧！</p>
-                <a href="{{ url_for('create') }}" class="btn btn-primary btn-large">
+                <a href="{{ url_for('create.create') }}" class="btn btn-primary btn-large">
                     <i class="fas fa-plus"></i>
                     开始创作
                 </a>

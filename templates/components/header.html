@@ -1,7 +1,7 @@
 <!-- 统一网站导航栏 -->
 <header class="header">
     <nav class="navbar">
-        <a class="nav-brand" href="{{ url_for('index') }}" aria-label="AI松果之术">
+        <a class="nav-brand" href="{{ url_for('main.index') }}" aria-label="AI松果之术">
             <span class="nav-logo-text">
                 <img
                     src="{{ url_for('static', filename='image/static-logo-horizontal.png') }}"
@@ -14,10 +14,11 @@
             </span>
         </a>
         <ul class="nav-menu">
-            <li><a href="{{ url_for('index') }}" class="nav-link {{ 'active' if request.endpoint == 'index' }}">首页</a></li>
-            <li><a href="{{ url_for('create') }}" class="nav-link {{ 'active' if request.endpoint == 'create' }}">开始创作</a></li>
-            <li><a href="{{ url_for('gallery') }}" class="nav-link {{ 'active' if request.endpoint == 'gallery' }}">作品展示</a></li>
-            <li><a href="{{ url_for('tutorial') }}" class="nav-link {{ 'active' if request.endpoint == 'tutorial' }}">使用教程</a></li>
+            <li><a href="{{ url_for('main.index') }}" class="nav-link {{ 'active' if request.endpoint == 'main.index' }}">首页</a></li>
+            <li><a href="{{ url_for('create.create') }}" class="nav-link {{ 'active' if request.endpoint == 'create.create' }}">开始创作</a></li>
+            <li><a href="{{ url_for('canvas.canvas') }}" class="nav-link {{ 'active' if request.endpoint == 'canvas.canvas' }}">AI画布</a></li>
+            <li><a href="{{ url_for('gallery.gallery') }}" class="nav-link {{ 'active' if request.endpoint == 'gallery.gallery' }}">作品展示</a></li>
+            <li><a href="{{ url_for('main.tutorial') }}" class="nav-link {{ 'active' if request.endpoint == 'main.tutorial' }}">使用教程</a></li>
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('auth.my_artworks') }}" class="nav-link {{ 'active' if request.endpoint == 'auth.my_artworks' }}">我的作品</a></li>
                 <li class="nav-dropdown">
