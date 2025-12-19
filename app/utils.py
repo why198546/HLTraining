@@ -1,8 +1,9 @@
 """通用工具函数"""
-import os
-import cv2
 import glob
+import os
 from datetime import datetime
+
+import cv2
 
 
 def normalize_path_for_url(file_path):
@@ -82,9 +83,10 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
         bool: 保存是否成功
     """
     try:
-        from auth.models import Artwork, db
         from flask_login import current_user
-        
+
+        from auth.models import Artwork, db
+
         # 验证必需的图片路径
         if not generated_image_path:
             print(f"⚠️ 没有生成图片路径，跳过保存")

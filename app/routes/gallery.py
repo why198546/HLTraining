@@ -9,7 +9,7 @@ def gallery():
     """公共作品展示页面"""
     try:
         from auth.models import Artwork, User
-        
+
         # 获取所有公开的推荐作品
         featured_artworks = Artwork.query.filter_by(
             is_public=True, 

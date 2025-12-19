@@ -1,6 +1,6 @@
 """创作相关路由"""
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 create_bp = Blueprint('create', __name__)
 
@@ -15,7 +15,7 @@ def create():
 def edit_artwork(artwork_id):
     """编辑作品页面"""
     from auth.models import Artwork
-    
+
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
     
@@ -35,7 +35,7 @@ def edit_artwork(artwork_id):
 def update_artwork(artwork_id):
     """更新作品信息"""
     from auth.models import Artwork, db
-    
+
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
     

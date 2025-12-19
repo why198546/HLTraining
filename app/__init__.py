@@ -1,11 +1,13 @@
 """Flask应用工厂"""
+import os
+
 from flask import Flask
 from flask_login import LoginManager
-import os
+
 
 def create_app():
     """创建并配置Flask应用"""
-    from .config import Config, BASE_DIR
+    from .config import BASE_DIR, Config
     
     app = Flask(__name__, 
                 template_folder=os.path.join(BASE_DIR, 'templates'),
@@ -16,7 +18,7 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     # 初始化数据库
-    from auth.models import db, User
+    from auth.models import User, db
     db.init_app(app)
     
     # 初始化登录管理器
@@ -47,16 +49,8 @@ def create_app():
     app.register_blueprint(auth_bp)
     
     # 注册应用路由蓝图
-    from .routes import (
-        canvas_bp,
-        create_bp,
-        gallery_bp,
-        video_bp,
-        model3d_bp,
-        api_bp,
-        static_files_bp,
-        main_bp
-    )
+    from .routes import (api_bp, canvas_bp, create_bp, gallery_bp, main_bp,
+                         model3d_bp, static_files_bp, video_bp)
     
     app.register_blueprint(main_bp)
     app.register_blueprint(canvas_bp, url_prefix='/canvas')

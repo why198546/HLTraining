@@ -3,6 +3,7 @@
 import re
 from collections import defaultdict
 
+
 def analyze_routes():
     # 读取app.py
     with open('app.py', 'r', encoding='utf-8') as f:

@@ -1,14 +1,15 @@
 """3D模型相关路由"""
-from flask import Blueprint, request, jsonify, url_for
-from flask_login import current_user
-from werkzeug.utils import secure_filename
 import os
 import uuid
 
-from managers.model3d_manager import Model3DManager
-from managers.creation_session_manager import CreationSessionManager
+from flask import Blueprint, jsonify, request, url_for
+from flask_login import current_user
+from werkzeug.utils import secure_filename
+
 from api.nano_banana import NanoBananaAPI
-from app.utils import normalize_path_for_url, auto_save_artwork_to_db
+from app.utils import auto_save_artwork_to_db, normalize_path_for_url
+from managers.creation_session_manager import CreationSessionManager
+from managers.model3d_manager import Model3DManager
 
 model3d_bp = Blueprint('model3d', __name__)
 

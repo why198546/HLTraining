@@ -2,12 +2,14 @@
 测试智能助手多图生成功能
 """
 
-import sys
 import os
+import sys
+
 sys.path.insert(0, os.path.dirname(__file__))
 
 # 导入需要的依赖
 import re
+
 
 def detect_and_split_multi_generation(prompt, forced_intent=None):
     """智能检测并拆解多张图片生成请求"""

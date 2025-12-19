@@ -1,32 +1,32 @@
 """API路由（所有/api/*路由）"""
+import json
 import os
 import re
-import uuid
-import json
-import traceback
 import shutil
-import numpy as np
-import cv2
-import requests
-import google.generativeai as genai
-from io import BytesIO
+import traceback
+import uuid
 from datetime import datetime
-from PIL import Image
-from flask import Blueprint, request, jsonify, current_app
-from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
-from sqlalchemy import func, desc
+from io import BytesIO
 
-# 导入数据库和模型
-from auth.models import db, User, Artwork, ArtworkVote, ArtworkView, CanvasProject
-from app.utils import normalize_path_for_url, allowed_file, preprocess_sketch
-from app.config import Config
+import cv2
+import google.generativeai as genai
+import numpy as np
+import requests
+from flask import Blueprint, current_app, jsonify, request
+from flask_login import current_user, login_required
+from PIL import Image
+from sqlalchemy import desc, func
+from werkzeug.utils import secure_filename
 
 # 导入API模块
 from api.nano_banana import NanoBananaAPI
-from api.sam3d_api import SAM3DAPI
 from api.prompt_translator import translate_prompt
-
+from api.sam3d_api import SAM3DAPI
+from app.config import Config
+from app.utils import allowed_file, normalize_path_for_url, preprocess_sketch
+# 导入数据库和模型
+from auth.models import (Artwork, ArtworkView, ArtworkVote, CanvasProject,
+                         User, db)
 # 导入managers
 from managers.creation_session_manager import CreationSessionManager
 

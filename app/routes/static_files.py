@@ -1,6 +1,7 @@
 """静态文件服务路由"""
-from flask import Blueprint, send_from_directory, current_app
 import os
+
+from flask import Blueprint, current_app, send_from_directory
 
 static_files_bp = Blueprint('static_files', __name__)
 

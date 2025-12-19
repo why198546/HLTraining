@@ -3,12 +3,13 @@
 支持儿童用户注册、作品管理和家长监护功能
 """
 
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
-from datetime import datetime, date
-from werkzeug.security import generate_password_hash, check_password_hash
-import uuid
 import os
+import uuid
+from datetime import date, datetime
+
+from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 

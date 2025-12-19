@@ -1,8 +1,9 @@
 """画布相关路由"""
-from flask import Blueprint, render_template, request, jsonify
-from flask_login import login_required, current_user
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from flask import Blueprint, jsonify, render_template, request
+from flask_login import current_user, login_required
 
 canvas_bp = Blueprint('canvas', __name__)
 

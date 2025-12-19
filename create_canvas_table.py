@@ -1,7 +1,7 @@
 """创建画布项目数据库表"""
-import sys
-import os
 import importlib.util
+import os
+import sys
 
 # 确保当前目录在Python路径中
 current_dir = os.path.dirname(os.path.abspath(__file__))

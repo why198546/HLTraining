@@ -2,9 +2,10 @@
 
 使用新的模块化应用结构。
 """
-from dotenv import load_dotenv
-import sys
 import os
+import sys
+
+from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
@@ -14,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # 导入 run.py 模块
 import importlib.util
+
 spec = importlib.util.spec_from_file_location("run_module", "run.py")
 run_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(run_module)
