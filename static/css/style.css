@@ -281,6 +281,51 @@
     gap: 12px;
 }
 
+/* 生成结果（在 lesson-layout 和 lesson-examples 之间）*/
+.classroom-result {
+    margin-top: 18px;
+    margin-bottom: 20px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 18px;
+    padding: 16px;
+    border: 2px solid #4CAF50;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.classroom-result:empty {
+    display: none;
+}
+
+.classroom-result .classroom-result-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.classroom-result .ai-image {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    max-height: 500px;
+}
+
+.classroom-prompt {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 10px;
+    word-break: break-word;
+    text-align: center;
+}
+
 /* 参考示例 */
 .lesson-examples {
     margin-top: 16px;
@@ -342,25 +387,33 @@
     opacity: 0.95;
 }
 
-.classroom-result {
-    margin-top: 18px;
-    background: rgba(255,255,255,0.95);
-    border-radius: 18px;
-    padding: 16px;
-    border: 1px solid rgba(0,0,0,0.06);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+/* Deprecated: moved to earlier definition */
+
+.classroom-result .classroom-result-inner {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 }
 
-.classroom-prompt {
-    font-size: 14px;
-    color: #444;
-    margin-bottom: 10px;
-    word-break: break-word;
+.classroom-result .ai-image {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 12px;
+    max-height: 500px;
 }
+
+
+/* Deprecated: classroom-result-window replaced by classroom-result */
 
 .ai-image {
     width: 100%;
+    max-width: 100%;
     height: auto;
+    object-fit: contain;
     border-radius: 14px;
     display: block;
 }

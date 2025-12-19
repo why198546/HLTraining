@@ -62,7 +62,13 @@ document.querySelectorAll('.prompt-form').forEach(form => {
       }
     }
 
-    const resultDiv = document.getElementById('classroom-result');
+    const resultDiv = form.closest('.class-section')?.querySelector('.classroom-result');
+    
+    if (!resultDiv) {
+      console.error('找不到结果窗口元素');
+      return;
+    }
+    
     if (!prompt) {
       resultDiv.innerHTML = '<div class="error">请先输入提示词，再点击生成</div>';
       return;

@@ -6,6 +6,8 @@ let recognition = null;
 let isRecording = false;
 let voiceTranscript = '';
 let microphonePermissionGranted = false;
+let recognitionState = 'idle'; // 'idle', 'starting', 'recording', 'stopping', 'processing'
+let recognitionAbortingPromise = null; // 用于追踪 abort 操作
 
 /**
  * 检查麦克风权限
@@ -136,7 +138,9 @@ function initVoiceRecognition() {
     
     recognition.onerror = function(event) {
         console.error('语音识别错误:', event.error);
+        console.error('错误详情:', event);
         isRecording = false;
+        recognitionState = 'idle';
         updateVoiceButtonState('error');
         
         let errorMessage = '语音识别出错';
@@ -144,19 +148,32 @@ function initVoiceRecognition() {
         
         switch(event.error) {
             case 'no-speech':
-                errorMessage = '未检测到语音，请重试';
+                errorMessage = '⚠️ 未检测到语音\n\n请检查:\n1. 麦克风是否正常工作\n2. 是否给予了麦克风权限\n3. 周围环境是否过于嘈杂';
                 break;
             case 'audio-capture':
-                errorMessage = '无法访问麦克风';
+                errorMessage = '❌ 无法访问麦克风\n\n请检查:\n1. 麦克风硬件是否正常\n2. 其他应用是否占用了麦克风\n3. 重启浏览器后重试';
                 shouldShowGuide = true;
                 break;
             case 'not-allowed':
-                errorMessage = '请在浏览器中允许使用麦克风';
+                errorMessage = '❌ 麦克风权限被拒绝\n\n请允许网站使用麦克风:\n1. 点击地址栏左侧的 ⓘ 图标\n2. 找到"麦克风"选项\n3. 选择"允许"';
                 shouldShowGuide = true;
+                break;
+            case 'network':
+                errorMessage = '❌ 网络错误\n\n请检查您的网络连接后重试';
+                break;
+            case 'service-not-allowed':
+                errorMessage = '❌ 浏览器不允许使用语音识别服务\n\n请:\n1. 刷新页面\n2. 检查网络连接\n3. 重试';
+                break;
+            case 'bad-grammar':
+                errorMessage = '⚠️ 语音识别配置错误\n\n请刷新页面后重试';
                 break;
             case 'aborted':
                 // 用户主动停止，不显示错误
+                console.log('用户主动停止了语音识别');
+                recognitionState = 'idle';
                 return;
+            default:
+                errorMessage = `❌ 错误: ${event.error}\n\n请重试或刷新页面后使用其他浏览器`;
         }
         
         showNotification(errorMessage, 'error');
@@ -170,12 +187,19 @@ function initVoiceRecognition() {
     };
     
     recognition.onend = function() {
-        console.log('语音识别已结束');
-        if (isRecording) {
+        console.log('🏁 语音识别已结束');
+        console.log(`状态转换: recognitionState ${recognitionState} -> idle`);
+        
+        const wasRecording = isRecording;
+        isRecording = false;
+        recognitionState = 'idle';
+        
+        if (wasRecording) {
             // 如果是用户主动停止，进行AI整理
+            console.log('💭 准备进行 AI 整理...');
             processVoiceInput();
         }
-        isRecording = false;
+        
         updateVoiceButtonState('idle');
     };
     
@@ -186,33 +210,104 @@ function initVoiceRecognition() {
  * 开始语音输入
  */
 async function startVoiceInput() {
-    if (!recognition) {
-        recognition = initVoiceRecognition();
-        if (!recognition) {
-            showNotification('您的浏览器不支持语音识别功能', 'error');
-            return;
+    console.log(`📊 当前状态: recording=${isRecording}, recognitionState=${recognitionState}`);
+    
+    // 如果已经在录音，则停止
+    if (isRecording) {
+        try {
+            console.log('🛑 停止语音识别...');
+            recognitionState = 'stopping';
+            if (recognition) {
+                recognition.stop();
+            }
+        } catch (error) {
+            console.error('停止语音识别失败:', error);
         }
+        return;
     }
     
-    if (isRecording) {
-        // 停止录音
-        recognition.stop();
-    } else {
-        // 开始录音时不显示引导，让浏览器自然弹出权限请求
-        voiceTranscript = '';
-        try {
-            recognition.start();
-            showNotification('🎤 请开始说话...', 'info');
-        } catch (error) {
-            console.error('启动语音识别失败:', error);
-            
-            // 如果是权限错误，显示友好提示
-            if (error.message && (error.message.includes('not-allowed') || error.name === 'NotAllowedError')) {
-                showNotification('请在浏览器弹窗中点击"允许"以使用麦克风', 'warning');
-            } else {
-                showNotification('启动语音识别失败，请重试', 'error');
+    // 防止重复启动
+    if (recognitionState === 'starting' || recognitionState === 'recording') {
+        console.warn('⚠️ 语音识别已经在运行中');
+        showNotification('语音识别已在运行中，请稍候...', 'warning');
+        return;
+    }
+    
+    // 重置状态
+    voiceTranscript = '';
+    recognitionState = 'starting';
+    
+    try {
+        // 确保识别对象存在
+        if (!recognition) {
+            console.log('🔧 初始化新的识别对象...');
+            recognition = initVoiceRecognition();
+            if (!recognition) {
+                showNotification('❌ 您的浏览器不支持语音识别功能\n\n推荐使用最新版 Chrome 浏览器', 'error');
+                recognitionState = 'idle';
+                return;
             }
         }
+        
+        // 如果识别对象可能处于不正确状态，先 abort 再等待
+        if (recognitionState === 'starting') {
+            console.log('🔄 清理可能存在的旧状态...');
+            try {
+                recognition.abort();
+                // 等待 abort 完成
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (e) {
+                console.log('abort 没有产生错误（这是预期的）');
+            }
+        }
+        
+        // 现在开始识别
+        console.log('📢 调用 recognition.start()...');
+        recognition.start();
+        isRecording = true;
+        recognitionState = 'recording';
+        showNotification('🎤 请开始说话...', 'info');
+        
+    } catch (error) {
+        console.error('❌ 启动语音识别失败:', error);
+        console.error('错误类型:', error.name);
+        console.error('错误信息:', error.message);
+        console.error('完整错误:', error);
+        
+        isRecording = false;
+        recognitionState = 'idle';
+        
+        let errorMessage = '启动语音识别失败';
+        
+        // 详细的错误处理
+        if (error.name === 'InvalidStateError') {
+            console.log('💡 InvalidStateError 原因分析：');
+            console.log('  1. 可能识别对象已在使用中');
+            console.log('  2. 可能浏览器内部状态不一致');
+            console.log('  3. 尝试重新创建识别对象...');
+            
+            errorMessage = '⚠️ 语音识别状态异常\n\n正在尝试修复...\n\n请:\n1. 稍候几秒\n2. 重新点击麦克风\n3. 如果继续失败，请刷新页面';
+            
+            // 尝试重置识别对象
+            recognition = null;
+            recognitionState = 'idle';
+            
+        } else if (error.name === 'NotAllowedError' || error.message?.includes('not-allowed')) {
+            errorMessage = '❌ 麦克风权限被拒绝\n\n请点击浏览器地址栏左侧的设置图标，允许使用麦克风';
+        } else if (error.message?.includes('NotSupportedError')) {
+            errorMessage = '❌ 您的浏览器不支持语音识别\n\n请使用最新版 Chrome 浏览器';
+        } else if (error.message?.includes('AbortError')) {
+            errorMessage = '⚠️ 语音识别被中断\n\n请重试';
+        } else if (error.message?.includes('NetworkError')) {
+            errorMessage = '❌ 网络错误\n\n请检查网络连接后重试';
+        } else if (error.message?.includes('failed to execute') || error.message?.includes('start')) {
+            errorMessage = '⚠️ 启动语音识别失败\n\n请:\n1. 刷新页面\n2. 检查麦克风权限\n3. 关闭其他使用麦克风的应用\n4. 重试';
+        } else {
+            errorMessage = `❌ 启动失败: ${error.message || error.name || '未知错误'}\n\n请:\n1. 刷新页面\n2. 检查麦克风权限\n3. 重试`;
+        }
+        
+        showNotification(errorMessage, 'error');
+        updateVoiceButtonState('idle');
     }
 }
 
@@ -309,7 +404,10 @@ function showNotification(message, type = 'info') {
     // 创建通知元素
     const notification = document.createElement('div');
     notification.className = `voice-notification ${type}`;
-    notification.textContent = message;
+    
+    // 支持多行信息 (用 \n 换行)
+    const lines = message.split('\n');
+    notification.innerHTML = lines.map(line => `<div>${line}</div>`).join('');
     
     // 添加到页面
     document.body.appendChild(notification);
@@ -319,13 +417,19 @@ function showNotification(message, type = 'info') {
         notification.classList.add('show');
     }, 10);
     
-    // 3秒后移除
+    // 错误消息显示时间更长
+    const displayTime = type === 'error' ? 5000 : 3000;
+    
+    // 移除
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
             notification.remove();
         }, 300);
-    }, 3000);
+    }, displayTime);
+    
+    // 错误时也打印到控制台便于远程调试
+    console.log(`[${type.toUpperCase()}] ${message.replace(/\n/g, ' ')}`);
 }
 
 // 页面加载时初始化
