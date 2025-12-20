@@ -792,6 +792,11 @@ async function generateImage(prompt, replaceImageId = null) {
             body: JSON.stringify({ prompt })
         });
         
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`服务器错误 (${response.status}): ${errorText.substring(0, 100)}`);
+        }
+        
         const data = await response.json();
         
         if (!data.success) {
@@ -848,6 +853,11 @@ async function generateMultipleImages(tasks) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: task.prompt })
             });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`服务器错误 (${response.status}): ${errorText.substring(0, 100)}`);
+            }
             
             const data = await response.json();
             

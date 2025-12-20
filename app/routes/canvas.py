@@ -11,8 +11,8 @@ canvas_bp = Blueprint('canvas', __name__)
 @canvas_bp.route('/')
 @login_required
 def canvas():
-    """AI画布页面（原版）"""
-    return render_template('canvas.html')
+    """手绘画布页面"""
+    return render_template('canvas_sketch.html')
 
 
 @canvas_bp.route('/infinite')

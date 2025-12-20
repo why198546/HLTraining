@@ -1,5 +1,5 @@
 ﻿# 松果AI平台 - 统一管理脚本
-# 用法: .\app.ps1 <command> [options]
+# 用法: .\run.ps1 <command> [options]
 
 param(
     [Parameter(Position=0)]
@@ -19,7 +19,7 @@ function Show-Help {
     Write-Host ("=" * 60)
     Write-Host ""
     Write-Host "用法:" -ForegroundColor Yellow
-    Write-Host "  .\app.ps1 <command> [options]"
+    Write-Host "  .\run.ps1 <command> [options]"
     Write-Host ""
     Write-Host "命令:" -ForegroundColor Yellow
     Write-Host "  start       启动服务(后台守护进程)"
@@ -34,11 +34,11 @@ function Show-Help {
     Write-Host "  -Follow     实时跟踪日志"
     Write-Host ""
     Write-Host "示例:" -ForegroundColor Yellow
-    Write-Host "  .\app.ps1 start              # 启动服务"
-    Write-Host "  .\app.ps1 status             # 查看状态"
-    Write-Host "  .\app.ps1 log                # 查看最后50行日志"
-    Write-Host "  .\app.ps1 log -Lines 100     # 查看最后100行"
-    Write-Host "  .\app.ps1 log -Follow        # 实时跟踪日志"
+    Write-Host "  .\run.ps1 start              # 启动服务"
+    Write-Host "  .\run.ps1 status             # 查看状态"
+    Write-Host "  .\run.ps1 log                # 查看最后50行日志"
+    Write-Host "  .\run.ps1 log -Lines 100     # 查看最后100行"
+    Write-Host "  .\run.ps1 log -Follow        # 实时跟踪日志"
     Write-Host ""
 }
 
@@ -51,7 +51,7 @@ function Start-Service {
             $process = Get-Process -Id $appPid -ErrorAction SilentlyContinue
             if ($process) {
                 Write-Host "服务已在运行 (PID: $appPid)" -ForegroundColor Yellow
-                Write-Host "如需重启，请运行: .\app.ps1 restart" -ForegroundColor Yellow
+                Write-Host "如需重启，请运行: .\run.ps1 restart" -ForegroundColor Yellow
                 return
             }
         }
@@ -70,7 +70,7 @@ function Start-Service {
 # 激活虚拟环境
 & .\.venv\Scripts\Activate.ps1
 # 启动应用
-python app.py
+python run.py
 "@
     $startScript | Out-File -FilePath "temp_start.ps1" -Encoding UTF8
     
@@ -96,8 +96,8 @@ python app.py
     Write-Host ""
     Write-Host "访问地址: http://127.0.0.1" -ForegroundColor White
     Write-Host ""
-    Write-Host "查看状态: .\app.ps1 status"
-    Write-Host "查看日志: .\app.ps1 log"
+    Write-Host "查看状态: .\run.ps1 status"
+    Write-Host "查看日志: .\run.ps1 log"
     Write-Host ""
 }
 
@@ -120,7 +120,7 @@ function Stop-Service {
     }
     
     if (-not $stopped) {
-        $pythonProcesses = Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object {$_.CommandLine -like "*app.py*"}
+        $pythonProcesses = Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object {$_.CommandLine -like "*run.py*"}
         
         if ($pythonProcesses) {
             foreach ($proc in $pythonProcesses) {
@@ -174,12 +174,12 @@ function Show-Status {
                 }
             } else {
                 Write-Host "状态: 进程已终止" -ForegroundColor Red
-                Write-Host "运行 .\app.ps1 start 重新启动"
+                Write-Host "运行 .\run.ps1 start 重新启动"
             }
         }
     } else {
         Write-Host "状态: 未运行" -ForegroundColor Red
-        Write-Host "运行 .\app.ps1 start 启动服务"
+        Write-Host "运行 .\run.ps1 start 启动服务"
     }
     
     Write-Host ""
@@ -192,7 +192,7 @@ function Show-Status {
             Write-Host "  大小: $([math]::Round($latestLog.Length / 1KB, 2)) KB"
             Write-Host "  修改: $($latestLog.LastWriteTime)"
             Write-Host ""
-            Write-Host "查看日志: .\app.ps1 log"
+            Write-Host "查看日志: .\run.ps1 log"
         }
     }
     Write-Host ""
@@ -225,8 +225,8 @@ function Show-Log {
         Write-Host ""
         Write-Host ("=" * 60)
         Write-Host "显示最后 $Lines 行" -ForegroundColor Cyan
-        Write-Host "实时跟踪: .\app.ps1 log -Follow"
-        Write-Host "更多行数: .\app.ps1 log -Lines 100"
+        Write-Host "实时跟踪: .\run.ps1 log -Follow"
+        Write-Host "更多行数: .\run.ps1 log -Lines 100"
         Write-Host ""
     }
 }

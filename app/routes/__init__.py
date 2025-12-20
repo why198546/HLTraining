@@ -1,5 +1,4 @@
 """路由模块"""
-from .api import api_bp
 from .canvas import canvas_bp
 from .create import create_bp
 from .gallery import gallery_bp
@@ -15,6 +14,5 @@ __all__ = [
     'gallery_bp',
     'video_bp',
     'model3d_bp',
-    'api_bp',
     'static_files_bp',
 ]

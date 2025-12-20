@@ -1,13 +1,14 @@
-import requests
-import os
-import json
-import time
-from PIL import Image, ImageOps
 import base64
 import io
+import json
+import os
+import time
+
+import requests
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv
+from PIL import Image, ImageOps
 
 # 确保环境变量在模块导入时就加载
 load_dotenv()
@@ -75,11 +76,26 @@ class NanoBananaAPI:
                 style_desc = style_prompts.get(style, style_prompts['cute'])
                 color_desc = color_prompts.get(color_preference, color_prompts['colorful'])
                 
-                # 简化的提示词构建，保持原始意图
+                # 加强提示词，确保AI严格遵循草图结构
                 if description:
-                    prompt = f"为这张手绘简笔画上色: {description}, {style_desc}, {color_desc}"
+                    prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
+内容描述：{description}
+艺术风格：{style_desc}
+色彩风格：{color_desc}
+重要要求：
+1. 必须保持原始线条的结构和位置关系
+2. 不要改变主体的形状和姿态
+3. 在线条范围内填充颜色和细节
+4. 保持画面清晰，适合儿童观看"""
                 else:
-                    prompt = f"为这张手绘简笔画添加美丽的颜色, {style_desc}, {color_desc}, 适合儿童观看"
+                    prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
+艺术风格：{style_desc}
+色彩风格：{color_desc}
+重要要求：
+1. 必须保持原始线条的结构和位置关系
+2. 不要改变主体的形状和姿态
+3. 在线条范围内填充颜色和细节
+4. 保持画面清晰，适合儿童观看"""
             
             print(f"🎨 用户描述：{description or '使用默认风格'}")
             print(f"📝 上色提示词: {prompt}")

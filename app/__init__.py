@@ -49,8 +49,9 @@ def create_app():
     app.register_blueprint(auth_bp)
     
     # 注册应用路由蓝图
-    from .routes import (api_bp, canvas_bp, create_bp, gallery_bp, main_bp,
-                         model3d_bp, static_files_bp, video_bp)
+    from .routes import (canvas_bp, create_bp, gallery_bp, main_bp, model3d_bp,
+                         static_files_bp, video_bp)
+    from .routes.api import api_bp  # 从api子模块导入
     
     app.register_blueprint(main_bp)
     app.register_blueprint(canvas_bp, url_prefix='/canvas')

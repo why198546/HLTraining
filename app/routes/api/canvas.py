@@ -1,34 +1,20 @@
-"""API路由（所有/api/*路由）"""
-import json
+"""画布相关API路由"""
 import os
 import re
-import traceback
 import uuid
 from datetime import datetime
-from io import BytesIO
 
-import cv2
-import numpy as np
-import requests
 from flask import Blueprint, current_app, jsonify, request
 from flask_login import current_user, login_required
-from PIL import Image
-from werkzeug.utils import secure_filename
 
-# 导入API模块
 from api.nano_banana import NanoBananaAPI
-from api.prompt_translator import translate_prompt
-from api.sam3d_api import SAM3DAPI
-from app.utils import allowed_file, normalize_path_for_url, preprocess_sketch
-# 导入数据库和模型
-from auth.models import (Artwork, ArtworkView, ArtworkVote, CanvasProject,
-                         User, db)
+from app.utils import normalize_path_for_url
+from auth.models import CanvasProject, db
 
-api_bp = Blueprint('api', __name__)
+canvas_api_bp = Blueprint('canvas_api', __name__)
 
-# ========== 画布相关API ==========
 
-@api_bp.route('/canvas/generate', methods=['POST'])
+@canvas_api_bp.route('/generate', methods=['POST'])
 @login_required
 def canvas_generate():
     """画布图片生成API"""
@@ -88,7 +74,8 @@ def canvas_generate():
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/chat', methods=['POST'])
+
+@canvas_api_bp.route('/chat', methods=['POST'])
 @login_required
 def canvas_chat():
     """画布对话API - 判断用户意图"""
@@ -188,7 +175,8 @@ def canvas_chat():
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/modify', methods=['POST'])
+
+@canvas_api_bp.route('/modify', methods=['POST'])
 @login_required
 def canvas_modify():
     """画布图片修改API"""
@@ -255,9 +243,10 @@ def canvas_modify():
             'error': str(e)
         }), 500
 
+
 # ========== 画布项目管理 API ==========
 
-@api_bp.route('/canvas/projects', methods=['GET'])
+@canvas_api_bp.route('/projects', methods=['GET'])
 @login_required
 def get_canvas_projects():
     """获取用户的所有画布项目"""
@@ -278,7 +267,8 @@ def get_canvas_projects():
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/projects/create', methods=['POST'])
+
+@canvas_api_bp.route('/projects/create', methods=['POST'])
 @login_required
 def create_canvas_project():
     """创建新的画布项目"""
@@ -310,7 +300,8 @@ def create_canvas_project():
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/projects/<project_id>', methods=['GET'])
+
+@canvas_api_bp.route('/projects/<project_id>', methods=['GET'])
 @login_required
 def get_canvas_project(project_id):
     """获取特定画布项目"""
@@ -342,7 +333,8 @@ def get_canvas_project(project_id):
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/projects/<project_id>', methods=['PUT'])
+
+@canvas_api_bp.route('/projects/<project_id>', methods=['PUT'])
 @login_required
 def update_canvas_project(project_id):
     """更新画布项目"""
@@ -393,7 +385,8 @@ def update_canvas_project(project_id):
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/projects/<project_id>', methods=['DELETE'])
+
+@canvas_api_bp.route('/projects/<project_id>', methods=['DELETE'])
 @login_required
 def delete_canvas_project(project_id):
     """删除画布项目（软删除）"""
@@ -427,7 +420,8 @@ def delete_canvas_project(project_id):
             'error': str(e)
         }), 500
 
-@api_bp.route('/canvas/projects/<project_id>/chat', methods=['POST'])
+
+@canvas_api_bp.route('/projects/<project_id>/chat', methods=['POST'])
 @login_required
 def add_canvas_chat_message(project_id):
     """添加对话消息到项目"""
@@ -463,20 +457,3 @@ def add_canvas_chat_message(project_id):
             'success': False,
             'error': str(e)
         }), 500
-
-# ========== 3D模型API ==========
-
-@api_bp.route('/sam3d/info')
-def sam3d_info():
-    """获取SAM 3D模型信息"""
-    try:
-        sam3d = SAM3DAPI()
-        info = sam3d.get_model_info()
-        return jsonify({
-            'success': True,
-            'info': info
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# 此文件继续... (第2部分将包含视频API、作品API等)

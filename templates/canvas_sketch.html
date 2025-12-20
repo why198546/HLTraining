@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手绘画布 - 松鼠艺术</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_sketch.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/auth_header.html' %}
+    
+    <div class="sketch-container">
+        <!-- 顶部控制栏 -->
+        <div class="control-bar">
+            <div class="resolution-selector">
+                <label>分辨率：</label>
+                <select id="resolutionSelect">
+                    <option value="512x512">512×512 (1:1)</option>
+                    <option value="768x512">768×512 (3:2)</option>
+                    <option value="512x768">512×768 (2:3)</option>
+                    <option value="1024x576" selected>1024×576 (16:9)</option>
+                    <option value="576x1024">576×1024 (9:16)</option>
+                    <option value="1024x1024">1024×1024 (1:1)</option>
+                </select>
+                <button id="applyResolution" class="btn-primary">应用分辨率</button>
+            </div>
+            
+            <div class="prompt-input-container">
+                <input type="text" id="promptInput" placeholder="输入提示词描述你想要生成的图片...">
+                <button id="generateBtn" class="btn-generate">
+                    <i class="fas fa-magic"></i> 生成图片
+                </button>
+            </div>
+        </div>
+
+        <!-- 画布和工具栏 -->
+        <div class="canvas-section">
+            <div class="canvas-toolbar">
+                <h3>绘图工具</h3>
+                <div class="tool-group">
+                    <label>画笔大小：</label>
+                    <input type="range" id="brushSize" min="1" max="50" value="5">
+                    <span id="brushSizeValue">5</span>px
+                </div>
+                <div class="tool-group">
+                    <label>画笔颜色：</label>
+                    <input type="color" id="brushColor" value="#000000">
+                </div>
+                <div class="tool-group">
+                    <label>透明度：</label>
+                    <input type="range" id="brushOpacity" min="0" max="100" value="100">
+                    <span id="brushOpacityValue">100</span>%
+                </div>
+                <div class="tool-buttons">
+                    <button id="eraserBtn" class="tool-btn">
+                        <i class="fas fa-eraser"></i> 橡皮擦
+                    </button>
+                    <button id="clearBtn" class="tool-btn">
+                        <i class="fas fa-trash"></i> 清空画布
+                    </button>
+                    <button id="undoBtn" class="tool-btn">
+                        <i class="fas fa-undo"></i> 撤销
+                    </button>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <div class="canvas-box" id="canvasBox">
+                    <canvas id="sketchCanvas"></canvas>
+                    <div class="canvas-hint">在这里手绘你的草图作为参考图...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果展示区域 -->
+        <div class="result-section" id="resultSection" style="display: none;">
+            <div class="result-header">
+                <h3>生成结果</h3>
+                <div class="view-mode-selector">
+                    <button id="sideBySideBtn" class="view-mode-btn active">
+                        <i class="fas fa-columns"></i> 左右对比
+                    </button>
+                    <button id="overlayBtn" class="view-mode-btn">
+                        <i class="fas fa-layer-group"></i> 叠加对比
+                    </button>
+                </div>
+            </div>
+
+            <!-- 左右对比模式 -->
+            <div class="side-by-side-view" id="sideBySideView">
+                <div class="image-panel">
+                    <h4>手绘草图</h4>
+                    <img id="sketchImageSide" src="" alt="手绘草图">
+                </div>
+                <div class="image-panel">
+                    <h4>AI生成</h4>
+                    <img id="generatedImageSide" src="" alt="AI生成图片">
+                </div>
+            </div>
+
+            <!-- 叠加对比模式 -->
+            <div class="overlay-view" id="overlayView" style="display: none;">
+                <div class="overlay-container">
+                    <img id="sketchImageOverlay" class="overlay-image sketch-layer" src="" alt="手绘草图">
+                    <img id="generatedImageOverlay" class="overlay-image generated-layer" src="" alt="AI生成图片">
+                    <div class="overlay-slider-line"></div>
+                </div>
+                <div class="overlay-controls">
+                    <label>
+                        <input type="checkbox" id="toggleSketchLayer" checked> 显示草图
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleGeneratedLayer" checked> 显示AI生成
+                    </label>
+                    <div class="slider-control">
+                        <label>对比滑块：</label>
+                        <input type="range" id="overlaySlider" min="0" max="100" value="50">
+                    </div>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button id="downloadSketchBtn" class="btn-action">
+                    <i class="fas fa-download"></i> 下载草图
+                </button>
+                <button id="downloadGeneratedBtn" class="btn-action">
+                    <i class="fas fa-download"></i> 下载生成图
+                </button>
+                <button id="saveToGalleryBtn" class="btn-action btn-primary">
+                    <i class="fas fa-save"></i> 保存到作品集
+                </button>
+                <button id="newSketchBtn" class="btn-action">
+                    <i class="fas fa-plus"></i> 新建画布
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>AI正在生成图片，请稍候...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/canvas_sketch.js') }}"></script>
+</body>
+</html>
