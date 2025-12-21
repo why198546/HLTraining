@@ -7,6 +7,26 @@ let currentSize = 5;
 let currentOpacity = 1;
 let drawingHistory = [];
 let historyStep = -1;
+let generatedImageUrl = ''; // 存储生成的图片URL
+let currentViewMode = 'overlay'; // 当前视图模式
+
+// 新增功能变量
+let currentTool = 'brush'; // brush, pencil, marker, spray
+let currentBrushType = 'round'; // round, square
+let currentShapeTool = null; // line, rect, circle, arrow
+let shapeStartPos = null;
+let tempCanvas = null;
+let colorHistory = ['#000000']; // 颜色历史
+let pressureSensitive = true; // 压感支持
+let lastPressure = 0.5; // 最后的压感值
+let pressureHistory = []; // 压感历史（用于平滑）
+const PRESSURE_SMOOTH_COUNT = 3; // 压感平滑窗口大小
+
+// 缩放功能变量
+let zoomLevel = 1; // 当前缩放级别
+const ZOOM_STEP = 0.1; // 缩放步长
+const MIN_ZOOM = 0.25; // 最小缩放25%
+const MAX_ZOOM = 3; // 最大缩放300%
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -21,7 +41,52 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化工具栏
     initializeTools();
+    
+    // 初始化工具栏折叠功能
+    initializeToolbarToggle();
+    
+    // 初始化全屏功能
+    initializeFullscreen();
+    
+    // 初始化缩放功能
+    initializeZoom();
+    
+    // 初始化工具选项面板
+    initializeToolOptions();
+    
+    // 检测设备和压感支持
+    detectDeviceAndPressure();
 });
+
+// 检测设备和压感支持
+function detectDeviceAndPressure() {
+    const isTouch = 'ontouchstart' in window;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    console.log('=== 设备检测 ===');
+    console.log('触摸设备:', isTouch);
+    console.log('iOS设备:', isIOS);
+    console.log('Android设备:', isAndroid);
+    console.log('User Agent:', navigator.userAgent);
+    
+    // 测试压感支持
+    if (isTouch) {
+        console.log('✅ 支持触摸事件');
+        canvas.addEventListener('touchstart', function testPressure(e) {
+            if (e.touches && e.touches[0]) {
+                const touch = e.touches[0];
+                console.log('=== 压感测试 ===');
+                console.log('force:', touch.force);
+                console.log('webkitForce:', touch.webkitForce);
+                console.log('radiusX:', touch.radiusX);
+                console.log('radiusY:', touch.radiusY);
+                console.log('压感支持:', typeof touch.force !== 'undefined' || typeof touch.webkitForce !== 'undefined' ? '✅ 是' : '❌ 否');
+            }
+            canvas.removeEventListener('touchstart', testPressure);
+        }, { once: true });
+    }
+}
 
 // 应用分辨率
 function applyResolution() {
@@ -31,9 +96,13 @@ function applyResolution() {
     canvas.width = width;
     canvas.height = height;
     
-    // 设置画布背景为白色
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 设置白色背景层尺寸
+    const whiteBackground = document.getElementById('whiteBackground');
+    whiteBackground.style.width = width + 'px';
+    whiteBackground.style.height = height + 'px';
+    
+    // canvas背景设置为透明
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // 保存初始状态
     saveState();
@@ -58,27 +127,47 @@ function bindEvents() {
     // 触摸事件支持
     canvas.addEventListener('touchstart', handleTouch);
     canvas.addEventListener('touchmove', handleTouch);
-    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchend', handleTouch);
+    canvas.addEventListener('touchcancel', handleTouch);
     
     // 工具按钮
-    document.getElementById('eraserBtn').addEventListener('click', toggleEraser);
-    document.getElementById('clearBtn').addEventListener('click', clearCanvas);
-    document.getElementById('undoBtn').addEventListener('click', undo);
+    const imageFileInput = document.getElementById('imageFileInput');
+    if (imageFileInput) {
+        imageFileInput.addEventListener('change', handleImageImport);
+    }
+    
+    const eraserBtn = document.getElementById('eraserBtn');
+    if (eraserBtn) {
+        eraserBtn.addEventListener('click', toggleEraser);
+    }
+    
+    const undoBtn = document.getElementById('undoBtn');
+    if (undoBtn) {
+        undoBtn.addEventListener('click', undo);
+    }
+    
+    const clearBtn = document.getElementById('clearBtn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearCanvas);
+    }
     
     // 生成按钮
     document.getElementById('generateBtn').addEventListener('click', generateImage);
     
     // 视图模式切换
+    document.getElementById('overlayModeBtn').addEventListener('click', () => switchViewMode('overlay'));
     document.getElementById('sideBySideBtn').addEventListener('click', () => switchViewMode('side'));
-    document.getElementById('overlayBtn').addEventListener('click', () => switchViewMode('overlay'));
+    document.getElementById('hideModeBtn').addEventListener('click', () => switchViewMode('hide'));
     
     // 叠加模式控制
-    document.getElementById('toggleSketchLayer').addEventListener('change', toggleLayer);
-    document.getElementById('toggleGeneratedLayer').addEventListener('change', toggleLayer);
-    document.getElementById('overlaySlider').addEventListener('input', updateOverlay);
+    document.getElementById('toggleSketchLayer').addEventListener('change', toggleSketchLayer);
+    document.getElementById('toggleGeneratedLayer').addEventListener('change', toggleGeneratedLayer);
+    document.getElementById('generatedOpacitySlider').addEventListener('input', updateGeneratedOpacity);
+    document.getElementById('compareSlider').addEventListener('input', updateCompareSlider);
     
     // 结果操作按钮
-    document.getElementById('downloadSketchBtn').addEventListener('click', downloadSketch);
+    document.getElementById('regenerateBtn').addEventListener('click', regenerateImage);
+    document.getElementById('clearBackgroundBtn').addEventListener('click', clearBackground);
     document.getElementById('downloadGeneratedBtn').addEventListener('click', downloadGenerated);
     document.getElementById('saveToGalleryBtn').addEventListener('click', saveToGallery);
     document.getElementById('newSketchBtn').addEventListener('click', newSketch);
@@ -90,29 +179,137 @@ function initializeTools() {
     const brushColor = document.getElementById('brushColor');
     const brushOpacity = document.getElementById('brushOpacity');
     
-    brushSize.addEventListener('input', (e) => {
-        currentSize = e.target.value;
-        document.getElementById('brushSizeValue').textContent = currentSize;
+    // 画笔大小
+    if (brushSize) {
+        brushSize.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brushSizeValue').textContent = brushSize;
+        });
+    }
+    
+    // 大小预设按钮
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const size = parseInt(e.target.dataset.size);
+            brushSize = size;
+            const sizeInput = document.getElementById('brushSize');
+            if (sizeInput) sizeInput.value = size;
+            const sizeValue = document.getElementById('brushSizeValue');
+            if (sizeValue) sizeValue.textContent = size;
+        });
     });
     
-    brushColor.addEventListener('input', (e) => {
-        currentColor = e.target.value;
-        isEraser = false;
-        document.getElementById('eraserBtn').classList.remove('active');
+    // 画笔颜色
+    if (brushColor) {
+        brushColor.addEventListener('input', (e) => {
+            currentColor = e.target.value;
+            isEraser = false;
+            const eraserBtn = document.getElementById('eraserBtn');
+            if (eraserBtn) eraserBtn.classList.remove('active');
+            addColorToHistory(currentColor);
+        });
+    }
+    
+    // 快速颜色选择
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const color = e.target.dataset.color;
+            if (color) {
+                currentColor = color;
+                if (brushColor) brushColor.value = color;
+                isEraser = false;
+                const eraserBtn = document.getElementById('eraserBtn');
+                if (eraserBtn) eraserBtn.classList.remove('active');
+                addColorToHistory(color);
+                // 高亮当前颜色
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            }
+        });
     });
     
-    brushOpacity.addEventListener('input', (e) => {
-        currentOpacity = e.target.value / 100;
-        document.getElementById('brushOpacityValue').textContent = e.target.value;
-    });
+    // 透明度
+    if (brushOpacity) {
+        brushOpacity.addEventListener('input', (e) => {
+            currentOpacity = e.target.value / 100;
+            const opacityValue = document.getElementById('brushOpacityValue');
+            if (opacityValue) opacityValue.textContent = e.target.value;
+        });
+    }
+    
+    // 笔触类型按钮
+    const roundBtn = document.getElementById('roundBtn');
+    if (roundBtn) {
+        roundBtn.addEventListener('click', () => {
+            brushType = 'round';
+            document.querySelectorAll('.brush-type-btn').forEach(btn => btn.classList.remove('active'));
+            roundBtn.classList.add('active');
+        });
+    }
+    
+    const squareBtn = document.getElementById('squareBtn');
+    if (squareBtn) {
+        squareBtn.addEventListener('click', () => {
+            brushType = 'square';
+            document.querySelectorAll('.brush-type-btn').forEach(btn => btn.classList.remove('active'));
+            squareBtn.classList.add('active');
+        });
+    }
+    
+    // 形状工具按钮
+    const lineBtn = document.getElementById('lineBtn');
+    if (lineBtn) lineBtn.addEventListener('click', () => selectShapeTool('line'));
+    
+    const rectBtn = document.getElementById('rectBtn');
+    if (rectBtn) rectBtn.addEventListener('click', () => selectShapeTool('rect'));
+    
+    const circleBtn = document.getElementById('circleBtn');
+    if (circleBtn) circleBtn.addEventListener('click', () => selectShapeTool('circle'));
+    
+    const arrowBtn = document.getElementById('arrowBtn');
+    if (arrowBtn) arrowBtn.addEventListener('click', () => selectShapeTool('arrow'));
+    
+    // 初始化颜色历史
+    updateColorHistory();
 }
 
 // 开始绘画
 function startDrawing(e) {
     isDrawing = true;
     const pos = getMousePos(e);
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
+    
+    // 如果是形状工具，记录起始点
+    if (currentShapeTool) {
+        shapeStartPos = pos;
+    } else {
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+}
+
+// 压感平滑函数
+function smoothPressure(rawPressure) {
+    // 过滤异常值：如果压感突然跳变超过0.3，使用上一次的值
+    if (pressureHistory.length > 0) {
+        const lastValue = pressureHistory[pressureHistory.length - 1];
+        if (Math.abs(rawPressure - lastValue) > 0.3) {
+            console.log(`压感异常跳变: ${lastValue.toFixed(2)} -> ${rawPressure.toFixed(2)}, 已过滤`);
+            rawPressure = lastValue;
+        }
+    }
+    
+    // 添加到历史记录
+    pressureHistory.push(rawPressure);
+    if (pressureHistory.length > PRESSURE_SMOOTH_COUNT) {
+        pressureHistory.shift();
+    }
+    
+    // 计算移动平均
+    const sum = pressureHistory.reduce((a, b) => a + b, 0);
+    const smoothed = sum / pressureHistory.length;
+    
+    lastPressure = smoothed;
+    return smoothed;
 }
 
 // 绘画
@@ -121,9 +318,61 @@ function draw(e) {
     
     const pos = getMousePos(e);
     
-    ctx.lineWidth = currentSize;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+    // 如果是形状工具，不用持续绘制
+    if (currentShapeTool) {
+        return;
+    }
+    
+    // 获取压力值
+    let pressure = 1.0;
+    if (pressureSensitive) {
+        let rawPressure = 1.0;
+        let pressureDetected = false;
+        
+        // 方法1: 从原始触摸事件获取
+        if (e.originalTouchEvent && e.originalTouchEvent.touches && e.originalTouchEvent.touches[0]) {
+            const touch = e.originalTouchEvent.touches[0];
+            // iOS Safari 支持 force (0-1)
+            if (typeof touch.force !== 'undefined' && touch.force > 0) {
+                rawPressure = touch.force;
+                pressureDetected = true;
+            }
+            // Android Chrome 支持 webkitForce
+            else if (typeof touch.webkitForce !== 'undefined' && touch.webkitForce > 0) {
+                rawPressure = touch.webkitForce;
+                pressureDetected = true;
+            }
+        }
+        // 方法2: 直接从事件获取（兼容处理）
+        else if (e.touches && e.touches[0]) {
+            const touch = e.touches[0];
+            if (typeof touch.force !== 'undefined' && touch.force > 0) {
+                rawPressure = touch.force;
+                pressureDetected = true;
+            } else if (typeof touch.webkitForce !== 'undefined' && touch.webkitForce > 0) {
+                rawPressure = touch.webkitForce;
+                pressureDetected = true;
+            }
+        }
+        
+        // 如果检测到压感，应用平滑算法
+        if (pressureDetected) {
+            // 限制压力值范围 0.1-1.0
+            rawPressure = Math.max(0.1, Math.min(1.0, rawPressure));
+            // 应用平滑算法
+            pressure = smoothPressure(rawPressure);
+        } else {
+            // 如果无法读取压感，使用上一次的值
+            pressure = lastPressure;
+        }
+        
+        // 更新压感指示器
+        updatePressureIndicator(pressure);
+    }
+    
+    ctx.lineWidth = currentSize * pressure;
+    ctx.lineCap = currentBrushType === 'round' ? 'round' : 'square';
+    ctx.lineJoin = currentBrushType === 'round' ? 'round' : 'miter';
     
     if (isEraser) {
         ctx.globalCompositeOperation = 'destination-out';
@@ -133,18 +382,50 @@ function draw(e) {
     }
     
     ctx.globalAlpha = currentOpacity;
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+    
+    // 根据不同工具类型绘制
+    switch (currentTool) {
+        case 'brush':
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            break;
+        case 'pencil':
+            ctx.lineWidth = currentSize * 0.5 * pressure; // 铅笔更细
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            break;
+        case 'marker':
+            ctx.globalAlpha = currentOpacity * 0.6; // 马克笔有透明度
+            ctx.lineWidth = currentSize * 1.5 * pressure; // 马克笔更宽
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            break;
+        case 'spray':
+            drawSpray(pos.x, pos.y, currentSize * pressure);
+            break;
+    }
+    
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
 }
 
 // 停止绘画
-function stopDrawing() {
+function stopDrawing(e) {
     if (isDrawing) {
+        // 如果是形状工具，绘制最终形状
+        if (currentShapeTool && shapeStartPos && e) {
+            const pos = getMousePos(e);
+            drawShape(shapeStartPos.x, shapeStartPos.y, pos.x, pos.y, currentShapeTool);
+            shapeStartPos = null;
+        }
+        
         isDrawing = false;
         ctx.globalAlpha = 1;
         saveState();
+        
+        // 清理压感历史
+        pressureHistory = [];
+        lastPressure = 0.5;
     }
 }
 
@@ -163,11 +444,37 @@ function getMousePos(e) {
 // 触摸事件处理
 function handleTouch(e) {
     e.preventDefault();
+    
+    // touchend时直接停止绘制，不读取压感
+    if (e.type === 'touchend' || e.type === 'touchcancel') {
+        stopDrawing(null);
+        // 重置压感历史
+        pressureHistory = [];
+        lastPressure = 0.5;
+        return;
+    }
+    
     const touch = e.touches[0];
-    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+    if (!touch) return;
+    
+    // 根据触摸事件类型分发对应的鼠标事件
+    let eventType;
+    if (e.type === 'touchstart') {
+        eventType = 'mousedown';
+        // touchstart时重置压感历史
+        pressureHistory = [];
+    } else if (e.type === 'touchmove') {
+        eventType = 'mousemove';
+    }
+    
+    const mouseEvent = new MouseEvent(eventType, {
         clientX: touch.clientX,
-        clientY: touch.clientY
+        clientY: touch.clientY,
+        bubbles: true
     });
+    
+    // 将原始触摸事件附加到鼠标事件上，用于压感检测
+    mouseEvent.originalTouchEvent = e;
     canvas.dispatchEvent(mouseEvent);
 }
 
@@ -178,11 +485,107 @@ function toggleEraser() {
     btn.classList.toggle('active', isEraser);
 }
 
+// 处理图片导入
+function handleImageImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件！');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            // 询问用户导入方式
+            const choice = confirm(
+                '导入图片选项：\n\n' +
+                '【确定】- 作为底图（可在上面绘制）\n' +
+                '【取消】- 直接导入到画布（替换当前内容）\n\n' +
+                '提示：iPad用户可以在备忘录等应用画好后导入'
+            );
+            
+            if (choice) {
+                // 作为底图
+                importAsBackground(img);
+            } else {
+                // 导入到画布
+                importToCanvas(img);
+            }
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+    
+    // 重置文件输入，允许重复选择同一文件
+    e.target.value = '';
+}
+
+// 将图片导入为底图
+function importAsBackground(img) {
+    const backgroundImg = document.getElementById('generatedBackground');
+    backgroundImg.src = img.src;
+    backgroundImg.style.display = 'block';
+    generatedImageUrl = img.src;
+    
+    // 显示结果控制区域
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('overlayControls').style.display = 'flex';
+    
+    // 设置为叠加模式
+    switchViewMode('overlay');
+    
+    // 提示用户
+    console.log('图片已作为底图导入，现在可以在上面绘制了！');
+    
+    // iPad自动关闭工具栏
+    if (window.innerWidth <= 1366) {
+        const toolbar = document.getElementById('canvasToolbar');
+        if (toolbar) {
+            toolbar.classList.remove('active');
+        }
+    }
+}
+
+// 将图片直接导入到画布
+function importToCanvas(img) {
+    // 调整图片大小以适应画布
+    const scale = Math.min(
+        canvas.width / img.width,
+        canvas.height / img.height
+    );
+    const scaledWidth = img.width * scale;
+    const scaledHeight = img.height * scale;
+    const x = (canvas.width - scaledWidth) / 2;
+    const y = (canvas.height - scaledHeight) / 2;
+    
+    // 清空画布
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 绘制图片
+    ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+    
+    // 保存状态
+    saveState();
+    
+    console.log('图片已导入到画布！');
+    
+    // iPad自动关闭工具栏
+    if (window.innerWidth <= 1366) {
+        const toolbar = document.getElementById('canvasToolbar');
+        if (toolbar) {
+            toolbar.classList.remove('active');
+        }
+    }
+}
+
 // 清空画布
 function clearCanvas() {
     if (confirm('确定要清空画布吗？')) {
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         saveState();
     }
 }
@@ -194,19 +597,223 @@ function saveState() {
         drawingHistory.length = historyStep;
     }
     drawingHistory.push(canvas.toDataURL());
+    
+    // 限制历史记录数量
+    if (drawingHistory.length > 50) {
+        drawingHistory.shift();
+        historyStep--;
+    }
+}
+
+// 选择绘图工具
+function selectTool(tool) {
+    const btn = document.getElementById(tool + 'Btn');
+    if (!btn) return;
+    
+    const wasActive = btn.classList.contains('active');
+    
+    // 隐藏所有选项面板
+    document.querySelectorAll('.tool-options-panel').forEach(panel => {
+        panel.style.display = 'none';
+    });
+    
+    // 如果工具已经激活，显示其选项面板
+    if (wasActive) {
+        const optionsPanel = document.getElementById(tool + 'Options');
+        if (optionsPanel) {
+            optionsPanel.style.display = 'block';
+        }
+    } else {
+        // 否则激活该工具
+        currentTool = tool;
+        currentShapeTool = null;
+        isEraser = false;
+        
+        // 更新按钮状态
+        document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('eraserBtn').classList.remove('active');
+    }
+}
+
+// 选择笔触类型
+function selectBrushType(type) {
+    currentBrushType = type;
+    document.querySelectorAll('.brush-type-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(type + 'Btn').classList.add('active');
+}
+
+// 选择形状工具
+function selectShapeTool(shape) {
+    currentShapeTool = shape;
+    currentTool = 'shape';
+    isEraser = false;
+    
+    // 更新按钮状态
+    document.querySelectorAll('.shape-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(shape + 'Btn').classList.add('active');
+    document.querySelectorAll('.tool-mode-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('eraserBtn').classList.remove('active');
+}
+
+// 绘制喷雾效果
+function drawSpray(x, y, radius) {
+    const density = 20;
+    for (let i = 0; i < density; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius;
+        const sprayX = x + Math.cos(angle) * distance;
+        const sprayY = y + Math.sin(angle) * distance;
+        
+        ctx.fillStyle = currentColor;
+        ctx.globalAlpha = currentOpacity * 0.5;
+        ctx.fillRect(sprayX, sprayY, 1, 1);
+    }
+}
+
+// 绘制形状
+function drawShape(x1, y1, x2, y2, shape) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = currentColor;
+    ctx.lineWidth = currentSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = currentOpacity;
+    
+    ctx.beginPath();
+    
+    switch (shape) {
+        case 'line':
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            break;
+        case 'rect':
+            const width = x2 - x1;
+            const height = y2 - y1;
+            ctx.rect(x1, y1, width, height);
+            break;
+        case 'circle':
+            const radius = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            ctx.arc(x1, y1, radius, 0, Math.PI * 2);
+            break;
+        case 'arrow':
+            drawArrow(x1, y1, x2, y2);
+            return; // drawArrow已经包含stroke
+    }
+    
+    ctx.stroke();
+}
+
+// 绘制箭头
+function drawArrow(x1, y1, x2, y2) {
+    const headLength = Math.min(currentSize * 3, 20);
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+    
+    // 绘制线条
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    
+    // 绘制箭头
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+        x2 - headLength * Math.cos(angle - Math.PI / 6),
+        y2 - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(
+        x2 - headLength * Math.cos(angle + Math.PI / 6),
+        y2 - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.stroke();
+}
+
+// 添加颜色到历史记录
+function addColorToHistory(color) {
+    if (!colorHistory.includes(color)) {
+        colorHistory.unshift(color);
+        if (colorHistory.length > 10) {
+            colorHistory.pop();
+        }
+        updateColorHistory();
+    }
+}
+
+// 更新颜色历史显示
+function updateColorHistory() {
+    const historyContainer = document.getElementById('colorHistory');
+    historyContainer.innerHTML = '';
+    
+    colorHistory.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = 'color-history-btn';
+        btn.style.background = color;
+        if (color === '#FFFFFF' || color === '#ffffff') {
+            btn.style.border = '1px solid #ddd';
+        }
+        btn.title = color;
+        btn.addEventListener('click', () => {
+            currentColor = color;
+            document.getElementById('brushColor').value = color;
+            isEraser = false;
+            document.getElementById('eraserBtn').classList.remove('active');
+        });
+        historyContainer.appendChild(btn);
+    });
+}
+
+// 更新压感指示器
+function updatePressureIndicator(pressure) {
+    const indicator = document.getElementById('pressureIndicator');
+    if (!indicator || indicator.style.display === 'none') return;
+    
+    const barFill = document.getElementById('pressureBarFill');
+    const valueDisplay = document.getElementById('pressureValue');
+    
+    if (barFill && valueDisplay) {
+        // 更新进度条
+        const percentage = (pressure * 100).toFixed(0);
+        barFill.style.width = percentage + '%';
+        
+        // 根据压力值改变颜色
+        if (pressure < 0.3) {
+            barFill.style.background = '#4CAF50'; // 绿色-轻
+        } else if (pressure < 0.7) {
+            barFill.style.background = '#FF9800'; // 橙色-中
+        } else {
+            barFill.style.background = '#f44336'; // 红色-重
+        }
+        
+        // 更新数值显示
+        valueDisplay.textContent = pressure.toFixed(2);
+    }
 }
 
 // 撤销
 function undo() {
     if (historyStep > 0) {
         historyStep--;
-        const img = new Image();
-        img.src = drawingHistory[historyStep];
-        img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
-        };
+        restoreFromHistory();
     }
+}
+
+// 重做
+function redo() {
+    if (historyStep < drawingHistory.length - 1) {
+        historyStep++;
+        restoreFromHistory();
+    }
+}
+
+// 从历史恢复
+function restoreFromHistory() {
+    const img = new Image();
+    img.src = drawingHistory[historyStep];
+    img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+    };
 }
 
 // 生成图片
@@ -238,8 +845,21 @@ async function generateImage() {
     document.getElementById('loadingOverlay').style.display = 'flex';
     
     try {
-        // 将画布转换为blob
-        const sketchBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        // 创建一个临时canvas，将透明背景的sketch合成到白色背景上
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // 先填充白色背景
+        tempCtx.fillStyle = 'white';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        // 然后将sketch内容绘制上去
+        tempCtx.drawImage(canvas, 0, 0);
+        
+        // 将合成后的画布转换为blob
+        const sketchBlob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
         
         // 获取当前分辨率
         const resolution = document.getElementById('resolutionSelect').value;
@@ -272,8 +892,17 @@ async function generateImage() {
             throw new Error(data.error || '生成失败');
         }
         
+        // 创建带白色背景的sketch用于显示对比
+        const displayCanvas = document.createElement('canvas');
+        displayCanvas.width = canvas.width;
+        displayCanvas.height = canvas.height;
+        const displayCtx = displayCanvas.getContext('2d');
+        displayCtx.fillStyle = 'white';
+        displayCtx.fillRect(0, 0, displayCanvas.width, displayCanvas.height);
+        displayCtx.drawImage(canvas, 0, 0);
+        
         // 显示结果
-        displayResults(canvas.toDataURL(), data.image_url);
+        displayResults(displayCanvas.toDataURL(), data.image_url);
         
     } catch (error) {
         console.error('生成失败:', error);
@@ -285,35 +914,35 @@ async function generateImage() {
 
 // 显示结果
 function displayResults(sketchUrl, generatedUrl) {
+    // 保存生成的图片URL
+    generatedImageUrl = generatedUrl;
+    
     // 显示结果区域
     document.getElementById('resultSection').style.display = 'block';
     
-    // 设置左右对比图片
+    // 设置并排对比图片
     document.getElementById('sketchImageSide').src = sketchUrl;
     document.getElementById('generatedImageSide').src = generatedUrl;
     
-    // 设置叠加对比图片并确保尺寸一致
-    const sketchOverlay = document.getElementById('sketchImageOverlay');
-    const generatedOverlay = document.getElementById('generatedImageOverlay');
-    const overlayContainer = document.querySelector('.overlay-container');
+    // 将生成的图片设置为canvas背景
+    const backgroundImg = document.getElementById('generatedBackground');
+    const whiteBackground = document.getElementById('whiteBackground');
     
-    // 加载草图
-    sketchOverlay.onload = function() {
-        // 设置容器尺寸为图片的实际尺寸
-        overlayContainer.style.width = sketchOverlay.naturalWidth + 'px';
-        overlayContainer.style.height = sketchOverlay.naturalHeight + 'px';
+    backgroundImg.onload = function() {
+        // 确保图片与canvas尺寸一致
+        backgroundImg.style.width = canvas.width + 'px';
+        backgroundImg.style.height = canvas.height + 'px';
+        whiteBackground.style.width = canvas.width + 'px';
+        whiteBackground.style.height = canvas.height + 'px';
+        backgroundImg.style.display = 'block';
         
-        // 确保生成图也是相同尺寸
-        generatedOverlay.style.width = sketchOverlay.naturalWidth + 'px';
-        generatedOverlay.style.height = sketchOverlay.naturalHeight + 'px';
-        sketchOverlay.style.width = sketchOverlay.naturalWidth + 'px';
-        sketchOverlay.style.height = sketchOverlay.naturalHeight + 'px';
-        
-        console.log(`叠加容器尺寸: ${sketchOverlay.naturalWidth}x${sketchOverlay.naturalHeight}`);
+        console.log(`分层设置完成: ${canvas.width}x${canvas.height}`);
+        console.log('z-index: 白色背景(1) < 生成图(2) < 手绘线条(3)');
     };
+    backgroundImg.src = generatedUrl;
     
-    sketchOverlay.src = sketchUrl;
-    generatedOverlay.src = generatedUrl;
+    // 默认显示叠放模式
+    switchViewMode('overlay');
     
     // 滚动到结果区域
     document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
@@ -321,67 +950,141 @@ function displayResults(sketchUrl, generatedUrl) {
 
 // 切换视图模式
 function switchViewMode(mode) {
-    const sideBySideView = document.getElementById('sideBySideView');
-    const overlayView = document.getElementById('overlayView');
-    const sideBySideBtn = document.getElementById('sideBySideBtn');
-    const overlayBtn = document.getElementById('overlayBtn');
+    currentViewMode = mode;
     
-    if (mode === 'side') {
-        sideBySideView.style.display = 'grid';
-        overlayView.style.display = 'none';
-        sideBySideBtn.classList.add('active');
-        overlayBtn.classList.remove('active');
-    } else {
+    const sideBySideView = document.getElementById('sideBySideView');
+    const overlayHint = document.getElementById('overlayHint');
+    const overlayControls = document.getElementById('overlayControls');
+    const overlayModeBtn = document.getElementById('overlayModeBtn');
+    const sideBySideBtn = document.getElementById('sideBySideBtn');
+    const hideModeBtn = document.getElementById('hideModeBtn');
+    const backgroundImg = document.getElementById('generatedBackground');
+    
+    // 移除所有按钮的active状态
+    overlayModeBtn.classList.remove('active');
+    sideBySideBtn.classList.remove('active');
+    hideModeBtn.classList.remove('active');
+    
+    if (mode === 'overlay') {
+        // 叠放模式：在canvas底层显示生成图
         sideBySideView.style.display = 'none';
-        overlayView.style.display = 'block';
-        sideBySideBtn.classList.remove('active');
-        overlayBtn.classList.add('active');
+        overlayHint.style.display = 'block';
+        overlayControls.style.display = 'block';
+        backgroundImg.style.display = 'block';
+        overlayModeBtn.classList.add('active');
+        
+        // 滚动到画布区域
+        document.querySelector('.canvas-section').scrollIntoView({ behavior: 'smooth' });
+    } else if (mode === 'side') {
+        // 并排模式
+        sideBySideView.style.display = 'grid';
+        overlayHint.style.display = 'none';
+        overlayControls.style.display = 'none';
+        backgroundImg.style.display = 'none';
+        sideBySideBtn.classList.add('active');
+    } else if (mode === 'hide') {
+        // 隐藏模式
+        sideBySideView.style.display = 'none';
+        overlayHint.style.display = 'none';
+        overlayControls.style.display = 'none';
+        backgroundImg.style.display = 'none';
+        hideModeBtn.classList.add('active');
     }
 }
 
-// 切换图层
-function toggleLayer() {
-    const sketchLayer = document.querySelector('.sketch-layer');
-    const showSketch = document.getElementById('toggleSketchLayer').checked;
-    sketchLayer.style.display = showSketch ? 'block' : 'none';
-}
-
-// 更新叠加效果
-function updateOverlay() {
-    const slider = document.getElementById('overlaySlider');
-    const sketchLayer = document.querySelector('.sketch-layer');
-    const sliderLine = document.querySelector('.overlay-slider-line');
+// 重新生成图片
+async function regenerateImage() {
+    const prompt = document.getElementById('promptInput').value.trim();
     
-    const percentage = slider.value;
-    sketchLayer.style.clipPath = `inset(0 ${100 - percentage}% 0 0)`;
-    sliderLine.style.left = `${percentage}%`;
+    if (!prompt) {
+        alert('请输入提示词！');
+        return;
+    }
+    
+    // 直接调用生成函数
+    await generateImage();
 }
 
-// 下载草图
-function downloadSketch() {
-    const link = document.createElement('a');
-    link.download = `sketch_${Date.now()}.png`;
-    link.href = canvas.toDataURL();
-    link.click();
+// 清除背景图
+function clearBackground() {
+    if (confirm('确定要清除背景图吗？')) {
+        const backgroundImg = document.getElementById('generatedBackground');
+        backgroundImg.style.display = 'none';
+        backgroundImg.src = '';
+        generatedImageUrl = '';
+        
+        // 隐藏结果区域
+        document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('overlayControls').style.display = 'none';
+        
+        // 滚动到画布
+        document.querySelector('.canvas-section').scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// 切换手绘线条图层
+function toggleSketchLayer() {
+    const showSketch = document.getElementById('toggleSketchLayer').checked;
+    canvas.style.opacity = showSketch ? '1' : '0';
+}
+
+// 切换生成图片图层
+function toggleGeneratedLayer() {
+    const showGenerated = document.getElementById('toggleGeneratedLayer').checked;
+    const backgroundImg = document.getElementById('generatedBackground');
+    backgroundImg.style.opacity = showGenerated ? document.getElementById('generatedOpacitySlider').value / 100 : '0';
+}
+
+// 更新生成图片透明度
+function updateGeneratedOpacity() {
+    const slider = document.getElementById('generatedOpacitySlider');
+    const value = slider.value;
+    const backgroundImg = document.getElementById('generatedBackground');
+    
+    if (document.getElementById('toggleGeneratedLayer').checked) {
+        backgroundImg.style.opacity = value / 100;
+    }
+    
+    document.getElementById('opacityValue').textContent = value;
+}
+
+// 更新对比滑块
+function updateCompareSlider() {
+    const slider = document.getElementById('compareSlider');
+    const value = slider.value;
+    const backgroundImg = document.getElementById('generatedBackground');
+    
+    // 使用clip-path实现左右对比效果
+    backgroundImg.style.clipPath = `inset(0 ${100 - value}% 0 0)`;
+    
+    document.getElementById('compareValue').textContent = value;
 }
 
 // 下载生成图
 function downloadGenerated() {
-    const img = document.getElementById('generatedImageSide');
+    if (!generatedImageUrl) {
+        alert('没有可下载的生成图！');
+        return;
+    }
+    
     const link = document.createElement('a');
     link.download = `generated_${Date.now()}.png`;
-    link.href = img.src;
+    link.href = generatedImageUrl;
     link.click();
 }
 
 // 保存到作品集
 async function saveToGallery() {
-    const generatedImg = document.getElementById('generatedImageSide');
+    if (!generatedImageUrl) {
+        alert('没有可保存的生成图！');
+        return;
+    }
+    
     const prompt = document.getElementById('promptInput').value;
     
     try {
         // 将图片URL转换为blob
-        const response = await fetch(generatedImg.src);
+        const response = await fetch(generatedImageUrl);
         const blob = await response.blob();
         
         // 创建FormData
@@ -412,9 +1115,8 @@ async function saveToGallery() {
 // 新建画布
 function newSketch() {
     if (confirm('确定要新建画布吗？当前内容将被清空。')) {
-        // 清空画布
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 清空画布（透明背景）
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawingHistory = [];
         historyStep = -1;
         saveState();
@@ -422,10 +1124,309 @@ function newSketch() {
         // 清空提示词
         document.getElementById('promptInput').value = '';
         
+        // 清除背景图
+        const backgroundImg = document.getElementById('generatedBackground');
+        backgroundImg.style.display = 'none';
+        backgroundImg.src = '';
+        generatedImageUrl = '';
+        
         // 隐藏结果区域
         document.getElementById('resultSection').style.display = 'none';
+        document.getElementById('overlayControls').style.display = 'none';
         
         // 滚动到顶部
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+}
+
+// 初始化工具栏折叠功能
+function initializeToolbarToggle() {
+    const toolbar = document.getElementById('canvasToolbar');
+    const toggleBtn = document.getElementById('toolbarToggle');
+    const closeBtn = document.getElementById('toolbarClose');
+    
+    if (!toolbar || !toggleBtn) return; // PC端没有这些元素
+    
+    // 点击折叠按钮打开工具栏
+    toggleBtn.addEventListener('click', () => {
+        toolbar.classList.add('active');
+    });
+    
+    // 点击关闭按钮关闭工具栏
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            toolbar.classList.remove('active');
+        });
+    }
+    
+    // 点击工具栏外部区域关闭（iPad专用）
+    document.addEventListener('click', (e) => {
+        if (toolbar.classList.contains('active')) {
+            const isClickInside = toolbar.contains(e.target) || (toggleBtn && toggleBtn.contains(e.target));
+            if (!isClickInside) {
+                toolbar.classList.remove('active');
+            }
+        }
+    });
+    
+    // 选择工具后自动关闭工具栏（iPad专用）
+    const toolButtons = toolbar.querySelectorAll('.tool-mode-btn, .brush-type-btn, .shape-btn, .action-btn');
+    toolButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // 延迟关闭，让用户看到选择效果
+            setTimeout(() => {
+                if (window.innerWidth <= 1366) {
+                    toolbar.classList.remove('active');
+                }
+            }, 300);
+        });
+    });
+}
+
+// 初始化工具选项面板
+function initializeToolOptions() {
+    // 画笔选项
+    const brushSizeSlider = document.getElementById('brushSize');
+    const brushSizeValue = document.getElementById('brushSizeValue');
+    const brushOpacitySlider = document.getElementById('brushOpacity');
+    const brushOpacityValue = document.getElementById('brushOpacityValue');
+    
+    if (brushSizeSlider) {
+        brushSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            brushSizeValue.textContent = brushSize;
+        });
+    }
+    
+    if (brushOpacitySlider) {
+        brushOpacitySlider.addEventListener('input', (e) => {
+            brushOpacity = parseInt(e.target.value);
+            brushOpacityValue.textContent = brushOpacity + '%';
+        });
+    }
+    
+    // 铅笔选项
+    const pencilSizeSlider = document.getElementById('pencilSize');
+    const pencilSizeValue = document.getElementById('pencilSizeValue');
+    
+    if (pencilSizeSlider) {
+        pencilSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            pencilSizeValue.textContent = brushSize;
+        });
+    }
+    
+    // 马克笔选项
+    const markerSizeSlider = document.getElementById('markerSize');
+    const markerSizeValue = document.getElementById('markerSizeValue');
+    const markerOpacitySlider = document.getElementById('markerOpacity');
+    const markerOpacityValue = document.getElementById('markerOpacityValue');
+    
+    if (markerSizeSlider) {
+        markerSizeSlider.addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            markerSizeValue.textContent = brushSize;
+        });
+    }
+    
+    if (markerOpacitySlider) {
+        markerOpacitySlider.addEventListener('input', (e) => {
+            brushOpacity = parseInt(e.target.value);
+            markerOpacityValue.textContent = brushOpacity + '%';
+        });
+    }
+    
+    // 喷枪选项
+    const sprayRangeSlider = document.getElementById('sprayRange');
+    const sprayRangeValue = document.getElementById('sprayRangeValue');
+    const sprayDensitySlider = document.getElementById('sprayDensity');
+    const sprayDensityValue = document.getElementById('sprayDensityValue');
+    
+    if (sprayRangeSlider) {
+        sprayRangeSlider.addEventListener('input', (e) => {
+            sprayRange = parseInt(e.target.value);
+            sprayRangeValue.textContent = sprayRange;
+        });
+    }
+    
+    if (sprayDensitySlider) {
+        sprayDensitySlider.addEventListener('input', (e) => {
+            sprayDensity = parseInt(e.target.value);
+            sprayDensityValue.textContent = sprayDensity;
+        });
+    }
+    
+    // 点击工具栏外部或画布时关闭选项面板
+    document.addEventListener('click', (e) => {
+        const isToolbarClick = e.target.closest('.canvas-toolbar');
+        const isOptionsPanel = e.target.closest('.tool-options-panel');
+        
+        if (!isToolbarClick && !isOptionsPanel) {
+            document.querySelectorAll('.tool-options-panel').forEach(panel => {
+                panel.style.display = 'none';
+            });
+        }
+    });
+}
+// 初始化工具栏折叠功能
+function initializeToolbarToggle() {
+    const toggleButtons = document.querySelectorAll('.toolbar-toggle');
+    
+    toggleButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const target = btn.dataset.target;
+            const toolbar = target === 'left' ? 
+                document.querySelector('.left-toolbar') : 
+                document.querySelector('.right-toolbar');
+            
+            toolbar.classList.toggle('collapsed');
+        });
+    });
+}
+
+// 初始化全屏功能
+function initializeFullscreen() {
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const canvasSection = document.querySelector('.canvas-section');
+    
+    if (fullscreenBtn && canvasSection) {
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                // 进入全屏
+                canvasSection.requestFullscreen().then(() => {
+                    canvasSection.classList.add('fullscreen');
+                    fullscreenBtn.querySelector('i').classList.remove('fa-expand');
+                    fullscreenBtn.querySelector('i').classList.add('fa-compress');
+                }).catch(err => {
+                    console.error('全屏失败:', err);
+                });
+            } else {
+                // 退出全屏
+                document.exitFullscreen();
+            }
+        });
+        
+        // 监听全屏变化（包括ESC键退出）
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                canvasSection.classList.remove('fullscreen');
+                fullscreenBtn.querySelector('i').classList.remove('fa-compress');
+                fullscreenBtn.querySelector('i').classList.add('fa-expand');
+            }
+        });
+    }
+}
+
+// 初始化缩放功能
+function initializeZoom() {
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const zoomResetBtn = document.getElementById('zoomResetBtn');
+    const zoomLevelDisplay = document.querySelector('.zoom-level');
+    const canvasBox = document.getElementById('canvas-box');
+    const canvasWrapper = document.querySelector('.canvas-wrapper');
+
+    // 更新缩放显示和应用缩放
+    function updateZoomDisplay() {
+        const percentage = Math.round(zoomLevel * 100);
+        zoomLevelDisplay.textContent = `${percentage}%`;
+        
+        // 应用缩放到canvas容器
+        canvasBox.style.transform = `scale(${zoomLevel})`;
+    }
+
+    // 放大
+    zoomInBtn.addEventListener('click', () => {
+        if (zoomLevel < MAX_ZOOM) {
+            zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
+            updateZoomDisplay();
+        }
+    });
+
+    // 缩小
+    zoomOutBtn.addEventListener('click', () => {
+        if (zoomLevel > MIN_ZOOM) {
+            zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
+            updateZoomDisplay();
+        }
+    });
+
+    // 重置
+    zoomResetBtn.addEventListener('click', () => {
+        zoomLevel = 1;
+        updateZoomDisplay();
+    });
+
+    // 鼠标滚轮缩放（在canvas区域直接滚轮即可）
+    canvasWrapper.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        // 滚轮向上放大，向下缩小
+        if (e.deltaY < 0) {
+            // 放大
+            if (zoomLevel < MAX_ZOOM) {
+                zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
+                updateZoomDisplay();
+            }
+        } else {
+            // 缩小
+            if (zoomLevel > MIN_ZOOM) {
+                zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
+                updateZoomDisplay();
+            }
+        }
+    }, { passive: false });
+
+    // 触摸手势缩放（双指缩放）
+    let touchStartDistance = 0;
+    let touchStartZoom = 1;
+
+    canvasWrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            // 计算两指距离
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            touchStartDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            touchStartZoom = zoomLevel;
+        }
+    }, { passive: false });
+
+    canvasWrapper.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            // 计算当前两指距离
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const currentDistance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            
+            // 计算缩放比例
+            const scale = currentDistance / touchStartDistance;
+            let newZoom = touchStartZoom * scale;
+            
+            // 限制在最小和最大缩放范围内
+            newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, newZoom));
+            
+            if (newZoom !== zoomLevel) {
+                zoomLevel = newZoom;
+                updateZoomDisplay();
+            }
+        }
+    }, { passive: false });
+
+    canvasWrapper.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            touchStartDistance = 0;
+        }
+    }, { passive: false });
+
+    // 初始化显示
+    updateZoomDisplay();
 }

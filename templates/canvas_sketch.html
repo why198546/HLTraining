@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>手绘画布 - 松鼠艺术</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_sketch.css') }}">
@@ -17,10 +19,10 @@
             <div class="resolution-selector">
                 <label>分辨率：</label>
                 <select id="resolutionSelect">
-                    <option value="512x512">512×512 (1:1)</option>
+                    <option value="512x512" selected>512×512 (1:1)</option>
                     <option value="768x512">768×512 (3:2)</option>
                     <option value="512x768">512×768 (2:3)</option>
-                    <option value="1024x576" selected>1024×576 (16:9)</option>
+                    <option value="1024x576">1024×576 (16:9)</option>
                     <option value="576x1024">576×1024 (9:16)</option>
                     <option value="1024x1024">1024×1024 (1:1)</option>
                 </select>
@@ -37,41 +39,150 @@
 
         <!-- 画布和工具栏 -->
         <div class="canvas-section">
-            <div class="canvas-toolbar">
-                <h3>绘图工具</h3>
-                <div class="tool-group">
-                    <label>画笔大小：</label>
-                    <input type="range" id="brushSize" min="1" max="50" value="5">
-                    <span id="brushSizeValue">5</span>px
-                </div>
-                <div class="tool-group">
-                    <label>画笔颜色：</label>
-                    <input type="color" id="brushColor" value="#000000">
-                </div>
-                <div class="tool-group">
-                    <label>透明度：</label>
-                    <input type="range" id="brushOpacity" min="0" max="100" value="100">
-                    <span id="brushOpacityValue">100</span>%
-                </div>
-                <div class="tool-buttons">
-                    <button id="eraserBtn" class="tool-btn">
-                        <i class="fas fa-eraser"></i> 橡皮擦
+            <!-- 左上角操作按钮 -->
+            <div class="top-left-controls">
+                <button id="undoBtn" class="control-btn" title="撤销">
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button id="redoBtn" class="control-btn" title="重做">
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button id="clearBtn" class="control-btn danger" title="清空">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button id="fullscreenBtn" class="control-btn" title="全屏">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <div class="zoom-controls">
+                    <button id="zoomOutBtn" class="control-btn" title="缩小">
+                        <i class="fas fa-search-minus"></i>
                     </button>
-                    <button id="clearBtn" class="tool-btn">
-                        <i class="fas fa-trash"></i> 清空画布
+                    <span id="zoomLevel" class="zoom-level">100%</span>
+                    <button id="zoomInBtn" class="control-btn" title="放大">
+                        <i class="fas fa-search-plus"></i>
                     </button>
-                    <button id="undoBtn" class="tool-btn">
-                        <i class="fas fa-undo"></i> 撤销
+                    <button id="zoomResetBtn" class="control-btn" title="重置">
+                        <i class="fas fa-compress-arrows-alt"></i>
                     </button>
                 </div>
             </div>
 
-            <div class="canvas-wrapper">
+            <!-- 左侧工具栏 -->
+            <div class="left-toolbar">
+                <button class="toolbar-toggle" data-target="left">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="toolbar-content">
+                <!-- 笔触类型 -->
+                <div class="tool-section">
+                    <label><i class="fas fa-circle"></i> 笔触</label>
+                    <div class="brush-type-buttons">
+                        <button id="roundBtn" class="brush-type-btn active" title="圆形">
+                            <div class="brush-preview round"></div>
+                        </button>
+                        <button id="squareBtn" class="brush-type-btn" title="方形">
+                            <div class="brush-preview square"></div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 画笔大小 -->
+                <div class="tool-section">
+                    <label><i class="fas fa-text-height"></i> 大小</label>
+                    <div class="range-container">
+                        <input type="range" id="brushSize" min="1" max="100" value="5" step="1">
+                        <span id="brushSizeValue" class="value-display">5</span>
+                    </div>
+                    <div class="size-presets">
+                        <button class="preset-btn" data-size="2">极细</button>
+                        <button class="preset-btn" data-size="5">细</button>
+                        <button class="preset-btn" data-size="10">中</button>
+                        <button class="preset-btn" data-size="20">粗</button>
+                        <button class="preset-btn" data-size="40">极粗</button>
+                    </div>
+                </div>
+
+                <!-- 快速颜色选择 -->
+                <div class="tool-section">
+                    <label><i class="fas fa-fill-drip"></i> 颜色</label>
+                    <div class="color-palette">
+                        <button class="color-btn" data-color="#000000" style="background: #000000;"></button>
+                        <button class="color-btn" data-color="#FFFFFF" style="background: #FFFFFF; border: 1px solid #ddd;"></button>
+                        <button class="color-btn" data-color="#FF0000" style="background: #FF0000;"></button>
+                        <button class="color-btn" data-color="#FF6B00" style="background: #FF6B00;"></button>
+                        <button class="color-btn" data-color="#FFD700" style="background: #FFD700;"></button>
+                        <button class="color-btn" data-color="#00FF00" style="background: #00FF00;"></button>
+                        <button class="color-btn" data-color="#0000FF" style="background: #0000FF;"></button>
+                        <button class="color-btn" data-color="#8B00FF" style="background: #8B00FF;"></button>
+                        <button class="color-btn" data-color="#FF1493" style="background: #FF1493;"></button>
+                        <button class="color-btn" data-color="#8B4513" style="background: #8B4513;"></button>
+                        <button class="color-btn" data-color="#808080" style="background: #808080;"></button>
+                        <button class="color-btn" data-color="#87CEEB" style="background: #87CEEB;"></button>
+                    </div>
+                    <div class="custom-color-container">
+                        <input type="color" id="brushColor" value="#000000">
+                        <div id="colorHistory" class="color-history"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- 右侧工具栏 -->
+            <div class="right-toolbar">
+                <button class="toolbar-toggle" data-target="right">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="toolbar-content">
+                <!-- 透明度 -->
+                <div class="tool-section">
+                    <label><i class="fas fa-adjust"></i> 透明度</label>
+                    <div class="range-container">
+                        <input type="range" id="brushOpacity" min="0" max="100" value="100">
+                        <span id="brushOpacityValue" class="value-display">100</span>%
+                    </div>
+                </div>
+
+                <!-- 形状工具 -->
+                <div class="tool-section">
+                    <label><i class="fas fa-shapes"></i> 形状</label>
+                    <div class="shape-buttons">
+                        <button id="lineBtn" class="shape-btn" title="直线">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button id="rectBtn" class="shape-btn" title="矩形">
+                            <i class="far fa-square"></i>
+                        </button>
+                        <button id="circleBtn" class="shape-btn" title="圆形">
+                            <i class="far fa-circle"></i>
+                        </button>
+                        <button id="arrowBtn" class="shape-btn" title="箭头">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 橡皮擦 -->
+                <div class="tool-section">
+                    <button id="eraserBtn" class="tool-btn">
+                        <i class="fas fa-eraser"></i> 橡皮擦
+                    </button>
+                </div>
+                </div>
+            </div>
+            
+            <div class="canvas-wrapper" id="canvasWrapper">
                 <div class="canvas-box" id="canvasBox">
+                    <!-- 第1层：白色背景层 -->
+                    <div class="white-background" id="whiteBackground"></div>
+                    <!-- 第2层：生成的图片层 -->
+                    <img id="generatedBackground" class="generated-background" src="" alt="" style="display: none;">
+                    <!-- 第3层：透明画布层（手绘线条） -->
                     <canvas id="sketchCanvas"></canvas>
                     <div class="canvas-hint">在这里手绘你的草图作为参考图...</div>
                 </div>
             </div>
+            
+            <input type="file" id="imageFileInput" accept="image/*" style="display: none;">
         </div>
 
         <!-- 结果展示区域 -->
@@ -79,17 +190,20 @@
             <div class="result-header">
                 <h3>生成结果</h3>
                 <div class="view-mode-selector">
-                    <button id="sideBySideBtn" class="view-mode-btn active">
-                        <i class="fas fa-columns"></i> 左右对比
+                    <button id="overlayModeBtn" class="view-mode-btn active">
+                        <i class="fas fa-layer-group"></i> 叠放编辑
                     </button>
-                    <button id="overlayBtn" class="view-mode-btn">
-                        <i class="fas fa-layer-group"></i> 叠加对比
+                    <button id="sideBySideBtn" class="view-mode-btn">
+                        <i class="fas fa-columns"></i> 并排对比
+                    </button>
+                    <button id="hideModeBtn" class="view-mode-btn">
+                        <i class="fas fa-eye-slash"></i> 隐藏结果
                     </button>
                 </div>
             </div>
 
-            <!-- 左右对比模式 -->
-            <div class="side-by-side-view" id="sideBySideView">
+            <!-- 并排对比模式 -->
+            <div class="side-by-side-view" id="sideBySideView" style="display: none;">
                 <div class="image-panel">
                     <h4>手绘草图</h4>
                     <img id="sketchImageSide" src="" alt="手绘草图">
@@ -100,30 +214,39 @@
                 </div>
             </div>
 
-            <!-- 叠加对比模式 -->
-            <div class="overlay-view" id="overlayView" style="display: none;">
-                <div class="overlay-container">
-                    <img id="sketchImageOverlay" class="overlay-image sketch-layer" src="" alt="手绘草图">
-                    <img id="generatedImageOverlay" class="overlay-image generated-layer" src="" alt="AI生成图片">
-                    <div class="overlay-slider-line"></div>
+            <!-- 叠加对比控制 -->
+            <div class="overlay-controls" id="overlayControls" style="display: none;">
+                <div class="control-row">
+                    <label>
+                        <input type="checkbox" id="toggleSketchLayer" checked> 显示手绘线条
+                    </label>
+                    <label>
+                        <input type="checkbox" id="toggleGeneratedLayer" checked> 显示生成图片
+                    </label>
                 </div>
-                <div class="overlay-controls">
-                    <label>
-                        <input type="checkbox" id="toggleSketchLayer" checked> 显示草图
-                    </label>
-                    <label>
-                        <input type="checkbox" id="toggleGeneratedLayer" checked> 显示AI生成
-                    </label>
-                    <div class="slider-control">
-                        <label>对比滑块：</label>
-                        <input type="range" id="overlaySlider" min="0" max="100" value="50">
-                    </div>
+                <div class="control-row">
+                    <label>生成图片透明度：</label>
+                    <input type="range" id="generatedOpacitySlider" min="0" max="100" value="80">
+                    <span id="opacityValue">80</span>%
+                </div>
+                <div class="control-row">
+                    <label>对比滑块：</label>
+                    <input type="range" id="compareSlider" min="0" max="100" value="100">
+                    <span id="compareValue">100</span>%
                 </div>
             </div>
 
+            <!-- 提示文字 -->
+            <div class="overlay-hint" id="overlayHint">
+                <p><i class="fas fa-info-circle"></i> 生成的图片已放置在画布底层，您可以继续在上面手绘调整，然后重新生成</p>
+            </div>
+
             <div class="result-actions">
-                <button id="downloadSketchBtn" class="btn-action">
-                    <i class="fas fa-download"></i> 下载草图
+                <button id="regenerateBtn" class="btn-action btn-primary">
+                    <i class="fas fa-sync-alt"></i> 重新生成
+                </button>
+                <button id="clearBackgroundBtn" class="btn-action">
+                    <i class="fas fa-eraser"></i> 清除背景图
                 </button>
                 <button id="downloadGeneratedBtn" class="btn-action">
                     <i class="fas fa-download"></i> 下载生成图
