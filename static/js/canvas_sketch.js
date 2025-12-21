@@ -1,14 +1,112 @@
 // 手绘画布功能
+console.log('=== Canvas Sketch.js 已加载 ===');
+
 let canvas, ctx;
 let isDrawing = false;
 let isEraser = false;
 let currentColor = '#000000';
 let currentSize = 5;
 let currentOpacity = 1;
-let drawingHistory = [];
-let historyStep = -1;
 let generatedImageUrl = ''; // 存储生成的图片URL
 let currentViewMode = 'overlay'; // 当前视图模式
+
+// Session管理系统 - 支持至少50步历史记录
+class CanvasSession {
+    constructor(maxHistory = 50) {
+        this.history = [];
+        this.currentStep = -1;
+        this.maxHistory = maxHistory;
+        this.sessionId = this.generateSessionId();
+    }
+    
+    generateSessionId() {
+        return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    // 保存当前状态
+    saveState(canvasDataUrl) {
+        // 如果当前不在历史末尾，删除后面的历史
+        if (this.currentStep < this.history.length - 1) {
+            this.history = this.history.slice(0, this.currentStep + 1);
+        }
+        
+        // 添加新状态
+        this.history.push({
+            dataUrl: canvasDataUrl,
+            timestamp: Date.now()
+        });
+        
+        // 限制历史记录数量
+        if (this.history.length > this.maxHistory) {
+            this.history.shift();
+        } else {
+            this.currentStep++;
+        }
+        
+        console.log(`[Session] 已保存状态 ${this.currentStep + 1}/${this.history.length}`);
+        return true;
+    }
+    
+    // 撤销
+    undo() {
+        if (this.canUndo()) {
+            this.currentStep--;
+            console.log(`[Session] 撤销到步骤 ${this.currentStep + 1}/${this.history.length}`);
+            return this.getCurrentState();
+        }
+        return null;
+    }
+    
+    // 重做
+    redo() {
+        if (this.canRedo()) {
+            this.currentStep++;
+            console.log(`[Session] 重做到步骤 ${this.currentStep + 1}/${this.history.length}`);
+            return this.getCurrentState();
+        }
+        return null;
+    }
+    
+    // 获取当前状态
+    getCurrentState() {
+        if (this.currentStep >= 0 && this.currentStep < this.history.length) {
+            return this.history[this.currentStep];
+        }
+        return null;
+    }
+    
+    // 是否可以撤销
+    canUndo() {
+        return this.currentStep > 0;
+    }
+    
+    // 是否可以重做
+    canRedo() {
+        return this.currentStep < this.history.length - 1;
+    }
+    
+    // 获取历史记录信息
+    getInfo() {
+        return {
+            sessionId: this.sessionId,
+            totalSteps: this.history.length,
+            currentStep: this.currentStep + 1,
+            canUndo: this.canUndo(),
+            canRedo: this.canRedo(),
+            maxHistory: this.maxHistory
+        };
+    }
+    
+    // 清空历史
+    clear() {
+        this.history = [];
+        this.currentStep = -1;
+        console.log('[Session] 历史记录已清空');
+    }
+}
+
+// 创建session实例
+let canvasSession = new CanvasSession(50);
 
 // 新增功能变量
 let currentTool = 'brush'; // brush, pencil, marker, spray
@@ -30,14 +128,24 @@ const MAX_ZOOM = 3; // 最大缩放300%
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Canvas] DOM加载完成，开始初始化...');
+    
     canvas = document.getElementById('sketchCanvas');
-    ctx = canvas.getContext('2d');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    if (!canvas || !ctx) {
+        console.error('[Canvas] 错误: 无法获取画布元素或上下文');
+        return;
+    }
+    
+    console.log('[Canvas] 画布元素获取成功');
     
     // 初始化画布大小
     applyResolution();
     
     // 绑定事件
     bindEvents();
+    console.log('[Canvas] 事件绑定完成');
     
     // 初始化工具栏
     initializeTools();
@@ -56,6 +164,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 检测设备和压感支持
     detectDeviceAndPressure();
+    
+    // 保存初始空画布状态
+    saveState();
+    
+    // 初始化历史按钮状态
+    updateHistoryButtons();
+    
+    // 显示session信息
+    console.log('[Session] 已创建新会话:', canvasSession.getInfo());
+    console.log('[Canvas] 初始化完成！可以开始绘画');
 });
 
 // 检测设备和压感支持
@@ -93,24 +211,53 @@ function applyResolution() {
     const select = document.getElementById('resolutionSelect');
     const [width, height] = select.value.split('x').map(Number);
     
+    console.log(`[Canvas] 应用分辨率: ${width}x${height}`);
+    
+    // 保存旧的画布内容（如果有）
+    let hasContent = false;
+    const tempCanvas = document.createElement('canvas');
+    if (canvas.width > 0 && canvas.height > 0) {
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+        hasContent = true;
+    }
+    
+    // 设置新的画布尺寸
     canvas.width = width;
     canvas.height = height;
     
     // 设置白色背景层尺寸
     const whiteBackground = document.getElementById('whiteBackground');
-    whiteBackground.style.width = width + 'px';
-    whiteBackground.style.height = height + 'px';
+    if (whiteBackground) {
+        whiteBackground.style.width = width + 'px';
+        whiteBackground.style.height = height + 'px';
+    }
     
-    // canvas背景设置为透明
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 设置canvas-box尺寸以匹配画布
+    const canvasBox = document.getElementById('canvasBox');
+    if (canvasBox) {
+        canvasBox.style.width = width + 'px';
+        canvasBox.style.height = height + 'px';
+    }
     
-    // 保存初始状态
-    saveState();
+    // 如果有旧内容，尝试恢复
+    if (hasContent && tempCanvas.width > 0) {
+        const scale = Math.min(width / tempCanvas.width, height / tempCanvas.height);
+        const scaledWidth = tempCanvas.width * scale;
+        const scaledHeight = tempCanvas.height * scale;
+        const x = (width - scaledWidth) / 2;
+        const y = (height - scaledHeight) / 2;
+        ctx.drawImage(tempCanvas, x, y, scaledWidth, scaledHeight);
+    }
     
     // 隐藏提示
-    document.querySelector('.canvas-hint').style.display = 'none';
+    const hint = document.querySelector('.canvas-hint');
+    if (hint) hint.style.display = 'none';
     
-    console.log(`画布分辨率设置为: ${width}x${height}`);
+    console.log(`[Canvas] 画布实际尺寸: ${canvas.width}x${canvas.height}`);
+    console.log(`[Canvas] 画布可以绘制: ${canvas.getContext ? '✓' : '✗'}`);
 }
 
 // 绑定事件
@@ -144,6 +291,11 @@ function bindEvents() {
     const undoBtn = document.getElementById('undoBtn');
     if (undoBtn) {
         undoBtn.addEventListener('click', undo);
+    }
+    
+    const redoBtn = document.getElementById('redoBtn');
+    if (redoBtn) {
+        redoBtn.addEventListener('click', redo);
     }
     
     const clearBtn = document.getElementById('clearBtn');
@@ -241,7 +393,7 @@ function initializeTools() {
     const roundBtn = document.getElementById('roundBtn');
     if (roundBtn) {
         roundBtn.addEventListener('click', () => {
-            brushType = 'round';
+            currentBrushType = 'round';
             document.querySelectorAll('.brush-type-btn').forEach(btn => btn.classList.remove('active'));
             roundBtn.classList.add('active');
         });
@@ -250,7 +402,7 @@ function initializeTools() {
     const squareBtn = document.getElementById('squareBtn');
     if (squareBtn) {
         squareBtn.addEventListener('click', () => {
-            brushType = 'square';
+            currentBrushType = 'square';
             document.querySelectorAll('.brush-type-btn').forEach(btn => btn.classList.remove('active'));
             squareBtn.classList.add('active');
         });
@@ -592,16 +744,61 @@ function clearCanvas() {
 
 // 保存状态
 function saveState() {
-    historyStep++;
-    if (historyStep < drawingHistory.length) {
-        drawingHistory.length = historyStep;
+    const dataUrl = canvas.toDataURL();
+    canvasSession.saveState(dataUrl);
+    updateHistoryButtons();
+}
+
+// 撤销
+function undo() {
+    const state = canvasSession.undo();
+    if (state) {
+        restoreFromState(state.dataUrl);
+        updateHistoryButtons();
     }
-    drawingHistory.push(canvas.toDataURL());
+}
+
+// 重做
+function redo() {
+    const state = canvasSession.redo();
+    if (state) {
+        restoreFromState(state.dataUrl);
+        updateHistoryButtons();
+    }
+}
+
+// 从状态恢复
+function restoreFromState(dataUrl) {
+    const img = new Image();
+    img.src = dataUrl;
+    img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+    };
+}
+
+// 更新历史按钮状态
+function updateHistoryButtons() {
+    const info = canvasSession.getInfo();
     
-    // 限制历史记录数量
-    if (drawingHistory.length > 50) {
-        drawingHistory.shift();
-        historyStep--;
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    
+    if (undoBtn) {
+        undoBtn.disabled = !info.canUndo;
+        undoBtn.classList.toggle('disabled', !info.canUndo);
+        undoBtn.title = info.canUndo ? `撤销 (${info.currentStep}/${info.totalSteps})` : '撤销 (无可撤销操作)';
+    }
+    
+    if (redoBtn) {
+        redoBtn.disabled = !info.canRedo;
+        redoBtn.classList.toggle('disabled', !info.canRedo);
+        redoBtn.title = info.canRedo ? `重做 (${info.currentStep}/${info.totalSteps})` : '重做 (无可重做操作)';
+    }
+    
+    // 在控制台显示session信息（调试用）
+    if (info.totalSteps > 0) {
+        console.log(`[History] 步骤: ${info.currentStep}/${info.totalSteps} | 撤销: ${info.canUndo} | 重做: ${info.canRedo}`);
     }
 }
 
@@ -788,32 +985,6 @@ function updatePressureIndicator(pressure) {
         // 更新数值显示
         valueDisplay.textContent = pressure.toFixed(2);
     }
-}
-
-// 撤销
-function undo() {
-    if (historyStep > 0) {
-        historyStep--;
-        restoreFromHistory();
-    }
-}
-
-// 重做
-function redo() {
-    if (historyStep < drawingHistory.length - 1) {
-        historyStep++;
-        restoreFromHistory();
-    }
-}
-
-// 从历史恢复
-function restoreFromHistory() {
-    const img = new Image();
-    img.src = drawingHistory[historyStep];
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-    };
 }
 
 // 生成图片
@@ -1323,9 +1494,15 @@ function initializeZoom() {
     const zoomInBtn = document.getElementById('zoomInBtn');
     const zoomOutBtn = document.getElementById('zoomOutBtn');
     const zoomResetBtn = document.getElementById('zoomResetBtn');
-    const zoomLevelDisplay = document.querySelector('.zoom-level');
-    const canvasBox = document.getElementById('canvas-box');
-    const canvasWrapper = document.querySelector('.canvas-wrapper');
+    const zoomLevelDisplay = document.getElementById('zoomLevel');
+    const canvasBox = document.getElementById('canvasBox');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    
+    // 检查必需元素
+    if (!zoomLevelDisplay || !canvasBox || !canvasWrapper) {
+        console.warn('[Zoom] 缩放功能元素未找到，跳过初始化');
+        return;
+    }
 
     // 更新缩放显示和应用缩放
     function updateZoomDisplay() {
@@ -1337,26 +1514,32 @@ function initializeZoom() {
     }
 
     // 放大
-    zoomInBtn.addEventListener('click', () => {
-        if (zoomLevel < MAX_ZOOM) {
-            zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
-            updateZoomDisplay();
-        }
-    });
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            if (zoomLevel < MAX_ZOOM) {
+                zoomLevel = Math.min(MAX_ZOOM, zoomLevel + ZOOM_STEP);
+                updateZoomDisplay();
+            }
+        });
+    }
 
     // 缩小
-    zoomOutBtn.addEventListener('click', () => {
-        if (zoomLevel > MIN_ZOOM) {
-            zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
-            updateZoomDisplay();
-        }
-    });
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+            if (zoomLevel > MIN_ZOOM) {
+                zoomLevel = Math.max(MIN_ZOOM, zoomLevel - ZOOM_STEP);
+                updateZoomDisplay();
+            }
+        });
+    }
 
     // 重置
-    zoomResetBtn.addEventListener('click', () => {
-        zoomLevel = 1;
-        updateZoomDisplay();
-    });
+    if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => {
+            zoomLevel = 1;
+            updateZoomDisplay();
+        });
+    }
 
     // 鼠标滚轮缩放（在canvas区域直接滚轮即可）
     canvasWrapper.addEventListener('wheel', (e) => {

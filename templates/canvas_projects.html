@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AI画布项目 - 松鼠艺术</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎨</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .projects-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+        .project-section {
+            margin-bottom: 60px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .section-header h2 {
+            font-size: 1.8em;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-header h2 i {
+            color: #667eea;
+        }
+        
+        .btn-new-project {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-new-project:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .project-thumbnail {
+            width: 100%;
+            height: 200px;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .project-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .project-thumbnail.empty {
+            color: #ccc;
+            font-size: 48px;
+        }
+        
+        .project-info {
+            padding: 20px;
+        }
+        
+        .project-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #999;
+            margin-bottom: 12px;
+        }
+        
+        .project-size {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .project-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-action {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 0.9em;
+        }
+        
+        .btn-action:hover {
+            background: #f8f9ff;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .btn-action.danger:hover {
+            background: #fff5f5;
+            border-color: #ff4757;
+            color: #ff4757;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .empty-state p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .projects-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 20px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .btn-new-project {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'components/auth_header.html' %}
+    
+    <div class="projects-container">
+        <div class="page-header">
+            <h1>🎨 我的AI画布项目</h1>
+            <p>管理你的手绘项目和创意画布</p>
+        </div>
+        
+        <!-- 手绘项目区域 -->
+        <div class="project-section">
+            <div class="section-header">
+                <h2><i class="fas fa-pencil-alt"></i> 手绘项目</h2>
+                <button class="btn-new-project" onclick="createNewProject('sketch')">
+                    <i class="fas fa-plus"></i> 新建手绘项目
+                </button>
+            </div>
+            
+            <div class="projects-grid" id="sketchProjects">
+                <div class="empty-state">
+                    <i class="fas fa-palette"></i>
+                    <p>还没有手绘项目</p>
+                    <p style="font-size: 0.9em; color: #ccc;">点击"新建手绘项目"开始创作</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 创意项目区域 (无限画布) -->
+        <div class="project-section">
+            <div class="section-header">
+                <h2><i class="fas fa-layer-group"></i> 创意项目</h2>
+                <button class="btn-new-project" onclick="createNewProject('infinite')">
+                    <i class="fas fa-plus"></i> 新建创意项目
+                </button>
+            </div>
+            
+            <div class="projects-grid" id="infiniteProjects">
+                <div class="empty-state">
+                    <i class="fas fa-infinity"></i>
+                    <p>还没有创意项目</p>
+                    <p style="font-size: 0.9em; color: #ccc;">点击"新建创意项目"开始创作</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 加载项目列表
+        async function loadProjects() {
+            try {
+                const response = await fetch('/canvas/projects/list');
+                const data = await response.json();
+                
+                if (data.success) {
+                    renderProjects('sketch', data.sketch_projects);
+                    renderProjects('infinite', data.infinite_projects);
+                }
+            } catch (error) {
+                console.error('加载项目失败:', error);
+            }
+        }
+        
+        // 渲染项目列表
+        function renderProjects(type, projects) {
+            const container = document.getElementById(type === 'sketch' ? 'sketchProjects' : 'infiniteProjects');
+            
+            if (projects.length === 0) {
+                return; // 保持empty-state
+            }
+            
+            container.innerHTML = projects.map(project => `
+                <div class="project-card" onclick="openProject(${project.id}, '${type}')">
+                    <div class="project-thumbnail ${project.thumbnail ? '' : 'empty'}">
+                        ${project.thumbnail ? 
+                            `<img src="${project.thumbnail}" alt="${project.title}">` : 
+                            '<i class="fas fa-image"></i>'}
+                    </div>
+                    <div class="project-info">
+                        <div class="project-title">${project.title}</div>
+                        <div class="project-meta">
+                            <span class="project-size">
+                                <i class="fas fa-ruler-combined"></i>
+                                ${project.width}×${project.height}
+                            </span>
+                            <span class="project-date">
+                                ${formatDate(project.updated_at)}
+                            </span>
+                        </div>
+                        <div class="project-actions" onclick="event.stopPropagation()">
+                            <button class="btn-action" onclick="renameProject(${project.id}, '${project.title}')">
+                                <i class="fas fa-edit"></i> 重命名
+                            </button>
+                            <button class="btn-action danger" onclick="deleteProject(${project.id})">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 格式化日期
+        function formatDate(dateStr) {
+            if (!dateStr) return '刚刚';
+            const date = new Date(dateStr);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) return '今天';
+            if (days === 1) return '昨天';
+            if (days < 7) return `${days}天前`;
+            return date.toLocaleDateString('zh-CN');
+        }
+        
+        // 创建新项目
+        function createNewProject(type) {
+            const url = type === 'sketch' ? '/canvas/sketch' : '/canvas/infinite';
+            window.location.href = `${url}?new=1`;
+        }
+        
+        // 打开项目
+        function openProject(projectId, type) {
+            const url = type === 'sketch' ? '/canvas/sketch' : '/canvas/infinite';
+            window.location.href = `${url}?project_id=${projectId}`;
+        }
+        
+        // 重命名项目
+        async function renameProject(projectId, oldTitle) {
+            const newTitle = prompt('请输入新的项目名称:', oldTitle);
+            if (!newTitle || newTitle === oldTitle) return;
+            
+            try {
+                const response = await fetch(`/canvas/projects/${projectId}/rename`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({title: newTitle})
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadProjects();
+                } else {
+                    alert('重命名失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('重命名失败:', error);
+                alert('重命名失败');
+            }
+        }
+        
+        // 删除项目
+        async function deleteProject(projectId) {
+            if (!confirm('确定要删除这个项目吗？此操作无法撤销。')) return;
+            
+            try {
+                const response = await fetch(`/canvas/projects/${projectId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    loadProjects();
+                } else {
+                    alert('删除失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败');
+            }
+        }
+        
+        // 页面加载时加载项目列表
+        document.addEventListener('DOMContentLoaded', loadProjects);
+    </script>
+</body>
+</html>

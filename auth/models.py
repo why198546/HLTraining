@@ -417,6 +417,7 @@ class Comment(db.Model):
 class CanvasProject(db.Model):
     """画布项目模型 - 存储用户的画布项目"""
     __tablename__ = 'canvas_projects'
+    __table_args__ = {'extend_existing': True}
     
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.String(36), unique=True, nullable=False)
@@ -424,8 +425,13 @@ class CanvasProject(db.Model):
     
     # 项目信息
     title = db.Column(db.String(200), default='未命名项目')
+    project_type = db.Column(db.String(20), default='infinite')  # 'sketch' 或 'infinite'
     description = db.Column(db.Text)
     thumbnail = db.Column(db.String(500))  # 项目缩略图
+    
+    # 画布尺寸
+    width = db.Column(db.Integer, default=512)
+    height = db.Column(db.Integer, default=512)
     
     # 画布数据
     canvas_data = db.Column(db.JSON)  # 存储画布中的所有图片及其位置、尺寸
@@ -435,6 +441,7 @@ class CanvasProject(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
+    last_opened_at = db.Column(db.DateTime)  # 最后打开时间
     
     # 统计信息
     image_count = db.Column(db.Integer, default=0)
@@ -443,13 +450,17 @@ class CanvasProject(db.Model):
     # 关联用户
     user = db.relationship('User', backref='canvas_projects')
     
-    def __init__(self, project_id, user_id, title='未命名项目'):
+    def __init__(self, project_id, user_id, title='未命名项目', project_type='infinite', **kwargs):
         self.project_id = project_id
         self.user_id = user_id
         self.title = title
-        self.canvas_data = {'images': []}
-        self.chat_history = []
-        self.image_count = 0
+        self.project_type = project_type
+        self.canvas_data = kwargs.get('canvas_data', {'images': []})
+        self.chat_history = kwargs.get('chat_history', [])
+        self.image_count = kwargs.get('image_count', 0)
+        self.width = kwargs.get('width', 512)
+        self.height = kwargs.get('height', 512)
+        self.thumbnail = kwargs.get('thumbnail')
     
     def to_dict(self):
         """转换为字典"""
@@ -457,14 +468,18 @@ class CanvasProject(db.Model):
             'id': self.id,
             'project_id': self.project_id,
             'title': self.title,
+            'project_type': self.project_type,
             'description': self.description,
             'thumbnail': self.thumbnail,
+            'width': self.width,
+            'height': self.height,
             'canvas_data': self.canvas_data,
             'chat_history': self.chat_history,
             'image_count': self.image_count,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat(),
-            'last_accessed': self.last_accessed.isoformat()
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'last_accessed': self.last_accessed.isoformat() if self.last_accessed else None,
+            'last_opened_at': self.last_opened_at.isoformat() if self.last_opened_at else None,
         }
     
     def update_canvas_data(self, canvas_data):

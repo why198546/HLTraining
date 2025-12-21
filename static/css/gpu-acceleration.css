@@ -1,0 +1,438 @@
+/* ========================================
+   全局GPU加速优化
+   让整个网站运行更流畅
+   ======================================== */
+
+/* ====== 基础优化 ====== */
+
+/* 全局平滑滚动 + GPU加速 */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    /* 不在body上使用transform，避免影响position:fixed子元素的定位 */
+    backface-visibility: hidden;
+}
+
+/* ====== 通用动画元素 ====== */
+
+/* 所有hover效果启用GPU加速 - 改进：只在hover/focus时启用will-change */
+a, button, .btn, .card, .artwork-card {
+    /* 静态状态只用基础加速，不用will-change避免内存浪费 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 只在交互时启用will-change */
+a:hover, a:focus,
+button:hover, button:focus,
+.btn:hover, .btn:focus,
+.card:hover,
+.artwork-card:hover {
+    will-change: transform, opacity;
+}
+
+/* 所有过渡动画优化 */
+.transition, 
+[class*="transition"],
+[class*="hover"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ====== 滚动优化 ====== */
+
+/* 滚动容器优化 - 改进：滚动时才启用will-change */
+.scroll-container,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto,
+[style*="overflow: auto"],
+[style*="overflow-y: auto"],
+[style*="overflow-x: auto"] {
+    /* 开启硬件加速滚动 */
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+}
+
+/* 滚动时由JS动态添加.scrolling类来启用will-change */
+.scroll-container.scrolling,
+.overflow-auto.scrolling,
+.overflow-y-auto.scrolling,
+.overflow-x-auto.scrolling {
+    will-change: scroll-position;
+}
+
+/* ====== 图片优化 ====== */
+
+/* 所有图片GPU加速 */
+img {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    /* 图片渲染优化 */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* 图片加载动画 */
+img[loading="lazy"] {
+    will-change: opacity;
+}
+
+/* ====== 卡片和容器 ====== */
+
+/* 卡片类元素 - 改进：只在交互时启用will-change */
+.card, 
+.artwork-card,
+.project-card,
+.lesson-card,
+.user-card {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.card:hover, 
+.artwork-card:hover,
+.project-card:hover,
+.lesson-card:hover,
+.user-card:hover {
+    will-change: transform, box-shadow;
+}
+
+/* ====== 模态框和弹出层 ====== */
+
+/* 模态框 - 改进：默认不用will-change，打开时由JS动态添加 */
+.modal,
+.popup,
+.overlay,
+.dropdown-menu,
+.tooltip {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 当模态框显示时才启用will-change */
+.modal.show,
+.popup.show,
+.overlay.show,
+.dropdown-menu.show,
+.tooltip.show {
+    will-change: transform, opacity;
+}
+
+/* 模态框背景 */
+.modal-backdrop,
+.overlay-backdrop {
+    transform: translateZ(0);
+}
+
+.modal-backdrop.show,
+.overlay-backdrop.show {
+    will-change: opacity;
+}
+
+/* ====== 导航栏优化 ====== */
+
+/* 导航栏固定元素 - 改进：固定元素才真正需要持续优化 */
+.navbar,
+.header,
+.sidebar,
+.footer,
+[class*="nav-"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 只有固定定位的导航才持续使用will-change */
+.navbar.fixed-top,
+.header.fixed,
+.sidebar.fixed,
+[class*="nav-"].fixed {
+    will-change: transform;
+}
+
+/* 导航链接 */
+.nav-link,
+.navbar a,
+.menu-item {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ====== 表单元素 ====== */
+
+/* 输入框和按钮 */
+input,
+textarea,
+select,
+button,
+.form-control {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 按钮hover效果 */
+button:hover,
+.btn:hover,
+a.btn:hover {
+    will-change: transform, box-shadow;
+}
+
+/* ====== 加载动画 ====== */
+
+/* 加载指示器 */
+.spinner,
+.loader,
+.loading,
+[class*="spin"],
+[class*="rotate"] {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ====== 网格和列表 ====== */
+
+/* 网格布局 */
+.grid,
+.gallery-grid,
+.artwork-grid,
+[class*="grid-"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 网格项 - 改进：只在hover时优化 */
+.grid-item,
+.gallery-item,
+[class*="col-"] {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+.grid-item:hover,
+.gallery-item:hover {
+    will-change: transform;
+}
+
+/* ====== 特定页面优化 ====== */
+
+/* 画廊页面 */
+.gallery-container {
+    transform: translateZ(0);
+    perspective: 1000px;
+}
+
+.gallery-item img {
+    transform: translateZ(0);
+}
+
+/* 只在hover时优化 */
+.gallery-item:hover img {
+    will-change: transform, opacity;
+}
+
+/* 创作页面 - 画布确实需要持续优化 */
+.creation-canvas,
+.drawing-area,
+.canvas-container {
+    transform: translateZ(0);
+    will-change: transform; /* 画布是例外，确实需要持续优化 */
+}
+
+/* 聊天面板 */
+.chat-panel,
+.chat-messages,
+.message-list {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 滚动时才启用will-change */
+.chat-panel.scrolling,
+.chat-messages.scrolling,
+.message-list.scrolling {
+    will-change: scroll-position;
+}
+
+/* ====== 动画关键帧优化 ====== */
+
+/* 淡入动画 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateZ(0) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateZ(0) translateY(0);
+    }
+}
+
+/* 滑入动画 */
+@keyframes slideIn {
+    from {
+        transform: translateZ(0) translateX(-100%);
+    }
+    to {
+        transform: translateZ(0) translateX(0);
+    }
+}
+
+/* 缩放动画 */
+@keyframes scaleIn {
+    from {
+        transform: translateZ(0) scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: translateZ(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* 旋转动画 */
+@keyframes rotate {
+    from {
+        transform: translateZ(0) rotate(0deg);
+    }
+    to {
+        transform: translateZ(0) rotate(360deg);
+    }
+}
+
+/* ====== 性能监控类 ====== */
+
+/* 标记需要高性能的元素 */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
+.smooth-transition {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ====== 移动端优化 ====== */
+
+@media (max-width: 768px) {
+    /* 移动端减少will-change使用，避免内存问题 */
+    * {
+        will-change: auto;
+    }
+    
+    /* 只对交互元素启用 */
+    button:active,
+    a:active,
+    .card:active {
+        will-change: transform;
+    }
+    
+    /* 优化触摸滚动 */
+    body {
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+/* ====== 打印优化 ====== */
+
+@media print {
+    /* 打印时禁用所有GPU加速，避免渲染问题 */
+    * {
+        will-change: auto !important;
+        transform: none !important;
+        backface-visibility: visible !important;
+    }
+}
+
+/* ====== 降低动画效果（无障碍） ====== */
+
+@media (prefers-reduced-motion: reduce) {
+    /* 尊重用户偏好，减少动画 */
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        will-change: auto !important;
+    }
+}
+
+/* ====== 特殊元素优化 ====== */
+
+/* 视频播放器 */
+video {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Canvas元素 */
+canvas {
+    transform: translateZ(0);
+    will-change: contents;
+}
+
+/* SVG图标 */
+svg {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* ====== 提示信息 ====== */
+
+/* Toast / Notification */
+.toast,
+.notification,
+.alert {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+}
+
+/* ====== 搜索和筛选 ====== */
+
+/* 搜索框 */
+.search-box,
+.search-input,
+.filter-panel {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* 搜索结果 */
+.search-results,
+.results-list {
+    transform: translateZ(0);
+}
+
+.search-results.scrolling,
+.results-list.scrolling {
+    will-change: scroll-position;
+}
+
+/* ====== 内存管理建议 ====== */
+
+/*
+ * 性能优化最佳实践：
+ * 
+ * 1. will-change应该：
+ *    - 只在真正需要动画的时候使用
+ *    - 在动画开始前添加，动画结束后移除
+ *    - 避免同时对大量元素使用
+ * 
+ * 2. transform: translateZ(0) 是轻量级的：
+ *    - 创建合成层但不预分配内存
+ *    - 可以广泛使用
+ * 
+ * 3. 监控方法：
+ *    - Chrome DevTools → More Tools → Rendering
+ *    - 启用 "Layer borders" 查看合成层数量
+ *    - 保持合成层数量在合理范围（<50）
+ */

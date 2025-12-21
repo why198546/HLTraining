@@ -78,13 +78,16 @@ def canvas_generate():
 @canvas_api_bp.route('/chat', methods=['POST'])
 @login_required
 def canvas_chat():
-    """画布对话API - 判断用户意图"""
+    """画布对话API - 使用Gemini AI对话"""
     try:
+        import google.generativeai as genai
+        
         data = request.get_json()
         prompt = data.get('prompt', '').strip()
         selected_image_index = data.get('selectedImageIndex')
         has_images = data.get('hasImages', False)
         forced_intent = data.get('forcedIntent')  # 命令模式强制的意图
+        chat_history = data.get('chatHistory', [])  # 获取历史对话
         
         if not prompt:
             return jsonify({
@@ -92,88 +95,179 @@ def canvas_chat():
                 'error': '请输入内容'
             }), 400
         
-        print(f"💬 画布对话: {prompt}, 选中图片: {selected_image_index}, 有图片: {has_images}, 强制意图: {forced_intent}")
+        print(f"🌰 松果助手对话: {prompt}, 历史消息数: {len(chat_history)}, 选中图片: {selected_image_index}, 有图片: {has_images}, 强制意图: {forced_intent}")
         
-        # 如果有强制意图，直接使用
-        if forced_intent:
-            intent = forced_intent
-            refined_prompt = prompt
-            
-            if intent == 'generate':
-                response = '好的，我来为你生成图片...'
-            elif intent == 'modify':
-                response = '好的，我来帮你修改这张图片...'
-            elif intent == 'chat':
-                # 简单的对话响应 - 对话模式下不生成图片
-                prompt_lower = prompt.lower()
-                if '建议' in prompt_lower or '技巧' in prompt_lower:
-                    response = '创作建议：\n1. 描述要具体，包含主体、环境、光线、风格等\n2. 可以参考艺术家风格，如"梵高风格"、"水彩画风格"\n3. 想修改图片时，先选中它再告诉我改什么'
-                elif '教程' in prompt_lower or '怎么' in prompt_lower:
-                    response = '使用方法：\n📝 生成新图：直接描述想要的图片，如"画一只松鼠"\n✨ 修改图片：单击选中图片，然后说"换成夜晚场景"\n💬 对话交流：问我任何创作相关的问题\n⚡ 快捷命令：输入 / 可以快速切换模式'
-                elif '谢谢' in prompt_lower or '感谢' in prompt_lower:
-                    response = '不客气！很高兴能帮到你 😊 还需要什么帮助吗？'
-                elif any(kw in prompt_lower for kw in ['画', '生成', '创作', '做一个', '做一张']):
-                    # 对话模式下，即使提到生成关键词，也只是对话
-                    response = f'我理解你想要生成："{prompt}"。\n\n💡 提示：当前是对话模式，我不会生成图片。如果要生成图片，可以：\n1. 输入 / 选择"生成"模式\n2. 或者退出对话模式，直接描述你想要的图片'
-                else:
-                    response = f'关于"{prompt}"的问题，我很乐意为你解答。你可以问我创作技巧、工具使用等问题。\n\n如果想生成图片，可以输入 / 切换到生成模式。'
-            
+        # 配置Gemini API
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
             return jsonify({
-                'success': True,
-                'intent': intent,
-                'refined_prompt': refined_prompt,
-                'response': response
-            })
+                'success': False,
+                'error': 'GEMINI_API_KEY 未配置'
+            }), 500
         
-        # 使用简单的关键词匹配判断意图（原有逻辑）
-        # 修改意图的关键词
-        modify_keywords = ['修改', '改成', '换', '变成', '调整', '优化', '改进', '让它', '把它', '更', '加上', '去掉', '删除', '移除']
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
-        # 生成意图的关键词
-        generate_keywords = ['画', '生成', '创作', '做一个', '做一张', '帮我', '我想要', '给我', '设计', '制作']
+        # 自动总结聊天历史（类似VS Code Chat）
+        conversation_summary = ""
+        if chat_history and len(chat_history) > 4:  # 超过2轮对话才需要总结
+            try:
+                print(f"📝 开始总结 {len(chat_history)} 条历史消息...")
+                
+                # 构建总结提示
+                history_text = "\n".join([
+                    f"{'用户' if msg.get('role') == 'user' else '助手'}: {msg.get('content', '')}"
+                    for msg in chat_history
+                ])
+                
+                summarize_prompt = f"""请总结以下对话的关键信息，提取：
+1. 用户的创作目标和意图
+2. 已经完成的操作（生成/修改了什么图片）
+3. 用户的偏好和要求
+4. 当前需要解决的问题或待完成的任务
+
+对话历史：
+{history_text}
+
+请用简洁的2-3句话总结，突出最重要的上下文信息。"""
+                
+                summary_response = model.generate_content(summarize_prompt)
+                conversation_summary = summary_response.text.strip()
+                print(f"✅ 总结完成: {conversation_summary[:100]}...")
+                
+            except Exception as e:
+                print(f"⚠️ 总结失败，将使用原始历史: {str(e)}")
+                # 降级：使用最近几条消息
+                recent_messages = chat_history[-6:]
+                conversation_summary = "最近对话：\n" + "\n".join([
+                    f"{'用户' if msg.get('role') == 'user' else '助手'}: {msg.get('content', '')}"
+                    for msg in recent_messages
+                ])
         
-        # 对话意图的关键词
-        chat_keywords = ['什么', '为什么', '怎么', '如何', '能不能', '可以吗', '建议', '技巧', '教程', '帮助', '说明', '?', '？']
+        # 如果有强制意图，按意图执行
+        if forced_intent:
+            if forced_intent == 'generate':
+                return jsonify({
+                    'success': True,
+                    'intent': 'generate',
+                    'refined_prompt': prompt,
+                    'response': '好的，我来为你生成图片...'
+                })
+            elif forced_intent == 'modify':
+                return jsonify({
+                    'success': True,
+                    'intent': 'modify',
+                    'refined_prompt': prompt,
+                    'response': '好的，我来帮你修改这张图片...'
+                })
         
-        prompt_lower = prompt.lower()
+        # 构建系统提示
+        system_prompt = """你是松果助手，一个友好的AI画布创作助手。你需要帮助用户：
+1. 判断用户意图：生成图片、修改图片、还是普通对话
+2. 如果是生成或修改图片，提取关键信息
+3. 如果是对话，友好地回答问题（参考之前的对话总结）
+
+当前画布状态：
+- 有图片：{has_images}
+- 选中图片：{selected}
+
+判断规则：
+- 包含"画"、"生成"、"创作"等词 → 意图是generate
+- 选中了图片且包含"修改"、"改成"、"换"等词 → 意图是modify  
+- 其他情况 → 意图是chat
+
+请用JSON格式回复：
+{{
+  "intent": "generate/modify/chat",
+  "refined_prompt": "提炼后的提示词(仅生成/修改时)",
+  "response": "给用户的回复文字"
+}}""".format(
+            has_images='是' if has_images else '否',
+            selected='是' if selected_image_index is not None else '否'
+        )
         
-        # 判断意图
-        intent = 'chat'  # 默认为对话
-        refined_prompt = prompt
-        response = ''
+        # 构建完整的对话上下文
+        conversation_context = system_prompt + "\n\n"
         
-        # 检查是否选中了图片且包含修改关键词
-        if selected_image_index is not None and any(kw in prompt_lower for kw in modify_keywords):
-            intent = 'modify'
-            response = '好的，我来帮你修改这张图片...'
-        # 检查是否包含生成关键词
-        elif any(kw in prompt_lower for kw in generate_keywords):
-            intent = 'generate'
-            response = '好的，我来为你生成图片...'
-        # 检查是否包含明确的对话关键词
-        elif any(kw in prompt_lower for kw in chat_keywords):
-            intent = 'chat'
-            # 根据不同的问题给出不同的回答
-            if '建议' in prompt_lower or '技巧' in prompt_lower:
-                response = '创作建议：\n1. 描述要具体，包含主体、环境、光线、风格等\n2. 可以参考艺术家风格，如"梵高风格"、"水彩画风格"\n3. 想修改图片时，先选中它再告诉我改什么'
-            elif '教程' in prompt_lower or '怎么' in prompt_lower:
-                response = '使用方法：\n📝 生成新图：直接描述想要的图片\n✨ 修改图片：单击选中图片，然后说出修改要求\n💬 对话交流：问我任何问题'
-            else:
-                response = '我会尽力回答你的问题。如果想生成图片，可以直接描述你想要的内容。'
+        # 添加对话总结（如果有）
+        if conversation_summary:
+            conversation_context += f"对话上下文总结：\n{conversation_summary}\n\n"
+        elif chat_history and len(chat_history) <= 4:
+            # 对话较短，直接包含最近消息
+            conversation_context += "最近对话：\n"
+            for msg in chat_history[-4:]:
+                role_name = "用户" if msg.get('role') == 'user' else "助手"
+                conversation_context += f"{role_name}: {msg.get('content', '')}\n"
+            conversation_context += "\n"
+        
+        # 添加当前用户消息
+        conversation_context += f"用户最新消息：{prompt}"
+        
+        # 调用Gemini
+        response = model.generate_content(conversation_context)
+        
+        # 解析Gemini返回的JSON
+        import json
+        response_text = response.text.strip()
+        
+        # 去除可能的markdown代码块标记
+        if response_text.startswith('```json'):
+            response_text = response_text[7:]
+        if response_text.startswith('```'):
+            response_text = response_text[3:]
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]
+        response_text = response_text.strip()
+        
+        result = json.loads(response_text)
         
         return jsonify({
             'success': True,
-            'intent': intent,
-            'refined_prompt': refined_prompt,
-            'response': response
+            'intent': result.get('intent', 'chat'),
+            'refined_prompt': result.get('refined_prompt', prompt),
+            'response': result.get('response', '我明白了。')
         })
         
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON解析错误: {str(e)}")
+        # 降级到简单匹配
+        return simple_intent_detection(prompt, selected_image_index, has_images)
     except Exception as e:
         print(f"❌ 画布对话错误: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        # 降级到简单匹配
+        return simple_intent_detection(prompt, selected_image_index, has_images)
+
+
+def simple_intent_detection(prompt, selected_image_index, has_images):
+    """简单的意图检测（降级方案）"""
+    modify_keywords = ['修改', '改成', '换', '变成', '调整', '优化', '改进', '让它', '把它', '更', '加上', '去掉', '删除', '移除']
+    generate_keywords = ['画', '生成', '创作', '做一个', '做一张', '帮我', '我想要', '给我', '设计', '制作']
+    
+    prompt_lower = prompt.lower()
+    
+    if selected_image_index is not None and any(kw in prompt_lower for kw in modify_keywords):
         return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+            'success': True,
+            'intent': 'modify',
+            'refined_prompt': prompt,
+            'response': '好的，我来帮你修改这张图片...'
+        })
+    elif any(kw in prompt_lower for kw in generate_keywords):
+        return jsonify({
+            'success': True,
+            'intent': 'generate',
+            'refined_prompt': prompt,
+            'response': '好的，我来为你生成图片...'
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'intent': 'chat',
+            'refined_prompt': prompt,
+            'response': '我是松果助手，很高兴为你服务！你可以问我创作相关的问题，或者直接描述想要生成的图片。'
+        })
 
 
 @canvas_api_bp.route('/modify', methods=['POST'])

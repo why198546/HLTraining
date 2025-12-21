@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>手绘画布 - 松鼠艺术</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎨</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_sketch.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -16,6 +19,16 @@
     <div class="sketch-container">
         <!-- 顶部控制栏 -->
         <div class="control-bar">
+            <div class="project-info">
+                <button id="backToProjects" class="btn-back" title="返回项目列表">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <input type="text" id="projectTitle" class="project-title-input" value="{{ project_title if project_title and project_title != '手绘项目' else '' }}" placeholder="项目标题（保存时自动生成）">
+                <button id="saveProjectBtn" class="btn-save">
+                    <i class="fas fa-save"></i> 保存项目
+                </button>
+            </div>
+            
             <div class="resolution-selector">
                 <label>分辨率：</label>
                 <select id="resolutionSelect">
@@ -270,5 +283,126 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/canvas_sketch.js') }}"></script>
+    <script>
+        // 项目管理相关变量
+        const projectId = {{ project_id if project_id else 'null' }};
+        const isNewProject = {{ 'true' if is_new else 'false' }};
+        
+        // 返回项目列表
+        document.getElementById('backToProjects').addEventListener('click', () => {
+            window.location.href = '/canvas/projects';
+        });
+        
+        // 保存项目
+        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
+            let title = document.getElementById('projectTitle').value.trim();
+            const canvas = document.getElementById('sketchCanvas');
+            const prompt = document.getElementById('promptInput').value.trim();
+            
+            // 如果是新项目且没有标题，尝试生成标题
+            if (isNewProject && !title && prompt) {
+                try {
+                    const genResponse = await fetch('/canvas/projects/generate-title', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({prompt: prompt, type: 'sketch'})
+                    });
+                    const genData = await genResponse.json();
+                    if (genData.success && genData.title) {
+                        title = genData.title;
+                        document.getElementById('projectTitle').value = title;
+                    }
+                } catch (e) {
+                    console.log('标题生成失败，使用默认标题');
+                }
+            }
+            
+            if (!title) {
+                title = '未命名项目';
+                document.getElementById('projectTitle').value = title;
+            }
+            
+            try {
+                // 生成缩略图
+                const thumbnail = canvas.toDataURL('image/png');
+                
+                // 准备画布数据
+                const canvasData = {
+                    imageDataUrl: canvas.toDataURL('image/png'),
+                    generatedImageUrl: window.generatedImageDataUrl || null,
+                    prompt: document.getElementById('promptInput').value
+                };
+                
+                const response = await fetch('/canvas/projects/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        title: title,
+                        project_type: 'sketch',
+                        thumbnail: thumbnail,
+                        canvas_data: canvasData,
+                        width: canvas.width,
+                        height: canvas.height
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('项目保存成功！');
+                    // 如果是新项目，更新URL
+                    if (!projectId) {
+                        window.history.pushState({}, '', `/canvas/sketch?project_id=${data.project_id}`);
+                        window.location.reload();
+                    }
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败');
+            }
+        });
+        
+        // 加载项目
+        if (projectId) {
+            fetch(`/canvas/projects/${projectId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.canvas_data) {
+                        const canvasData = data.canvas_data;
+                        const canvas = document.getElementById('sketchCanvas');
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        
+                        // 加载画布图片
+                        if (canvasData.imageDataUrl) {
+                            const img = new Image();
+                            img.onload = () => {
+                                ctx.drawImage(img, 0, 0);
+                                saveState(); // 保存初始状态到历史记录
+                            };
+                            img.src = canvasData.imageDataUrl;
+                        }
+                        
+                        // 加载生成的图片
+                        if (canvasData.generatedImageUrl) {
+                            window.generatedImageDataUrl = canvasData.generatedImageUrl;
+                            const genImg = new Image();
+                            genImg.onload = () => {
+                                const genCtx = document.getElementById('generatedCanvas').getContext('2d');
+                                genCtx.drawImage(genImg, 0, 0);
+                            };
+                            genImg.src = canvasData.generatedImageUrl;
+                        }
+                        
+                        // 加载提示词
+                        if (canvasData.prompt) {
+                            document.getElementById('promptInput').value = canvasData.prompt;
+                        }
+                    }
+                })
+                .catch(err => console.error('加载项目失败:', err));
+        }
+    </script>
 </body>
 </html>

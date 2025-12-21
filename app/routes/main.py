@@ -1,5 +1,7 @@
 """主页和通用路由"""
-from flask import Blueprint, render_template
+import os
+
+from flask import Blueprint, render_template, send_from_directory
 from flask_login import login_required
 
 main_bp = Blueprint('main', __name__)
@@ -9,6 +11,15 @@ main_bp = Blueprint('main', __name__)
 def index():
     """首页"""
     return render_template('index.html')
+
+
+@main_bp.route('/favicon.ico')
+def favicon():
+    """favicon图标"""
+    # 使用SVG emoji作为favicon
+    return '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <text y="0.9em" font-size="90">🎨</text>
+    </svg>''', 200, {'Content-Type': 'image/svg+xml'}
 
 
 @main_bp.route('/sunguo-class')
@@ -86,6 +97,12 @@ def simple_test():
 def test_3d():
     """3D测试页面"""
     return render_template('test_3d.html')
+
+
+@main_bp.route('/gpu-test')
+def gpu_test():
+    """GPU加速测试页面"""
+    return render_template('gpu_test.html')
 
 
 @main_bp.route('/test-model')

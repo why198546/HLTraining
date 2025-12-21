@@ -4,14 +4,104 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI画布 - 无限创作空间</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_infinite.css') }}?v=3.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_infinite.css') }}?v=4.3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/history_panel.css') }}?v=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}?v=1.1">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .project-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 15px;
+        z-index: 1000;
+    }
+    .back-button-header {
+        padding: 10px 15px;
+        background: #f5f5f5;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .back-button-header:hover {
+        background: #e0e0e0;
+    }
+    .project-title-input {
+        flex: 1;
+        max-width: 400px;
+        padding: 10px 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .project-title-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    .btn-save-project {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+    }
+    .btn-save-project:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    #toggleChatBtn {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    #toggleChatBtn:hover {
+        box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+    }
+    #historyPanelBtn {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    #historyPanelBtn:hover {
+        box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+    }
+    .canvas-page {
+        padding-top: 60px;
+    }
+</style>
 </head>
 <body>
-<!-- 简单的后退按钮 -->
-<a href="{{ url_for('main.index') }}" class="back-button" title="返回首页">
-    <i class="fas fa-arrow-left"></i>
-</a>
+<!-- 项目顶部栏 -->
+<div class="project-header">
+    <button class="back-button-header" id="backToProjects" title="返回项目列表">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+    <input type="text" id="projectTitle" class="project-title-input" value="{{ project_title if project_title and project_title != '创意项目' else '' }}" placeholder="项目标题（保存时自动生成）">
+    <button id="saveProjectBtn" class="btn-save-project">
+        <i class="fas fa-save"></i> 保存项目
+    </button>
+    <button id="toggleChatBtn" class="btn-save-project" title="打开松果助手">
+        <i class="fas fa-comments"></i> 松果助手
+    </button>
+    <button id="historyPanelBtn" class="btn-save-project" title="打开历史记录">
+        <i class="fas fa-history"></i> 历史
+    </button>
+</div>
 
 <div class="canvas-page">
     <!-- 无限画布容器 -->
@@ -70,6 +160,20 @@
         
         <!-- 控制面板 -->
         <div class="canvas-controls">
+            <button class="control-btn" id="undoBtn" title="撤销">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 7v6h6"></path>
+                    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"></path>
+                </svg>
+                撤销
+            </button>
+            <button class="control-btn" id="redoBtn" title="重做">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 7v6h-6"></path>
+                    <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"></path>
+                </svg>
+                重做
+            </button>
             <button class="control-btn" id="btnAutoArrangeAll" title="自动排列所有图片">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"></rect>
@@ -98,71 +202,119 @@
             <span class="zoom-level" id="zoomLevel">100%</span>
         </div>
         
-        <!-- 浮动聊天面板 -->
-        <div class="floating-chat-panel" id="floatingChat">
-            <div class="chat-panel-header">
-                <span class="chat-panel-title">💬 AI助手</span>
-                <div class="chat-panel-actions">
-                    <button class="btn-icon" id="btnMinimizeChat" title="最小化">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
+        <!-- 最小化后的聊天按钮 -->
+        <button class="floating-chat-btn" id="floatingChatBtn" style="display: none;">
+            💬
+        </button>
+    </div> <!-- 关闭 infinite-canvas-container -->
+</div> <!-- 关闭 canvas-page -->
+
+<!-- 浮动聊天面板 - 使用fixed定位，独立于页面结构 -->
+<div class="floating-chat-panel" id="floatingChat" data-position="left">
+    <div class="chat-panel-header">
+        <div class="panel-tabs">
+            <button class="tab-btn active" data-tab="chat">
+                <i class="fas fa-comments"></i> 松果助手
+            </button>
+            <button class="tab-btn" data-tab="history">
+                <i class="fas fa-history"></i> 历史记录
+            </button>
+        </div>
+        <div class="chat-panel-actions">
+            <div class="position-switcher">
+                <button class="btn-icon position-btn" data-position="left" title="贴靠左侧">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button class="btn-icon position-btn" data-position="bottom" title="贴靠底部">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="btn-icon position-btn" data-position="right" title="贴靠右侧">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+            <button class="btn-icon" id="btnMinimizeChat" title="最小化">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <div class="resize-handle resize-handle-top"></div>
+    <div class="resize-handle resize-handle-right"></div>
+    <div class="resize-handle resize-handle-bottom"></div>
+    <div class="resize-handle resize-handle-left"></div>
+    
+    <!-- 聊天标签页内容 -->
+    <div class="tab-content active" id="chatTabContent">
+        <div class="chat-panel-messages" id="chatMessages">
+            <div class="message assistant">
+                <div class="message-content">
+                    <p><strong>👋 欢迎来到无限画布！</strong></p>
+                    <p>你可以：</p>
+                    <ul>
+                        <li>🎨 描述想要的图片，我会生成在画布上</li>
+                        <li>🖱️ 拖拽画布移动，鼠标滚轮缩放</li>
+                        <li>📦 点击图片选中，拖动调整位置</li>
+                        <li>🔧 选中后使用工具栏编辑图片</li>
+                        <li>📐 一键自动重排整理图片</li>
+                    </ul>
+                    <p class="hint">输入 <code>/</code> 可快速切换模式</p>
                 </div>
             </div>
-            
-            <div class="chat-panel-messages" id="chatMessages">
-                <div class="message assistant">
-                    <div class="message-content">
-                        <p><strong>👋 欢迎来到无限画布！</strong></p>
-                        <p>你可以：</p>
-                        <ul>
-                            <li>🎨 描述想要的图片，我会生成在画布上</li>
-                            <li>🖱️ 拖拽画布移动，鼠标滚轮缩放</li>
-                            <li>📦 点击图片选中，拖动调整位置</li>
-                            <li>🔧 选中后使用工具栏编辑图片</li>
-                            <li>📐 一键自动重排整理图片</li>
-                        </ul>
-                        <p class="hint">输入 <code>/</code> 可快速切换模式</p>
+        </div>
+    </div>
+    
+    <!-- 历史记录标签页内容 -->
+    <div class="tab-content" id="historyTabContent" style="display: none;">
+        <div class="history-list" id="historyList">
+            <!-- 历史记录项将在这里动态生成 -->
+        </div>
+    </div>
+        
+        <div class="chat-panel-input">
+            <form id="chatForm">
+                <!-- 命令菜单 -->
+                <div class="command-menu" id="commandMenu">
+                    <div class="command-item" data-command="生成" data-mode="generate">
+                        <span class="command-icon">🎨</span>
+                        <span class="command-name">生成</span>
+                        <span class="command-desc">生成新图片</span>
+                    </div>
+                    <div class="command-item" data-command="多图" data-mode="multi">
+                        <span class="command-icon">🖼️</span>
+                        <span class="command-name">多图</span>
+                        <span class="command-desc">批量生成图片</span>
+                    </div>
+                    <div class="command-item" data-command="对话" data-mode="chat">
+                        <span class="command-icon">💬</span>
+                        <span class="command-name">对话</span>
+                        <span class="command-desc">聊天交流</span>
+                    </div>
+                    <div class="command-item" data-command="修改" data-mode="modify">
+                        <span class="command-icon">✨</span>
+                        <span class="command-name">修改</span>
+                        <span class="command-desc">修改选中图片</span>
                     </div>
                 </div>
-            </div>
-            
-            <div class="chat-panel-input">
-                <form id="chatForm">
-                    <!-- 命令菜单 -->
-                    <div class="command-menu" id="commandMenu">
-                        <div class="command-item" data-command="生成" data-mode="generate">
-                            <span class="command-icon">🎨</span>
-                            <span class="command-name">生成</span>
-                            <span class="command-desc">生成新图片</span>
-                        </div>
-                        <div class="command-item" data-command="多图" data-mode="multi">
-                            <span class="command-icon">🖼️</span>
-                            <span class="command-name">多图</span>
-                            <span class="command-desc">批量生成图片</span>
-                        </div>
-                        <div class="command-item" data-command="对话" data-mode="chat">
-                            <span class="command-icon">💬</span>
-                            <span class="command-name">对话</span>
-                            <span class="command-desc">聊天交流</span>
-                        </div>
-                        <div class="command-item" data-command="修改" data-mode="modify">
-                            <span class="command-icon">✨</span>
-                            <span class="command-name">修改</span>
-                            <span class="command-desc">修改选中图片</span>
-                        </div>
-                    </div>
-                    
-                    <textarea 
-                        id="promptInput" 
-                        name="prompt" 
-                        placeholder="输入 / 查看命令，或直接描述你的需求..." 
-                        rows="1"
-                        maxlength="1000"
-                    ></textarea>
-                    <div class="input-footer">
-                        <span class="char-count"><span id="charCount">0</span>/1000</span>
+                
+                <textarea 
+                    id="promptInput" 
+                    name="prompt" 
+                    placeholder="输入 / 查看命令，或直接描述你的需求..." 
+                    rows="1"
+                    maxlength="1000"
+                ></textarea>
+                <div class="input-footer">
+                    <span class="char-count"><span id="charCount">0</span>/1000</span>
+                    <div class="input-actions">
+                        <button type="button" class="btn-voice" id="btnVoice" title="语音输入">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
                         <button type="submit" class="btn-send" id="btnSend">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -170,16 +322,20 @@
                             </svg>
                         </button>
                     </div>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
         
-        <!-- 最小化后的聊天按钮 -->
-        <button class="floating-chat-btn" id="floatingChatBtn" style="display: none;">
-            💬
-        </button>
-    </div>
-</div>
+        <!-- 历史记录底部栏 -->
+        <div class="history-panel-footer" id="historyFooter" style="display: none;">
+            <div class="history-stats">
+                <span id="historyCurrentStep">0</span> / <span id="historyTotalSteps">0</span>
+            </div>
+            <button class="btn-clear-history" id="btnClearHistory" title="清空历史">
+                <i class="fas fa-trash"></i> 清空
+            </button>
+        </div>
+</div> <!-- 关闭 floating-chat-panel -->
 
 <!-- 图片预览模态框 -->
 <div class="modal" id="imageModal">
@@ -189,7 +345,227 @@
         <img id="modalImage" src="" alt="预览">
     </div>
 </div>
-
-    <script src="{{ url_for('static', filename='js/canvas_infinite.js') }}?v=2.9"></script>
+<script src="{{ url_for('static', filename='js/history_panel.js') }}?v=1.2"></script>
+<script src="{{ url_for('static', filename='js/canvas_infinite.js') }}?v=3.9"></script>
+<script>
+    // 确保聊天面板正常显示
+    window.addEventListener('load', function() {
+        const chat = document.getElementById('floatingChat');
+        if (chat) {
+            console.log('[Chat Panel] 聊天面板已加载，位置:', chat.getBoundingClientRect());
+        }
+    });
+</script>
+    <script>
+        // 项目管理相关变量
+        const projectId = {{ project_id if project_id else 'null' }};
+        const isNewProject = {{ 'true' if is_new else 'false' }};
+        
+        // 返回项目列表
+        document.getElementById('backToProjects').addEventListener('click', () => {
+            window.location.href = '/canvas/projects';
+        });
+        
+        // 保存项目
+        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
+            let title = document.getElementById('projectTitle').value.trim();
+            
+            // 如果是新项目且没有标题，尝试从聊天记录生成标题
+            if (isNewProject && !title) {
+                try {
+                    // 获取最后几条用户消息作为上下文
+                    const chatMessages = document.querySelectorAll('.message.user .message-content');
+                    let context = '';
+                    if (chatMessages.length > 0) {
+                        const lastMessages = Array.from(chatMessages).slice(-3);
+                        context = lastMessages.map(m => m.textContent).join(' ');
+                    }
+                    
+                    if (context) {
+                        const genResponse = await fetch('/canvas/projects/generate-title', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({prompt: context, type: 'infinite'})
+                        });
+                        const genData = await genResponse.json();
+                        if (genData.success && genData.title) {
+                            title = genData.title;
+                            document.getElementById('projectTitle').value = title;
+                        }
+                    }
+                } catch (e) {
+                    console.log('标题生成失败，使用默认标题');
+                }
+            }
+            
+            if (!title) {
+                title = '未命名项目';
+                document.getElementById('projectTitle').value = title;
+            }
+            
+            try {
+                // 生成缩略图 (从第一张图片或创建一个空白缩略图)
+                let thumbnail = null;
+                const images = window.canvasState ? window.canvasState.images : [];
+                
+                if (images && images.length > 0) {
+                    // 使用第一张图片作为缩略图
+                    thumbnail = images[0].url || images[0].src;
+                }
+                
+                // 收集聊天历史
+                const chatHistory = [];
+                const chatMessageElements = document.querySelectorAll('#chatMessages .message');
+                chatMessageElements.forEach(msg => {
+                    const role = msg.classList.contains('user') ? 'user' : 'assistant';
+                    const content = msg.querySelector('.message-content');
+                    if (content) {
+                        chatHistory.push({
+                            role: role,
+                            content: content.textContent || content.innerText,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                });
+                
+                // 准备画布数据
+                const canvasData = {
+                    images: images.map(img => ({
+                        id: img.id,
+                        url: img.url || img.src,
+                        prompt: img.prompt || '',
+                        x: img.x,
+                        y: img.y,
+                        width: img.width,
+                        height: img.height
+                    })),
+                    translateX: window.canvasState ? window.canvasState.translateX : 0,
+                    translateY: window.canvasState ? window.canvasState.translateY : 0,
+                    scale: window.canvasState ? window.canvasState.scale : 1
+                };
+                
+                console.log('📦 准备保存的数据:');
+                console.log('  - 图片数量:', images.length);
+                console.log('  - canvasData.images:', canvasData.images);
+                console.log('  - 聊天记录数量:', chatHistory.length);
+                
+                console.log('📦 准备保存的数据:');
+                console.log('  - 图片数量:', images.length);
+                console.log('  - canvasData.images:', canvasData.images);
+                console.log('  - 聊天记录数量:', chatHistory.length);
+                
+                const response = await fetch('/canvas/projects/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        title: title,
+                        project_type: 'infinite',
+                        thumbnail: thumbnail,
+                        canvas_data: canvasData,
+                        chat_history: chatHistory,
+                        width: 2000,
+                        height: 2000
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    alert('项目保存成功！');
+                    // 如果是新项目，更新URL
+                    if (!projectId) {
+                        window.history.pushState({}, '', `/canvas/infinite?project_id=${data.project_id}`);
+                        window.location.reload();
+                    }
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('保存失败:', error);
+                alert('保存失败');
+            }
+        });
+        
+        // 加载项目
+        if (projectId) {
+            fetch(`/canvas/projects/${projectId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.canvas_data) {
+                        const canvasData = data.canvas_data;
+                        
+                        console.log('加载项目数据:', canvasData);
+                        
+                        // 恢复画布状态
+                        if (window.canvasState) {
+                            if (canvasData.translateX !== undefined) {
+                                window.canvasState.translateX = canvasData.translateX;
+                            }
+                            if (canvasData.translateY !== undefined) {
+                                window.canvasState.translateY = canvasData.translateY;
+                            }
+                            if (canvasData.scale !== undefined) {
+                                window.canvasState.scale = canvasData.scale;
+                            }
+                            
+                            // 恢复图片 - 使用renderImage函数确保完整的DOM结构和事件
+                            if (canvasData.images && Array.isArray(canvasData.images)) {
+                                console.log('✅ 开始恢复图片，数量:', canvasData.images.length);
+                                console.log('  - 图片列表:', canvasData.images);
+                                canvasData.images.forEach(imgData => {
+                                    // 添加到canvasState.images
+                                    const imageObj = {
+                                        id: imgData.id || Date.now() + Math.random(),
+                                        url: imgData.url || imgData.src,
+                                        prompt: imgData.prompt || '',
+                                        x: imgData.x || 0,
+                                        y: imgData.y || 0,
+                                        width: imgData.width || 300,
+                                        height: imgData.height || 300
+                                    };
+                                    window.canvasState.images.push(imageObj);
+                                    
+                                    // 使用renderImage函数创建完整的DOM结构
+                                    if (typeof window.renderImage === 'function') {
+                                        window.renderImage(imageObj);
+                                    } else {
+                                        console.error('renderImage函数未定义，等待加载...');
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // 恢复聊天记录
+                        if (data.chat_history && Array.isArray(data.chat_history)) {
+                            console.log('恢复聊天记录数量:', data.chat_history.length);
+                            const chatContainer = document.getElementById('chatMessages');
+                            // 清除欢迎消息
+                            chatContainer.innerHTML = '';
+                            
+                            data.chat_history.forEach(msg => {
+                                const msgDiv = document.createElement('div');
+                                msgDiv.className = `message ${msg.role}`;
+                                
+                                const contentDiv = document.createElement('div');
+                                contentDiv.className = 'message-content';
+                                contentDiv.textContent = msg.content;
+                                
+                                msgDiv.appendChild(contentDiv);
+                                chatContainer.appendChild(msgDiv);
+                            });
+                            
+                            // 滚动到底部
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
+                        
+                        // 重新渲染画布
+                        if (typeof window.renderCanvas === 'function') {
+                            window.renderCanvas();
+                        }
+                    }
+                })
+                .catch(err => console.error('加载项目失败:', err));
+        }
+    </script>
 </body>
 </html>

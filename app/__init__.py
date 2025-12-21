@@ -18,7 +18,7 @@ def create_app():
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     # 初始化数据库
-    from auth.models import User, db
+    from auth.models import CanvasProject, User, db
     db.init_app(app)
     
     # 初始化登录管理器
