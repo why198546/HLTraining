@@ -10,6 +10,9 @@ let currentOpacity = 1;
 let generatedImageUrl = ''; // 存储生成的图片URL
 let currentViewMode = 'overlay'; // 当前视图模式
 
+// 将generatedImageUrl暴露到全局作用域，供保存功能使用
+window.generatedImageUrl = '';
+
 // Session管理系统 - 支持至少50步历史记录
 class CanvasSession {
     constructor(maxHistory = 50) {
@@ -321,6 +324,7 @@ function bindEvents() {
     document.getElementById('regenerateBtn').addEventListener('click', regenerateImage);
     document.getElementById('clearBackgroundBtn').addEventListener('click', clearBackground);
     document.getElementById('downloadGeneratedBtn').addEventListener('click', downloadGenerated);
+    document.getElementById('exportVideoBtn').addEventListener('click', exportAnimatedVideo);
     document.getElementById('saveToGalleryBtn').addEventListener('click', saveToGallery);
     document.getElementById('newSketchBtn').addEventListener('click', newSketch);
 }
@@ -682,6 +686,7 @@ function importAsBackground(img) {
     backgroundImg.src = img.src;
     backgroundImg.style.display = 'block';
     generatedImageUrl = img.src;
+    window.generatedImageUrl = img.src;
     
     // 显示结果控制区域
     document.getElementById('resultSection').style.display = 'block';
@@ -1085,8 +1090,11 @@ async function generateImage() {
 
 // 显示结果
 function displayResults(sketchUrl, generatedUrl) {
-    // 保存生成的图片URL
+    // 保存生成的图片URL（同时更新全局变量供保存功能使用）
     generatedImageUrl = generatedUrl;
+    window.generatedImageUrl = generatedUrl;
+    
+    console.log('生成图片URL已保存:', generatedUrl);
     
     // 显示结果区域
     document.getElementById('resultSection').style.display = 'block';
@@ -1183,6 +1191,7 @@ function clearBackground() {
         backgroundImg.style.display = 'none';
         backgroundImg.src = '';
         generatedImageUrl = '';
+        window.generatedImageUrl = '';
         
         // 隐藏结果区域
         document.getElementById('resultSection').style.display = 'none';
@@ -1300,6 +1309,7 @@ function newSketch() {
         backgroundImg.style.display = 'none';
         backgroundImg.src = '';
         generatedImageUrl = '';
+        window.generatedImageUrl = '';
         
         // 隐藏结果区域
         document.getElementById('resultSection').style.display = 'none';
@@ -1612,4 +1622,224 @@ function initializeZoom() {
 
     // 初始化显示
     updateZoomDisplay();
+}
+
+// 导出MP4视频动画功能
+async function exportAnimatedVideo() {
+    console.log('=== 开始导出MP4视频 ===');
+    console.log('generatedImageUrl:', generatedImageUrl);
+    console.log('window.generatedImageUrl:', window.generatedImageUrl);
+    
+    // 检查两个变量，优先使用window.generatedImageUrl（项目恢复时设置的）
+    const imageUrl = window.generatedImageUrl || generatedImageUrl;
+    
+    if (!imageUrl) {
+        toast.warning('请先生成图片再导出视频');
+        return;
+    }
+    
+    // 同步两个变量
+    generatedImageUrl = imageUrl;
+    window.generatedImageUrl = imageUrl;
+
+    try {
+        // 显示加载提示
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = loadingOverlay.querySelector('p');
+        loadingText.textContent = '正在准备导出视频...';
+        loadingOverlay.style.display = 'flex';
+
+        // 创建临时画布用于渲染动画帧
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+
+        // 获取生成的图片元素（正确的ID是generatedBackground）
+        const generatedImage = document.getElementById('generatedBackground');
+        if (!generatedImage) {
+            throw new Error('找不到生成的图片元素');
+        }
+
+        // 如果图片还未加载完成，等待加载
+        if (!generatedImage.complete || !generatedImage.naturalWidth) {
+            loadingText.textContent = '等待图片加载完成...';
+            await new Promise((resolve, reject) => {
+                generatedImage.onload = resolve;
+                generatedImage.onerror = () => reject(new Error('图片加载失败'));
+                setTimeout(() => reject(new Error('图片加载超时')), 10000);
+            });
+        }
+
+        console.log('图片已就绪，尺寸:', generatedImage.naturalWidth, 'x', generatedImage.naturalHeight);
+
+        // 动画参数 - 4个阶段，每个阶段1秒，30fps流畅动画
+        const fps = 30;  // 30帧每秒，更流畅
+        const stageDuration = 1;  // 每阶段1秒
+        const framesPerStage = fps * stageDuration;  // 每阶段30帧
+        const totalStages = 4;
+        const totalFrames = framesPerStage * totalStages;  // 总共120帧
+
+        console.log(`准备录制视频: ${totalFrames}帧, ${fps}fps, 总时长${totalStages}秒`);
+
+        // 使用MediaRecorder录制canvas
+        const stream = tempCanvas.captureStream(fps);
+        
+        // 尝试使用H264编码的MP4，如果不支持则使用WebM
+        let mimeType = 'video/webm;codecs=h264';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = 'video/webm;codecs=vp9';
+            if (!MediaRecorder.isTypeSupported(mimeType)) {
+                mimeType = 'video/webm';
+            }
+        }
+        
+        console.log('使用编码格式:', mimeType);
+        
+        const mediaRecorder = new MediaRecorder(stream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: 2500000  // 2.5Mbps，平衡质量和文件大小
+        });
+
+        const chunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                chunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.onstop = async () => {
+            console.log('录制完成，生成视频文件...');
+            const blob = new Blob(chunks, { type: mimeType });
+            console.log('视频大小:', (blob.size / 1024).toFixed(2), 'KB');
+            
+            // 确定文件扩展名
+            const ext = mimeType.includes('h264') ? 'mp4' : 'webm';
+            
+            // 下载视频
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `sketch-animation-${Date.now()}.${ext}`;
+            link.click();
+            
+            URL.revokeObjectURL(link.href);
+            loadingOverlay.style.display = 'none';
+            loadingText.textContent = 'AI正在生成图片，请稍候...';
+            toast.success('视频导出成功！');
+        };
+
+        // 开始录制
+        mediaRecorder.start();
+        loadingText.textContent = '正在录制视频... 0%';
+
+        // 渲染动画帧
+        let currentFrame = 0;
+        const frameInterval = 1000 / fps;
+
+        const renderFrame = () => {
+            if (currentFrame >= totalFrames) {
+                mediaRecorder.stop();
+                return;
+            }
+
+            // 清空临时画布
+            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // 第一步：绘制白色背景
+            tempCtx.fillStyle = '#ffffff';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+            // 计算当前阶段和进度
+            const stage = Math.floor(currentFrame / framesPerStage);
+            const frameInStage = currentFrame % framesPerStage;
+            const stageProgress = frameInStage / (framesPerStage - 1);
+            
+            let opacity, comparePosition;
+            
+            if (stage === 0) {
+                // 阶段1: 透明度 100% → 0%
+                opacity = 1 - stageProgress;
+                comparePosition = 1;
+            } else if (stage === 1) {
+                // 阶段2: 透明度 0% → 100%
+                opacity = stageProgress;
+                comparePosition = 1;
+            } else if (stage === 2) {
+                // 阶段3: 从右向左删除
+                opacity = 1;
+                comparePosition = 1 - stageProgress;
+            } else {
+                // 阶段4: 从左向右恢复
+                opacity = 1;
+                comparePosition = stageProgress;
+            }
+
+            // 第二步：绘制生成的图片
+            tempCtx.save();
+            
+            if (stage === 0 || stage === 1) {
+                // 透明度控制
+                tempCtx.globalAlpha = opacity;
+                tempCtx.drawImage(generatedImage, 0, 0, tempCanvas.width, tempCanvas.height);
+            } else {
+                // 对比滑块控制
+                const sliderX = tempCanvas.width * comparePosition;
+                
+                tempCtx.beginPath();
+                tempCtx.rect(0, 0, sliderX, tempCanvas.height);
+                tempCtx.clip();
+                
+                tempCtx.globalAlpha = 1;
+                tempCtx.drawImage(generatedImage, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // 分割线
+                tempCtx.strokeStyle = '#ffffff';
+                tempCtx.lineWidth = 3;
+                tempCtx.shadowColor = 'rgba(0,0,0,0.5)';
+                tempCtx.shadowBlur = 5;
+                tempCtx.beginPath();
+                tempCtx.moveTo(sliderX, 0);
+                tempCtx.lineTo(sliderX, tempCanvas.height);
+                tempCtx.stroke();
+                tempCtx.shadowColor = 'transparent';
+            }
+            
+            tempCtx.restore();
+
+            // 第三步：绘制sketch层
+            tempCtx.globalAlpha = 1;
+            tempCtx.drawImage(canvas, 0, 0);
+
+            // 更新进度
+            currentFrame++;
+            const progress = Math.round((currentFrame / totalFrames) * 100);
+            loadingText.textContent = `正在录制视频... ${progress}%`;
+
+            // 下一帧
+            setTimeout(renderFrame, frameInterval);
+        };
+
+        // 开始渲染
+        renderFrame();
+
+    } catch (error) {
+        console.error('导出视频失败:', error);
+        console.error('错误详情:', error.stack);
+        
+        let errorMessage = '导出视频失败: ';
+        if (error.message.includes('图片加载')) {
+            errorMessage += '生成的图片加载失败，请重新生成图片后再试';
+        } else if (error.message.includes('找不到')) {
+            errorMessage += '找不到生成的图片，请先生成图片';
+        } else {
+            errorMessage += error.message;
+        }
+        
+        toast.error(errorMessage);
+        
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = loadingOverlay.querySelector('p');
+        loadingOverlay.style.display = 'none';
+        loadingText.textContent = 'AI正在生成图片，请稍候...';
+    }
 }

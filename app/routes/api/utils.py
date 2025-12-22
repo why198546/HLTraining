@@ -219,3 +219,78 @@ def organize_prompt_api():
     except Exception as e:
         print(f"❌ AI整理失败: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@utils_api_bp.route('/convert-to-mp4', methods=['POST'])
+def convert_to_mp4():
+    """将WebM视频转换为MP4格式"""
+    import subprocess
+    import tempfile
+    from pathlib import Path
+    
+    try:
+        # 获取上传的视频文件
+        if 'video' not in request.files:
+            return jsonify({'success': False, 'error': '没有上传视频文件'}), 400
+        
+        video_file = request.files['video']
+        
+        # 创建临时文件
+        with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as webm_file:
+            webm_path = webm_file.name
+            video_file.save(webm_path)
+        
+        # 创建输出MP4文件路径
+        mp4_path = webm_path.replace('.webm', '.mp4')
+        
+        # 使用ffmpeg转换
+        # -y: 覆盖输出文件
+        # -i: 输入文件
+        # -c:v libx264: 使用H.264编码器
+        # -preset fast: 快速编码
+        # -crf 23: 质量参数（18-28，越小质量越好）
+        # -c:a aac: 音频编码器（虽然canvas录制没有音频，但保持兼容性）
+        cmd = [
+            'ffmpeg',
+            '-y',
+            '-i', webm_path,
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-crf', '23',
+            '-pix_fmt', 'yuv420p',  # 兼容性更好
+            '-movflags', '+faststart',  # 优化网络播放
+            mp4_path
+        ]
+        
+        # 执行转换
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode != 0:
+            print(f"FFmpeg错误: {result.stderr}")
+            return jsonify({'success': False, 'error': '视频转换失败'}), 500
+        
+        # 读取MP4文件
+        with open(mp4_path, 'rb') as f:
+            mp4_data = f.read()
+        
+        # 清理临时文件
+        try:
+            os.unlink(webm_path)
+            os.unlink(mp4_path)
+        except:
+            pass
+        
+        # 返回MP4文件
+        from flask import send_file
+        return send_file(
+            BytesIO(mp4_data),
+            mimetype='video/mp4',
+            as_attachment=False,
+            download_name='animation.mp4'
+        )
+        
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': '视频转换超时'}), 500
+    except Exception as e:
+        print(f"转换MP4失败: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

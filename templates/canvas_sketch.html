@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_sketch.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -264,6 +265,9 @@
                 <button id="downloadGeneratedBtn" class="btn-action">
                     <i class="fas fa-download"></i> 下载生成图
                 </button>
+                <button id="exportVideoBtn" class="btn-action btn-special">
+                    <i class="fas fa-film"></i> 导出MP4视频
+                </button>
                 <button id="saveToGalleryBtn" class="btn-action btn-primary">
                     <i class="fas fa-save"></i> 保存到作品集
                 </button>
@@ -282,11 +286,16 @@
         </div>
     </div>
 
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <!-- GIF生成库 - 使用本地文件避免CORS问题 -->
+    <script src="{{ url_for('static', filename='js/gif.js') }}"></script>
     <script src="{{ url_for('static', filename='js/canvas_sketch.js') }}"></script>
     <script>
         // 项目管理相关变量
         const projectId = {{ project_id if project_id else 'null' }};
         const isNewProject = {{ 'true' if is_new else 'false' }};
+        let titleGeneratedOnce = false; // 标记是否已经自动生成过标题
         
         // 返回项目列表
         document.getElementById('backToProjects').addEventListener('click', () => {
@@ -299,8 +308,8 @@
             const canvas = document.getElementById('sketchCanvas');
             const prompt = document.getElementById('promptInput').value.trim();
             
-            // 如果是新项目且没有标题，尝试生成标题
-            if (isNewProject && !title && prompt) {
+            // 只在第一次保存且没有标题时自动生成标题
+            if (isNewProject && !titleGeneratedOnce && !title && prompt) {
                 try {
                     const genResponse = await fetch('/canvas/projects/generate-title', {
                         method: 'POST',
@@ -311,6 +320,7 @@
                     if (genData.success && genData.title) {
                         title = genData.title;
                         document.getElementById('projectTitle').value = title;
+                        titleGeneratedOnce = true; // 标记已生成过标题
                     }
                 } catch (e) {
                     console.log('标题生成失败，使用默认标题');
@@ -326,12 +336,21 @@
                 // 生成缩略图
                 const thumbnail = canvas.toDataURL('image/png');
                 
+                // 获取生成的图片URL（从JavaScript变量）
+                const generatedImgUrl = window.generatedImageUrl || '';
+                
                 // 准备画布数据
                 const canvasData = {
                     imageDataUrl: canvas.toDataURL('image/png'),
-                    generatedImageUrl: window.generatedImageDataUrl || null,
+                    generatedImageUrl: generatedImgUrl,
                     prompt: document.getElementById('promptInput').value
                 };
+                
+                console.log('保存项目数据:', {
+                    hasSketch: !!canvasData.imageDataUrl,
+                    hasGenerated: !!generatedImgUrl,
+                    generatedUrl: generatedImgUrl
+                });
                 
                 const response = await fetch('/canvas/projects/save', {
                     method: 'POST',
@@ -349,18 +368,18 @@
                 
                 const data = await response.json();
                 if (data.success) {
-                    alert('项目保存成功！');
+                    toast.success('项目保存成功！');
                     // 如果是新项目，更新URL
                     if (!projectId) {
                         window.history.pushState({}, '', `/canvas/sketch?project_id=${data.project_id}`);
                         window.location.reload();
                     }
                 } else {
-                    alert('保存失败: ' + (data.error || '未知错误'));
+                    toast.error('保存失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
                 console.error('保存失败:', error);
-                alert('保存失败');
+                toast.error('保存失败，请重试');
             }
         });
         
@@ -386,13 +405,29 @@
                         
                         // 加载生成的图片
                         if (canvasData.generatedImageUrl) {
-                            window.generatedImageDataUrl = canvasData.generatedImageUrl;
-                            const genImg = new Image();
-                            genImg.onload = () => {
-                                const genCtx = document.getElementById('generatedCanvas').getContext('2d');
-                                genCtx.drawImage(genImg, 0, 0);
+                            console.log('加载生成的图片:', canvasData.generatedImageUrl);
+                            
+                            // 设置全局变量
+                            window.generatedImageUrl = canvasData.generatedImageUrl;
+                            
+                            // 设置背景图片
+                            const backgroundImg = document.getElementById('generatedBackground');
+                            const whiteBackground = document.getElementById('whiteBackground');
+                            
+                            backgroundImg.onload = function() {
+                                backgroundImg.style.width = canvas.width + 'px';
+                                backgroundImg.style.height = canvas.height + 'px';
+                                whiteBackground.style.width = canvas.width + 'px';
+                                whiteBackground.style.height = canvas.height + 'px';
+                                backgroundImg.style.display = 'block';
+                                
+                                // 显示结果区域和控制面板
+                                document.getElementById('resultSection').style.display = 'block';
+                                document.getElementById('overlayControls').style.display = 'flex';
+                                
+                                console.log('生成的图片已恢复显示');
                             };
-                            genImg.src = canvasData.generatedImageUrl;
+                            backgroundImg.src = canvasData.generatedImageUrl;
                         }
                         
                         // 加载提示词

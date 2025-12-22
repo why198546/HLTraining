@@ -7,7 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_infinite.css') }}?v=4.3">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/history_panel.css') }}?v=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}?v=1.1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<script src="{{ url_for('static', filename='js/toast.js') }}"></script>
 <style>
     .project-header {
         position: fixed;
@@ -471,18 +473,18 @@
                 
                 const data = await response.json();
                 if (data.success) {
-                    alert('项目保存成功！');
+                    toast.success('项目保存成功！');
                     // 如果是新项目，更新URL
                     if (!projectId) {
                         window.history.pushState({}, '', `/canvas/infinite?project_id=${data.project_id}`);
                         window.location.reload();
                     }
                 } else {
-                    alert('保存失败: ' + (data.error || '未知错误'));
+                    toast.error('保存失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
                 console.error('保存失败:', error);
-                alert('保存失败');
+                toast.error('保存失败，请重试');
             }
         });
         

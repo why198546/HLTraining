@@ -93,7 +93,7 @@ async function startVideoGeneration() {
 
     const prompt = document.getElementById('video-prompt').value.trim();
     if (!prompt) {
-        alert('请输入视频动作描述！');
+        toast.warning('请输入视频动作描述！');
         return;
     }
 
@@ -515,7 +515,7 @@ function showVideoResult(videoUrl) {
 async function saveVideoToGallery() {
     const videoElement = document.getElementById('generated-video');
     if (!videoElement || !videoElement.src) {
-        alert('没有可保存的视频');
+        toast.warning('没有可保存的视频');
         return;
     }
     
@@ -533,12 +533,12 @@ async function saveVideoToGallery() {
         
         const result = await response.json();
         if (result.success) {
-            alert('视频已保存到你的作品集！');
+            toast.success('视频已保存到你的作品集！');
         } else {
-            alert('保存失败：' + result.error);
+            toast.error('保存失败：' + result.error);
         }
     } catch (error) {
-        alert('保存失败，请重试');
+        toast.error('保存失败，请重试');
     }
 }
 
@@ -548,7 +548,7 @@ async function saveVideoToGallery() {
 function downloadVideo() {
     const videoElement = document.getElementById('generated-video');
     if (!videoElement || !videoElement.src) {
-        alert('没有可下载的视频');
+        toast.warning('没有可下载的视频');
         return;
     }
     

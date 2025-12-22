@@ -100,6 +100,14 @@
     <div class="model-viewer-container" onclick="event.stopPropagation()">
         <div class="model-header">
             <h3 id="modelTitle">3D模型查看器</h3>
+            <div class="model-header-actions">
+                <button class="model-action-btn" onclick="openInBambooStudio()" title="在Bamboo Studio中打开">
+                    <i class="fas fa-external-link-alt"></i> 在Bamboo Studio中打开
+                </button>
+                <button class="model-action-btn" onclick="downloadModel()" title="下载STL文件">
+                    <i class="fas fa-download"></i> 下载STL
+                </button>
+            </div>
             <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
         </div>
         <div id="modelContainer" class="model-container">

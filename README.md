@@ -19,6 +19,7 @@
 ## 📚 文档
 
 - **[🚀 快速启动指南](docs/快速启动指南.md)** - 虚拟环境配置和启动说明
+- **[🎮 3D模型生成配置](docs/3D_MODEL_CONFIG.md)** - 腾讯云AI3D服务配置指南
 - **[🤖 智能助手功能](docs/智能助手多图生成功能.md)** - 多图生成功能详解
 - [Nano Banana 实现文档](NANO_BANANA_IMPLEMENTATION.md) - 详细的功能实现和使用指南
 - [SAM 3D 集成文档](docs/SAM3D_INTEGRATION.md) - SAM 3D 集成指南和API使用说明

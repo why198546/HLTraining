@@ -1,6 +1,9 @@
 // 统一的作品模态框功能
 // 用于gallery页面和my_artworks页面的共享模态框组件
 
+// 全局变量存储当前模型URL
+let currentModelUrl = '';
+
 // 增加浏览次数(如果有artworkId的话)
 async function incrementViewCount(artworkId) {
     if (!artworkId) return;
@@ -499,6 +502,9 @@ function showModelModal(modelSrc, title) {
     
     console.log('showModelModal called with:', modelSrc, title);
     
+    // 保存当前模型URL到全局变量
+    currentModelUrl = modelSrc;
+    
     // 等待DOM完全加载的函数
     const ensureDOMReady = (callback) => {
         if (document.readyState === 'loading') {
@@ -608,10 +614,80 @@ function closeModelModal() {
         }, 300);
     }
     
+    // 清理全局变量
+    currentModelUrl = '';
+    
     // 清理3D场景
     if (typeof cleanup3DScene === 'function') {
         cleanup3DScene();
     }
+}
+
+// 在Bamboo Studio中打开模型
+function openInBambooStudio() {
+    if (!currentModelUrl) {
+        alert('未找到3D模型文件');
+        return;
+    }
+    
+    // 获取完整的模型URL
+    const fullUrl = currentModelUrl.startsWith('http') 
+        ? currentModelUrl 
+        : window.location.origin + (currentModelUrl.startsWith('/') ? currentModelUrl : '/' + currentModelUrl);
+    
+    // Bamboo Studio支持多种URL协议
+    // 尝试使用bambustudio://协议打开
+    const bambooUrl = `bambustudio://open?url=${encodeURIComponent(fullUrl)}`;
+    
+    console.log('尝试在Bamboo Studio中打开:', bambooUrl);
+    
+    // 创建隐藏的iframe来触发协议
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = bambooUrl;
+    document.body.appendChild(iframe);
+    
+    // 短暂延迟后移除iframe
+    setTimeout(() => {
+        document.body.removeChild(iframe);
+    }, 2000);
+    
+    // 提示用户
+    setTimeout(() => {
+        // 检测是否成功打开（通过页面是否失焦来判断）
+        if (document.hasFocus()) {
+            // 如果页面仍然有焦点，说明可能没有安装Bamboo Studio
+            const result = confirm(
+                '如果Bamboo Studio没有自动打开，可能是以下原因：\n\n' +
+                '1. 未安装Bamboo Studio软件\n' +
+                '2. 软件未关联STL文件格式\n\n' +
+                '是否直接下载STL文件？'
+            );
+            
+            if (result) {
+                downloadModel();
+            }
+        }
+    }, 1500);
+}
+
+// 下载模型文件
+function downloadModel() {
+    if (!currentModelUrl) {
+        alert('未找到3D模型文件');
+        return;
+    }
+    
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.href = currentModelUrl;
+    link.download = currentModelUrl.split('/').pop() || 'model.stl';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('开始下载模型文件:', currentModelUrl);
 }
 
 function toggleImageMode(img) {

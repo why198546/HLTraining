@@ -78,7 +78,7 @@ class Hunyuan3DGenerator:
             
             # 检查AI3D API是否可用
             if not self.client:
-                raise Exception("❌ 腾讯云AI3D服务不可用，请检查API密钥配置")
+                raise Exception("腾讯云AI3D服务未配置，请联系管理员设置API密钥")
             
             # 使用腾讯云AI3D API生成3D模型
             model_path = self._generate_with_ai3d_api(image_path)
@@ -86,7 +86,7 @@ class Hunyuan3DGenerator:
                 return model_path
             
             # API调用失败，抛出错误
-            raise Exception("❌ 腾讯云AI3D服务调用失败，请稍后重试")
+            raise Exception("3D模型生成服务暂时不可用，请稍后重试")
             
         except Exception as e:
             print(f"❌ 3D模型生成错误: {str(e)}")
@@ -110,7 +110,7 @@ class Hunyuan3DGenerator:
             req = self.models.SubmitHunyuanTo3DJobRequest()
             params = {
                 "ImageBase64": image_base64,
-                "ResultFormat": "GLB"  # 生成模型的格式：OBJ，GLB，STL，USDZ，FBX，MP4
+                "ResultFormat": "STL"  # 生成STL格式，最适合3D打印（支持：OBJ，GLB，STL，USDZ，FBX，MP4）
             }
             req.from_json_string(json.dumps(params))
             
@@ -213,7 +213,7 @@ class Hunyuan3DGenerator:
             req = self.models.SubmitHunyuanTo3DProJobRequest()
             params = {
                 "ViewImages": view_images_array,
-                "ResultFormat": "GLB"  # 生成模型的格式
+                "ResultFormat": "STL"  # 生成STL格式，最适合3D打印
             }
             req.from_json_string(json.dumps(params))
             

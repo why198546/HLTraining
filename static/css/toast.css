@@ -1,0 +1,91 @@
+/* Toast 提示样式 */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 250px;
+    max-width: 400px;
+    opacity: 0;
+    transform: translateX(100px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: auto;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast i {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.toast span {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+
+/* 不同类型的Toast颜色 */
+.toast-success {
+    border-left: 4px solid #4CAF50;
+}
+
+.toast-success i {
+    color: #4CAF50;
+}
+
+.toast-error {
+    border-left: 4px solid #f44336;
+}
+
+.toast-error i {
+    color: #f44336;
+}
+
+.toast-warning {
+    border-left: 4px solid #ff9800;
+}
+
+.toast-warning i {
+    color: #ff9800;
+}
+
+.toast-info {
+    border-left: 4px solid #2196F3;
+}
+
+.toast-info i {
+    color: #2196F3;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .toast {
+        min-width: auto;
+        max-width: none;
+    }
+}

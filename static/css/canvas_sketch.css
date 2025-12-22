@@ -1614,6 +1614,7 @@ html, body {
 .view-mode-selector {
     display: flex;
     gap: 10px;
+    align-items: center;
 }
 
 .view-mode-btn {
@@ -1624,6 +1625,9 @@ html, body {
     cursor: pointer;
     transition: all 0.3s;
     font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
 }
 
 .view-mode-btn:hover {
@@ -1760,6 +1764,7 @@ html, body {
     display: flex;
     gap: 15px;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
 }
 
@@ -1771,6 +1776,9 @@ html, body {
     cursor: pointer;
     transition: all 0.3s;
     font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
 }
 
 .btn-action:hover {
@@ -1786,6 +1794,20 @@ html, body {
 
 .btn-action.btn-primary:hover {
     background: #45a049;
+}
+
+.btn-action.btn-special {
+    border-color: #9C27B0;
+    background: linear-gradient(135deg, #9C27B0 0%, #E91E63 100%);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(156, 39, 176, 0.3);
+}
+
+.btn-action.btn-special:hover {
+    background: linear-gradient(135deg, #8E24AA 0%, #D81B60 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(156, 39, 176, 0.4);
 }
 
 .btn-action i {

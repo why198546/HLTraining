@@ -390,8 +390,30 @@ async function generate3DFromReference() {
     showLoadingOverlay('正在生成3D模型...');
     
     try {
+        // 先上传图片
+        const uploadFormData = new FormData();
+        uploadFormData.append('reference_image', uploadedImageFile);
+        
+        const uploadResponse = await fetch('/upload-reference-image', {
+            method: 'POST',
+            body: uploadFormData
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (!uploadResult.success || !uploadResult.image_url) {
+            throw new Error('图片上传失败');
+        }
+        
+        // 转换URL为路径格式（去掉域名部分，只保留相对路径）
+        const imageUrl = uploadResult.image_url;
+        const imagePath = imageUrl.includes('creation_sessions') 
+            ? imageUrl.substring(imageUrl.indexOf('creation_sessions'))
+            : imageUrl;
+        
+        // 使用上传后的图片路径生成3D模型
         const formData = new FormData();
-        formData.append('image', uploadedImageFile);
+        formData.append('image_path', imagePath);
         
         // 添加3D模型提示词（如果有）
         const prompt = document.getElementById('creation-prompt').value.trim();
@@ -418,10 +440,10 @@ async function generate3DFromReference() {
             
             setTimeout(() => {
                 hideLoadingOverlay();
-                showMessage('3D模型生成成功！', 'success');
+                toast.success('3D模型生成成功！');
                 
-                // 设置生成的图片URL（用于显示）
-                generatedImageUrl = URL.createObjectURL(uploadedImageFile);
+                // 设置生成的图片URL（使用上传后的路径）
+                generatedImageUrl = uploadResult.image_url;
                 
                 // 显示第三阶段（3D模型预览）
                 const finalImageEl = document.getElementById('final-image');
@@ -462,7 +484,7 @@ async function generate3DFromReference() {
     } catch (error) {
         stopProgressSimulation();
         hideLoadingOverlay();
-        showMessage(`3D模型生成失败：${error.message}`, 'error');
+        toast.error(`3D模型生成失败：${error.message}`);
         console.error('生成3D模型失败:', error);
     }
 }

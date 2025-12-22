@@ -9113,12 +9113,52 @@ main {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 1rem;
 }
 
 .model-header h3 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
+    flex: 0 0 auto;
+}
+
+.model-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    justify-content: flex-end;
+    margin-right: 1rem;
+}
+
+.model-action-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    white-space: nowrap;
+}
+
+.model-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.model-action-btn:active {
+    transform: translateY(0);
+}
+
+.model-action-btn i {
+    font-size: 1rem;
 }
 
 .model-close-btn {

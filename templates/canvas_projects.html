@@ -9,7 +9,9 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎨</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
     <style>
         .projects-container {
             max-width: 1400px;
@@ -357,20 +359,20 @@
                 
                 const data = await response.json();
                 if (data.success) {
+                    toast.success('重命名成功');
                     loadProjects();
                 } else {
-                    alert('重命名失败: ' + (data.error || '未知错误'));
+                    toast.error('重命名失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
                 console.error('重命名失败:', error);
-                alert('重命名失败');
+                toast.error('重命名失败，请重试');
             }
         }
         
         // 删除项目
         async function deleteProject(projectId) {
-            if (!confirm('确定要删除这个项目吗？此操作无法撤销。')) return;
-            
+            // 直接删除，不再显示确认框
             try {
                 const response = await fetch(`/canvas/projects/${projectId}`, {
                     method: 'DELETE'
@@ -378,13 +380,14 @@
                 
                 const data = await response.json();
                 if (data.success) {
+                    toast.success('删除成功');
                     loadProjects();
                 } else {
-                    alert('删除失败: ' + (data.error || '未知错误'));
+                    toast.error('删除失败: ' + (data.error || '未知错误'));
                 }
             } catch (error) {
                 console.error('删除失败:', error);
-                alert('删除失败');
+                toast.error('删除失败，请重试');
             }
         }
         
