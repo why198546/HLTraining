@@ -107,32 +107,59 @@ function initVoiceRecognition() {
     recognition.lang = 'zh-CN'; // 设置为中文
     recognition.continuous = true; // 持续识别
     recognition.interimResults = true; // 显示中间结果
+    recognition.maxAlternatives = 3; // 获取多个备选结果
+    
+    // 增加暂停容忍时间，适应儿童断断续续说话
+    // 注意：这些属性不是标准API，但Chrome支持
+    if (recognition.continuous) {
+        console.log('✅ 连续模式已启用，适合儿童断断续续说话');
+    }
     
     recognition.onstart = function() {
         console.log('语音识别已启动');
         isRecording = true;
         updateVoiceButtonState('recording');
+        
+        // 显示录音状态指示器
+        const indicator = document.getElementById('voice-recording-indicator');
+        if (indicator) {
+            indicator.style.display = 'block';
+        }
     };
     
     recognition.onresult = function(event) {
         let interimTranscript = '';
         let finalTranscript = '';
         
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        // 累积所有最终结果，支持断断续续说话
+        for (let i = 0; i < event.results.length; i++) {
             const transcript = event.results[i][0].transcript;
             if (event.results[i].isFinal) {
                 finalTranscript += transcript;
-            } else {
+            } else if (i >= event.resultIndex) {
+                // 只累加新的临时结果
                 interimTranscript += transcript;
             }
         }
         
-        voiceTranscript = finalTranscript || interimTranscript;
+        // 如果有新的最终结果，添加到已有内容后面
+        if (finalTranscript) {
+            if (voiceTranscript && !voiceTranscript.endsWith(finalTranscript.substring(0, Math.min(10, finalTranscript.length)))) {
+                // 检测停顿，添加逗号和空格连接
+                voiceTranscript = (voiceTranscript + '，' + finalTranscript).trim();
+            } else if (!voiceTranscript) {
+                voiceTranscript = finalTranscript;
+            }
+            console.log('📝 累积语音内容:', voiceTranscript);
+        }
         
-        // 实时显示识别结果
+        // 实时显示识别结果（包含临时结果）
         const promptTextarea = document.getElementById('creation-prompt');
         if (promptTextarea) {
-            promptTextarea.value = voiceTranscript;
+            const displayText = voiceTranscript + (interimTranscript ? ' ' + interimTranscript : '');
+            promptTextarea.value = displayText;
+            // 添加视觉提示
+            promptTextarea.style.borderColor = interimTranscript ? '#4CAF50' : '';
         }
     };
     
@@ -194,6 +221,18 @@ function initVoiceRecognition() {
         isRecording = false;
         recognitionState = 'idle';
         
+        // 隐藏录音状态指示器
+        const indicator = document.getElementById('voice-recording-indicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
+        
+        // 重置输入框边框颜色
+        const promptTextarea = document.getElementById('creation-prompt');
+        if (promptTextarea) {
+            promptTextarea.style.borderColor = '';
+        }
+        
         if (wasRecording) {
             // 如果是用户主动停止，进行AI整理
             console.log('💭 准备进行 AI 整理...');
@@ -216,9 +255,11 @@ async function startVoiceInput() {
     if (isRecording) {
         try {
             console.log('🛑 停止语音识别...');
+            console.log('📊 累积的语音内容:', voiceTranscript);
             recognitionState = 'stopping';
             if (recognition) {
                 recognition.stop();
+                showNotification('🎤 录音已停止，正在整理...', 'info');
             }
         } catch (error) {
             console.error('停止语音识别失败:', error);
@@ -330,7 +371,9 @@ async function processVoiceInput() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                voice_input: voiceTranscript
+                voice_input: voiceTranscript,
+                child_mode: true,  // 启用儿童模式
+                filter_fillers: true  // 过滤语气词
             })
         });
         
@@ -458,3 +501,199 @@ document.addEventListener('DOMContentLoaded', function() {
     // 不在页面加载时检查权限，避免每次刷新都弹窗
     // 只在用户点击麦克风按钮时才请求权限
 });
+
+/**
+ * 松果课堂专用：获取当前表单的textarea
+ */
+function getSunguoFormTextareas(event) {
+    const button = event.target.closest('.voice-input-btn');
+    if (!button) return null;
+    
+    const form = button.closest('form');
+    if (!form) return null;
+    
+    const rawPrompt = form.querySelector('textarea[name="raw_prompt"]');
+    const optimizedPrompt = form.querySelector('textarea[name="prompt"]');
+    
+    return { rawPrompt, optimizedPrompt, form };
+}
+
+/**
+ * 松果课堂语音输入启动（支持双栏结构）
+ */
+window.startVoiceInput = async function(event) {
+    if (event) event.preventDefault();
+    
+    // 检查是否为松果课堂页面（有raw_prompt字段）
+    const sunguoTextareas = getSunguoFormTextareas(event);
+    const isSunguoClass = sunguoTextareas && sunguoTextareas.rawPrompt;
+    
+    console.log(`📊 当前状态: recording=${isRecording}, recognitionState=${recognitionState}, 松果课堂=${isSunguoClass}`);
+    
+    // 如果已经在录音，则停止
+    if (isRecording) {
+        try {
+            console.log('🛑 停止语音识别...');
+            console.log('📊 累积的语音内容:', voiceTranscript);
+            recognitionState = 'stopping';
+            if (recognition) {
+                recognition.stop();
+                showNotification('🎤 录音已停止，正在整理...', 'info');
+            }
+        } catch (error) {
+            console.error('停止语音识别失败:', error);
+        }
+        return;
+    }
+    
+    // 防止重复启动
+    if (recognitionState === 'starting' || recognitionState === 'recording') {
+        console.warn('⚠️ 语音识别已经在运行中');
+        showNotification('语音识别已在运行中，请稍候...', 'warning');
+        return;
+    }
+    
+    // 重置状态
+    voiceTranscript = '';
+    recognitionState = 'starting';
+    
+    try {
+        // 确保识别对象存在
+        if (!recognition) {
+            console.log('🔧 初始化新的识别对象...');
+            recognition = initVoiceRecognition();
+            if (!recognition) {
+                showNotification('❌ 您的浏览器不支持语音识别功能\n\n推荐使用最新版 Chrome 浏览器', 'error');
+                recognitionState = 'idle';
+                return;
+            }
+        }
+        
+        // 为松果课堂设置特定的结果处理
+        if (isSunguoClass) {
+            recognition.onresult = function(event) {
+                let finalTranscript = '';
+                let interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                
+                if (finalTranscript) {
+                    if (voiceTranscript && !voiceTranscript.endsWith(finalTranscript.substring(0, Math.min(10, finalTranscript.length)))) {
+                        // 检测停顿，添加逗号和空格连接
+                        voiceTranscript = (voiceTranscript + '，' + finalTranscript).trim();
+                    } else if (!voiceTranscript) {
+                        voiceTranscript = finalTranscript;
+                    }
+                    console.log('📝 累积语音内容:', voiceTranscript);
+                }
+                
+                // 实时显示到原始输入框
+                if (sunguoTextareas.rawPrompt) {
+                    const displayText = voiceTranscript + (interimTranscript ? ' ' + interimTranscript : '');
+                    sunguoTextareas.rawPrompt.value = displayText;
+                    sunguoTextareas.rawPrompt.style.borderColor = interimTranscript ? '#4CAF50' : '';
+                    
+                    // 触发input事件，让自动优化逻辑工作
+                    sunguoTextareas.rawPrompt.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            };
+            
+            recognition.onend = async function() {
+                console.log('🏁 语音识别结束，voiceTranscript:', voiceTranscript);
+                isRecording = false;
+                
+                // 隐藏录音指示器
+                const indicator = document.getElementById('voice-recording-indicator');
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
+                
+                if (recognitionState === 'stopping') {
+                    recognitionState = 'processing';
+                    await processSunguoVoiceInput(sunguoTextareas);
+                } else {
+                    recognitionState = 'idle';
+                    updateVoiceButtonState('idle');
+                }
+                
+                // 重置边框颜色
+                if (sunguoTextareas.rawPrompt) {
+                    sunguoTextareas.rawPrompt.style.borderColor = '';
+                }
+            };
+        }
+        
+        // 清理可能存在的旧状态
+        if (recognitionState === 'starting') {
+            console.log('🔄 清理可能存在的旧状态...');
+            try {
+                recognition.abort();
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (e) {
+                console.log('abort 没有产生错误（这是预期的）');
+            }
+        }
+        
+        // 显示录音指示器
+        const indicator = document.getElementById('voice-recording-indicator');
+        if (indicator) {
+            indicator.style.display = 'flex';
+        }
+        
+        // 开始识别
+        console.log('📢 调用 recognition.start()...');
+        recognition.start();
+        isRecording = true;
+        recognitionState = 'recording';
+        updateVoiceButtonState('recording');
+        showNotification('🎤 请开始说话...', 'info');
+        
+    } catch (error) {
+        console.error('❌ 启动语音识别失败:', error);
+        isRecording = false;
+        recognitionState = 'idle';
+        updateVoiceButtonState('idle');
+        
+        const indicator = document.getElementById('voice-recording-indicator');
+        if (indicator) {
+            indicator.style.display = 'none';
+        }
+        
+        if (error.name === 'InvalidStateError') {
+            showNotification('语音识别服务忙，请稍后再试', 'warning');
+        } else {
+            showNotification('启动语音识别失败: ' + error.message, 'error');
+        }
+    }
+};
+
+/**
+ * 处理松果课堂语音输入（自动优化已由input事件触发）
+ */
+async function processSunguoVoiceInput(textareas) {
+    console.log('🤖 松果课堂语音处理完成，原始内容:', voiceTranscript);
+    
+    if (!voiceTranscript || voiceTranscript.trim() === '') {
+        showNotification('未识别到有效内容', 'warning');
+        updateVoiceButtonState('idle');
+        return;
+    }
+    
+    // 确保原始输入框有内容
+    if (textareas.rawPrompt && !textareas.rawPrompt.value.trim()) {
+        textareas.rawPrompt.value = voiceTranscript;
+        // 触发input事件来启动AI优化
+        textareas.rawPrompt.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    showNotification('✨ 语音录入完成！AI正在优化中...', 'success');
+    updateVoiceButtonState('idle');
+    recognitionState = 'idle';
+}

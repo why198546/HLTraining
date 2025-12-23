@@ -173,11 +173,33 @@ def organize_prompt_api():
     try:
         data = request.get_json()
         voice_input = data.get('voice_input', '').strip()
+        child_mode = data.get('child_mode', False)
+        filter_fillers = data.get('filter_fillers', False)
         
         if not voice_input:
             return jsonify({'success': False, 'error': '语音内容为空'}), 400
         
         print(f"🎤 收到语音输入: {voice_input}")
+        print(f"👶 儿童模式: {child_mode}, 过滤语气词: {filter_fillers}")
+        
+        # 如果启用了语气词过滤，先进行预处理
+        if filter_fillers:
+            # 常见的中文语气词和口头禅
+            fillers = [
+                '嗯', '啊', '呃', '哦', '额', '那个', '这个', '然后', '就是',
+                '怎么说呢', '你知道吗', '对吧', '是不是', '其实',
+                '嗯嗯', '啊啊', '呃呃', '哦哦',
+                '那个那个', '这个这个', '然后然后',
+                '就那个', '就这个', '就那样', '就这样'
+            ]
+            
+            # 过滤语气词
+            for filler in fillers:
+                voice_input = voice_input.replace(filler, ' ')
+            
+            # 清理多余空格
+            voice_input = ' '.join(voice_input.split())
+            print(f"✂️ 过滤后: {voice_input}")
         
         # 配置Gemini API
         api_key = os.getenv('GEMINI_API_KEY')
@@ -187,13 +209,33 @@ def organize_prompt_api():
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
-        # 构建整理指令
-        system_prompt = """你是一个创意助手，专门帮助儿童将他们的创意想法整理成清晰的画面描述。
+        # 根据是否是儿童模式构建不同的整理指令
+        if child_mode:
+            system_prompt = """你是一个创意助手，专门帮助儿童将他们的创意想法整理成清晰的画面描述。
 
-请根据孩子的语音输入，整理成一个清晰、生动的画面描述。要求：
-1. 保持孩子的原创想法和创意
+孩子们说话可能断断续续、不太连贯，请你理解他们的想法并整理成完整的描述。
+
+要求：
+1. 理解并保持孩子的原创想法和创意
+2. 忽略语气词（如"嗯"、"那个"、"然后"等）
+3. 补充必要的画面细节（颜色、动作、环境、表情等）
+4. 使用儿童友好、生动的语言
+5. 长度控制在50-100字
+6. 如果输入包含对话内容，请保持对话的中文原文
+7. 如果孩子的描述不完整，可以根据常识适当补充合理的细节
+
+示例：
+输入："嗯...我想画...那个...一只猫，对，就是...它在...在彩虹上面"
+输出："一只可爱的小猫咪，戴着红色的帽子，坐在七彩的彩虹上，彩虹的颜色非常鲜艳，小猫开心地笑着"
+
+现在请整理以下孩子的语音内容："""
+        else:
+            system_prompt = """你是一个创意助手，专门帮助用户将他们的创意想法整理成清晰的画面描述。
+
+请根据用户的语音输入，整理成一个清晰、生动的画面描述。要求：
+1. 保持用户的原创想法和创意
 2. 补充必要的画面细节（颜色、动作、环境等）
-3. 使用儿童友好的语言
+3. 使用生动的语言
 4. 长度控制在50-100字
 5. 如果输入包含对话内容，请保持对话的中文原文
 

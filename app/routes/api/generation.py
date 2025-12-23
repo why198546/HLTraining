@@ -49,6 +49,7 @@ def api_generate_image():
         original_image_path = request.form.get('original_image_path', '').strip()
         session_id = request.form.get('session_id')
         version_note = request.form.get('version_note', '')
+        num_images = int(request.form.get('num_images', '1'))  # 默认生成1张，松果课堂会传入4
         
         # 获取自定义宽高（用于手绘画布）
         custom_width = request.form.get('width')
@@ -116,35 +117,143 @@ def api_generate_image():
             else:
                 sketch_path = os.path.join('uploads', original_image_path)
         
-        print(f"🎨 开始生成图片 - 文字: {prompt}, 图片: {sketch_path}")
+        print(f"🎨 开始生成 {num_images} 张图片 - 文字: {prompt}, 图片: {sketch_path}")
         
-        # 根据输入类型生成图片
-        if sketch_path and prompt:
-            # 图片+文字模式
-            generated_image_path = nano_banana.generate_image_from_sketch_and_text(
-                sketch_path, prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
-            )
-        elif sketch_path:
-            # 纯图片模式
-            generated_image_path = nano_banana.generate_image_from_sketch(
-                sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
-            )
-        else:
-            # 纯文字模式
-            generated_image_path = nano_banana.generate_image_from_text(
-                prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
-            )
+        # 智能分析prompt，检测10个核心特征，动态生成差异化描述
+        def analyze_and_generate_variations(prompt_text, num_variations=4):
+            """分析prompt中已提到的特征，为未提到的特征生成差异化描述"""
+            import random
+            
+            # 10个核心特征及其检测关键词和变化选项
+            features = {
+                'gender': {
+                    'keywords': ['男孩', '女孩', '男', '女', '男生', '女生', '小伙', '姑娘', '闪男', '闪女'],
+                    'options': []  # 性别通常会明确，不建议变化
+                },
+                'body': {
+                    'keywords': ['胖', '瘦', '壮', '苗条', '强壮', '纤细', '肥胖', '削瘦', '身材', '胖嘟嘟', '壮实', '结实'],
+                    'options': ['偏瘦身材', '身材适中', '偏胖身材', '匀称身材']
+                },
+                'hair_length': {
+                    'keywords': ['长发', '短发', '中长发', '齐肩发', '披肩发', '长头发', '短头发', '头发'],
+                    'options': ['短发', '中长发', '长发', '齐肩发']
+                },
+                'hair_style': {
+                    'keywords': ['卷发', '直发', '波浪', '自然卷', '微卷', '卷头发', '直头发', '平头', '寸头', '光头', '马尾', '辫子', '发型'],
+                    'options': ['直发', '微卷发', '卷发', '自然发']
+                },
+                'skin': {
+                    'keywords': ['皮肤黑', '皮肤白', '肤色', '黑皮肤', '白皮肤', '皮肤', '黑', '白', '黑黑', '白白', '黑黑的', '白白的', '黑色', '白色', '黝黑', '白皙', '深色', '浅色', '深色皮肤', '浅色皮肤'],
+                    'options': ['皮肤白皙', '皮肤偏黑', '皮肤中等', '健康肤色']
+                },
+                'eyes': {
+                    'keywords': ['大眼睛', '小眼睛', '眼睛大', '眼睛小', '单眼皮', '双眼皮', '眼睛', '大眼', '小眼'],
+                    'options': ['大眼睛', '小眼睛', '中等眼睛', '明亮眼睛']
+                },
+                'nose': {
+                    'keywords': ['大鼻子', '小鼻子', '高鼻梁', '低鼻梁', '挺鼻', '鼻子大', '鼻子小', '塌鼻子', '鼻梁', '鼻子', '高高的鼻子', '高高的鼻梁'],
+                    'options': ['小巧鼻子', '高挺鼻梁', '中等鼻子', '秀气鼻子']
+                },
+                'mouth': {
+                    'keywords': ['大嘴', '小嘴', '嘴大', '嘴小', '樱桃小嘴', '嘴巴'],
+                    'options': ['嘴巴适中', '小嘴', '嘴型饱满', '嘴型秀气']
+                },
+                'lips': {
+                    'keywords': ['厚嘴唇', '薄嘴唇', '嘴唇厚', '嘴唇薄', '嘴唇', '肥厚的嘴唇', '肥肥的嘴唇', '肥嘴唇'],
+                    'options': ['薄嘴唇', '嘴唇适中', '厚嘴唇', '嘴唇自然']
+                },
+                'ears': {
+                    'keywords': ['大耳朵', '小耳朵', '耳朵大', '耳朵小', '耳朵'],
+                    'options': ['小耳朵', '耳朵适中', '大耳朵', '耳朵秀气']
+                }
+            }
+            
+            # 检测prompt中已提到的特征
+            mentioned_features = set()
+            for feature_name, feature_data in features.items():
+                for keyword in feature_data['keywords']:
+                    if keyword in prompt_text:
+                        mentioned_features.add(feature_name)
+                        break
+            
+            print(f"🔍 检测到已提及的特征: {mentioned_features}")
+            
+            # 为未提及的特征生成差异化选项
+            unmentioned_features = {k: v for k, v in features.items() 
+                                   if k not in mentioned_features and v['options']}
+            
+            # 生成num_variations个变化描述
+            variations = []
+            for i in range(num_variations):
+                variation_parts = []
+                for feature_name, feature_data in unmentioned_features.items():
+                    if feature_data['options']:
+                        # 为每个变化选择不同的选项
+                        option_index = i % len(feature_data['options'])
+                        variation_parts.append(feature_data['options'][option_index])
+                
+                if variation_parts:
+                    variations.append("，补充特征：" + "，".join(variation_parts))
+                else:
+                    # 如果所有特征都已提及，使用细微的绘画技法差异
+                    variations.append(f"，第{i+1}个版本")
+            
+            print(f"✨ 生成的差异化描述: {variations}")
+            return variations
         
-        print(f"✅ 图片生成完成: {generated_image_path}")
+        # 智能生成变化因子
+        variations = analyze_and_generate_variations(prompt, num_images)
         
-        # 检查图片是否真的生成成功
-        if not generated_image_path or not os.path.exists(generated_image_path):
-            print(f"❌ 图片生成失败，不保存到数据库")
+        # 生成多张图片
+        generated_images = []
+        for i in range(num_images):
+            print(f"📸 生成第 {i+1}/{num_images} 张图片...")
+            try:
+                # 为每张图片添加变化后缀，避免人物一致性
+                varied_prompt = prompt
+                if num_images > 1 and i < len(variations):
+                    varied_prompt = prompt + variations[i]
+                    print(f"📝 变化后的提示词: {varied_prompt}")
+                
+                # 根据输入类型生成图片
+                if sketch_path and varied_prompt:
+                    # 图片+文字模式
+                    generated_image_path = nano_banana.generate_image_from_sketch_and_text(
+                        sketch_path, varied_prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                    )
+                elif sketch_path:
+                    # 纯图片模式
+                    generated_image_path = nano_banana.generate_image_from_sketch(
+                        sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                    )
+                else:
+                    # 纯文字模式
+                    generated_image_path = nano_banana.generate_image_from_text(
+                        varied_prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                    )
+                
+                if generated_image_path and os.path.exists(generated_image_path):
+                    generated_images.append(generated_image_path)
+                    print(f"✅ 第 {i+1} 张图片生成成功: {generated_image_path}")
+                else:
+                    print(f"⚠️ 第 {i+1} 张图片生成失败")
+            except Exception as e:
+                print(f"❌ 第 {i+1} 张图片生成异常: {str(e)}")
+        
+        # 检查是否至少有一张图片生成成功
+        if not generated_images:
+            print(f"❌ 所有图片生成失败")
             return jsonify({'error': '图片生成失败，请重试'}), 500
         
+        print(f"✅ 成功生成 {len(generated_images)} 张图片")
+        
         # 返回相对路径用于前端显示
-        relative_path = normalize_path_for_url(generated_image_path)
-        print(f"📍 返回图片URL: {relative_path}")
+        relative_paths = [normalize_path_for_url(path) for path in generated_images]
+        print(f"📍 返回 {len(relative_paths)} 张图片URL: {relative_paths}")
+        
+        # 使用第一张图片作为主图片
+        generated_image_path = generated_images[0]
+        relative_path = relative_paths[0]
         
         # 如果有会话ID，添加到会话版本管理
         version_id = None
@@ -179,10 +288,11 @@ def api_generate_image():
         # 准备返回数据
         response_data = {
             'success': True,
-            'image_url': relative_path,
+            'image_url': relative_path,  # 第一张图片作为主图
+            'image_urls': relative_paths,  # 所有图片的URL数组
             'image_path': relative_path,
             'version_id': version_id,
-            'message': '图片生成成功！'
+            'message': f'成功生成 {len(relative_paths)} 张图片！'
         }
         
         # 如果有上传的图片，也返回原始图片路径

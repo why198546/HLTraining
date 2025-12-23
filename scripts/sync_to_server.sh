@@ -124,6 +124,58 @@ else
 fi
 echo ""
 
+# 步骤3.5: 远端数据库迁移检测（如果使用 SQLite）
+echo -e "${YELLOW}🗄️ 步骤3.5: 远端数据库迁移检测...${NC}"
+if eval "$SSH_CMD $SERVER_USER@$SERVER_HOST 'if [ -f /var/www/hltraining/instance/hltraining.db ]; then echo yes; else echo no; fi'" | grep -q yes; then
+    # 执行远端迁移检测脚本
+    $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" << 'ENDSSH'
+        set -e
+        cd /var/www/hltraining
+
+        if [ -f instance/hltraining.db ]; then
+            # 检查 canvas_projects 表中是否存在需要的列
+            missing=0
+            for col in project_type width height last_opened_at; do
+                if ! sqlite3 instance/hltraining.db "PRAGMA table_info(canvas_projects);" | awk -F'|' '{print $2}' | grep -qx "${col}"; then
+                    missing=1
+                fi
+            done
+
+            if [ "${missing}" -eq 1 ]; then
+                echo "🔍 检测到数据库需要迁移，先进行备份..."
+                timestamp=$(date +%F_%H%M%S)
+                backup_path="instance/hltraining_backup_${timestamp}.db"
+                cp instance/hltraining.db "${backup_path}"
+                echo "✅ 备份完成: ${backup_path}"
+                
+                echo "🔧 开始执行数据库迁移..."
+                # 激活虚拟环境（若存在）并运行迁移脚本
+                if [ -f venv/bin/activate ]; then
+                    source venv/bin/activate
+                fi
+                python3 scripts/add_project_type_column.py || {
+                    echo "❌ 迁移失败" >&2
+                    exit 1
+                }
+                echo "✅ 数据库迁移完成"
+            else
+                echo "✓ 数据库结构正常，无需迁移"
+            fi
+        else
+            echo "⚠️ 数据库文件不存在"
+        fi
+ENDSSH
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ 远端数据库迁移失败，已中止后续操作${NC}"
+        exit 1
+    else
+        echo -e "${GREEN}✅ 远端数据库迁移检测完成${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  远端没有检测到 SQLite 数据库文件，跳过数据库迁移检测${NC}"
+fi
+echo ""
+
 # 步骤4: 重启服务
 echo -e "${YELLOW}🔄 步骤4/4: 重启服务...${NC}"
 $SSH_CMD $SERVER_USER@$SERVER_HOST << 'ENDSSH'

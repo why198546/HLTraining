@@ -496,6 +496,16 @@ def canvas_generate():
         
         # 初始化Nano Banana API
         nano_banana = NanoBananaAPI()
+
+        # 如果AI客户端未初始化，尽早返回更清晰的错误（常见原因：GEMINI_API_KEY 未设置）
+        try:
+            client_ok = getattr(nano_banana, 'client', None) is not None
+        except Exception:
+            client_ok = False
+
+        if not client_ok:
+            app.logger.error('Google Gen AI 客户端未配置（GEMINI_API_KEY 可能未设置）')
+            return jsonify({'error': 'AI 服务未配置，请联系管理员（GEMINI_API_KEY 未设置）'}), 500
         
         # 生成图片
         generated_image_path = nano_banana.generate_image_from_text(

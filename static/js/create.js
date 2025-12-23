@@ -489,6 +489,9 @@ async function generate3DFromReference() {
     }
 }
 
+// 全局变量存储生成的所有图片
+let generatedImagesArray = [];
+
 // 生成图片
 async function generateImage() {
     console.log('🚀 generateImage 函数被调用');
@@ -526,6 +529,7 @@ async function generateImage() {
         formData.append('color_preference', colorPreference);
         formData.append('expert_mode', expertMode);
         formData.append('aspect_ratio', aspectRatio);
+        // 不添加num_images，使用默认值1，松果课堂会传入4
         
         // 添加会话ID（支持内联版本管理器）
         if (window.inlineVersionManager && window.inlineVersionManager.currentSessionId) {
@@ -557,22 +561,25 @@ async function generateImage() {
         console.log('📦 响应数据:', result);
 
         if (result.success) {
+            // 主创作页面只使用单张图片
+            generatedImagesArray = [result.image_url];
             generatedImageUrl = result.image_url;
+            
+            console.log(`✅ 图片生成成功`);
+            
             // 记录原始图片路径（如果有的话）
             if (result.original_image_url) {
                 originalImagePath = result.original_image_url;
             } else if (uploadedImageFile && !originalImagePath) {
-                // 如果没有返回original_image_url但有上传文件，使用生成的图片作为原始图片
                 originalImagePath = result.image_url;
             }
             
-            // 更新图片显示元素
+            // 更新主图片显示
             const generatedImageEl = document.getElementById('generated-image');
             const currentImageEl = document.getElementById('current-image');
             const finalImageEl = document.getElementById('final-image');
             
-            // 显示调试信息
-            showMessage(`图片生成成功！URL: ${result.image_url}`, 'success');
+            showMessage('图片生成成功！', 'success');
             
             if (generatedImageEl) {
                 generatedImageEl.src = result.image_url;
@@ -580,7 +587,6 @@ async function generateImage() {
                 generatedImageEl.onerror = () => console.error('generated-image 加载失败');
             } else {
                 console.error('未找到generated-image元素');
-                showMessage('未找到generated-image元素', 'error');
             }
             if (currentImageEl) {
                 currentImageEl.src = result.image_url;
@@ -590,6 +596,8 @@ async function generateImage() {
                 finalImageEl.src = result.image_url;
                 finalImageEl.style.display = 'block';
             }
+            
+            // 主创作页面不显示缩略图
             
             // 通知版本管理器刷新（支持内联版本管理器）
             if (window.inlineVersionManager) {
@@ -2532,4 +2540,87 @@ function closeImageMenu() {
     if (menu) {
         menu.classList.remove('show');
     }
+}
+
+// 显示生成的多张图片缩略图
+function displayGeneratedThumbnails(imageUrls) {
+    console.log('📸 显示生成的缩略图:', imageUrls);
+    
+    // 找到缩略图网格容器
+    const thumbnailsGrid = document.querySelector('.thumbnails-grid');
+    if (!thumbnailsGrid) {
+        console.error('未找到缩略图网格容器');
+        return;
+    }
+    
+    // 清空现有缩略图
+    thumbnailsGrid.innerHTML = '';
+    
+    // 为每张图片创建缩略图
+    imageUrls.forEach((url, index) => {
+        const thumbnailSlot = document.createElement('div');
+        thumbnailSlot.className = 'thumbnail-slot';
+        thumbnailSlot.style.cursor = 'pointer';
+        
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = `生成图片 ${index + 1}`;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '8px';
+        img.style.transition = 'transform 0.2s, box-shadow 0.2s';
+        
+        // 鼠标悬停效果
+        img.onmouseenter = () => {
+            img.style.transform = 'scale(1.05)';
+            img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        };
+        img.onmouseleave = () => {
+            img.style.transform = 'scale(1)';
+            img.style.boxShadow = 'none';
+        };
+        
+        // 点击缩略图切换到该图片
+        img.onclick = () => {
+            console.log(`🖱️ 选择图片 ${index + 1}`);
+            selectGeneratedImage(url);
+        };
+        
+        thumbnailSlot.appendChild(img);
+        thumbnailsGrid.appendChild(thumbnailSlot);
+    });
+    
+    // 如果图片少于5张，填充空白占位符
+    for (let i = imageUrls.length; i < 5; i++) {
+        const thumbnailSlot = document.createElement('div');
+        thumbnailSlot.className = 'thumbnail-slot';
+        const placeholder = document.createElement('div');
+        placeholder.className = 'thumbnail-placeholder';
+        placeholder.textContent = i + 1;
+        thumbnailSlot.appendChild(placeholder);
+        thumbnailsGrid.appendChild(thumbnailSlot);
+    }
+}
+
+// 选择某张生成的图片作为主图
+function selectGeneratedImage(url) {
+    generatedImageUrl = url;
+    
+    // 更新所有显示图片的元素
+    const generatedImageEl = document.getElementById('generated-image');
+    const currentImageEl = document.getElementById('current-image');
+    const finalImageEl = document.getElementById('final-image');
+    
+    if (generatedImageEl) {
+        generatedImageEl.src = url;
+    }
+    if (currentImageEl) {
+        currentImageEl.src = url;
+    }
+    if (finalImageEl) {
+        finalImageEl.src = url;
+    }
+    
+    showMessage('已切换到选中的图片', 'success');
 }

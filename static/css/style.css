@@ -281,6 +281,286 @@
     gap: 12px;
 }
 
+/* 双栏提示词容器 */
+.dual-prompt-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+    .dual-prompt-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+/* 特征选择器样式 */
+.feature-selector-section {
+    grid-column: 1 / -1;
+    margin-bottom: 20px;
+}
+
+/* 特征检测器（折叠式） */
+.feature-detector-section {
+    margin: 20px 0;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.feature-detector-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+}
+
+.feature-detector-header:hover {
+    background: linear-gradient(135deg, #f0f0f0 0%, #fafafa 100%);
+}
+
+.detector-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.detector-hint {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+    flex: 1;
+    margin: 0 16px;
+}
+
+.detector-toggle {
+    font-size: 0.9rem;
+    color: #666;
+    transition: transform 0.3s ease;
+}
+
+.feature-detector-section.collapsed .detector-toggle {
+    transform: rotate(-90deg);
+}
+
+.feature-detector-content {
+    max-height: 800px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.feature-detector-section.collapsed .feature-detector-content {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.feature-detector-section:not(.collapsed) .feature-detector-content {
+    padding: 16px;
+}
+
+@media (max-width: 768px) {
+    .feature-detector-content {
+        max-height: none;
+    }
+}
+
+.feature-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 2px solid #e0e0e0;
+}
+
+.feature-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+.feature-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    min-width: 80px;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.feature-label.active {
+    color: var(--primary-color);
+    background: rgba(244, 143, 177, 0.1);
+    font-weight: 700;
+}
+
+.feature-btn {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border: 2px solid #ddd;
+    border-radius: 20px;
+    background: white;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.feature-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(244, 143, 177, 0.3);
+}
+
+.feature-btn.active {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 12px rgba(244, 143, 177, 0.4);
+}
+
+@media (max-width: 768px) {
+    .feature-selector-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .feature-group {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .feature-label {
+        min-width: 70px;
+        flex-shrink: 0;
+    }
+    
+    .feature-detector-content {
+        max-height: none;
+    }
+}
+
+.prompt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.prompt-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.label-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.label-hint {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+
+.prompt-section textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.prompt-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.prompt-section textarea[readonly] {
+    background-color: #f8f9fa;
+    cursor: default;
+}
+
+/* 输入框和语音按钮容器 */
+.input-with-voice {
+    position: relative;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.input-with-voice textarea {
+    flex: 1;
+}
+
+.input-with-voice .voice-input-btn {
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 0;
+}
+
+/* 语音按钮容器 */
+.voice-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* AI优化按钮 - 跟麦克风一样的样式 */
+.ai-optimize-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1.2rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-optimize-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-optimize-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.ai-optimize-btn i {
+    font-size: 1rem;
+}
+
 /* 生成结果（在 lesson-layout 和 lesson-examples 之间）*/
 .classroom-result {
     margin-top: 18px;
@@ -309,6 +589,22 @@
     gap: 12px;
 }
 
+/* 松果课堂loading动画 */
+.classroom-result .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+}
+
+.classroom-result .loading-logo {
+    width: 100px;
+    height: 100px;
+    animation: spin 2s linear infinite !important;
+    transform-origin: center center;
+}
+
 .classroom-result .ai-image {
     width: 100%;
     max-width: 100%;
@@ -316,6 +612,64 @@
     object-fit: contain;
     border-radius: 12px;
     max-height: 500px;
+}
+
+/* 生成的4张图片网格布局 */
+.generated-images-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.generated-image-item {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #f5f5f5;
+    aspect-ratio: 1;
+}
+
+/* loading占位符样式 */
+.loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.loading-placeholder .loading-logo {
+    width: 50px;
+    height: 50px;
+    animation: spin 2s linear infinite !important;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.error-mini {
+    color: #ff4757;
+    font-size: 14px;
+    text-align: center;
+}
+
+.ai-image-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    cursor: pointer;
+}
+
+.ai-image-thumbnail:hover {
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .generated-images-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
 }
 
 .classroom-prompt {
@@ -692,7 +1046,7 @@ body {
 @media (max-width: 768px) {
     .nav-toggle {
         display: flex;
-        z-index: 1002;
+        z-index: 10002;
         position: relative;
     }
 
@@ -710,7 +1064,7 @@ body {
         padding: 0.4rem;
         transform: translateX(-100%);
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1001;
+        z-index: 10001;
         overflow-y: auto;
         display: flex !important;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
@@ -718,6 +1072,18 @@ body {
 
     .nav-menu.active {
         transform: translateX(0);
+    }
+
+    /* overlay that appears when mobile nav is open to capture outside clicks */
+    .nav-overlay {
+        position: fixed;
+        inset: 0;
+        /* semi-transparent background to indicate clickable area and darken content */
+        background: rgba(0,0,0,0.3);
+        /* pointer-events: auto - overlay captures clicks */
+        pointer-events: auto;
+        z-index: 9999; /* BELOW nav-menu (10001) so nav-menu clicks work */
+        cursor: pointer;
     }
 
     .nav-menu li {
@@ -4540,9 +4906,8 @@ main {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-    .nav-menu {
-        display: none;
-    }
+    /* .nav-menu 的移动端样式在前面的 @media (max-width: 768px) 中已定义 */
+    /* 不要在这里设置 display: none，否则会覆盖前面的 fixed 定位样式 */
 
     .nav-toggle {
         display: flex;
@@ -14074,4 +14439,263 @@ to {
     position: absolute;
     left: 0.5rem;
     color: #856404;
+}
+
+/* 全屏图片查看器 */
+.image-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+}
+
+.image-viewer-img {
+    position: relative;
+    max-width: 90%;
+    max-height: 90vh;
+    object-fit: contain;
+    z-index: 2;
+    cursor: zoom-out;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.image-viewer-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.image-viewer-print {
+    position: absolute;
+    top: 20px;
+    right: 80px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-print:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.image-viewer-prev,
+.image-viewer-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-prev {
+    left: 20px;
+}
+
+.image-viewer-next {
+    right: 20px;
+}
+
+.image-viewer-prev:hover,
+.image-viewer-next:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.image-viewer-counter {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 16px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+    z-index: 3;
+}
+
+@media (max-width: 768px) {
+    .image-viewer-img {
+        max-width: 95%;
+        max-height: 85vh;
+    }
+    
+    .image-viewer-close {
+        top: 10px;
+        right: 10px;
+        width: 40px;
+        height: 40px;
+        font-size: 28px;
+    }
+    
+    .image-viewer-print {
+        top: 10px;
+        right: 60px;
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+    
+    .image-viewer-prev,
+    .image-viewer-next {
+        width: 40px;
+        height: 40px;
+        font-size: 32px;
+    }
+    
+    .image-viewer-prev {
+        left: 10px;
+    }
+    
+    .image-viewer-next {
+        right: 10px;
+    }
+}
+
+/* 缩略图打印按钮 */
+.generated-image-item {
+    position: relative;
+}
+
+.image-print-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 98, 65, 0.9);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 2;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.generated-image-item:hover .image-print-btn {
+    opacity: 1;
+}
+
+.image-print-btn:hover {
+    background: var(--primary-color);
+    transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+    .image-print-btn {
+        opacity: 1;
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #print-container,
+    #print-container * {
+        visibility: visible;
+    }
+    
+    #print-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    #print-container img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+}
+
+/* Toast提示动画 */
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
 }

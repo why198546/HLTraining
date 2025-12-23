@@ -188,6 +188,12 @@ function setupArtworkInteractions() {
     
     // 使用事件委托处理作品卡片点击
     galleryGrid.addEventListener('click', function(e) {
+        // 忽略来自导航栏的点击
+        if (e.target.closest('.nav-menu') || e.target.closest('.nav-toggle') || e.target.closest('.navbar')) {
+            console.log('🚫 Gallery: 忽略导航栏内的点击');
+            return;
+        }
+        
         const artworkItem = e.target.closest('.artwork-item');
         if (artworkItem) {
             showArtworkModal(artworkItem);
@@ -196,6 +202,11 @@ function setupArtworkInteractions() {
     
     // 设置点赞功能
     galleryGrid.addEventListener('click', function(e) {
+        // 忽略来自导航栏的点击
+        if (e.target.closest('.nav-menu') || e.target.closest('.nav-toggle') || e.target.closest('.navbar')) {
+            return;
+        }
+        
         if (e.target.closest('.likes')) {
             e.stopPropagation();
             handleLike(e.target.closest('.likes'));
