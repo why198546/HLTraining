@@ -3,17 +3,20 @@
 专为儿童AI培训网站设计，支持图片转3D模型功能
 """
 
-import os
 import base64
 import json
-import uuid
+import os
 import time
+import uuid
+
 import requests
 from PIL import Image
 from tencentcloud.common import credential
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import \
+    TencentCloudSDKException
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
-from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
+
 
 class Hunyuan3DGenerator:
     def __init__(self):
