@@ -103,9 +103,10 @@ def api_generate_image():
             filename = str(uuid.uuid4()) + '_' + secure_filename(uploaded_file.filename)
             sketch_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
             uploaded_file.save(sketch_path)
+            print(f"📁 图片已保存: {sketch_path}")
             
-            # 预处理手绘图片
-            processed_sketch = preprocess_sketch(sketch_path)
+            # 智能预处理：自动判断是否需要处理（手绘线稿会处理，彩色参考图保持原样）
+            processed_sketch = preprocess_sketch(sketch_path, force_process=False)
             if processed_sketch:
                 sketch_path = processed_sketch
         elif original_image_path:

@@ -1106,6 +1106,12 @@ async function generate3DModel() {
         const versionNote = `3D模型 ${new Date().toLocaleTimeString()}`;
         formData.append('version_note', versionNote);
         
+        // 添加API版本选择（极速版或专业版）
+        const apiVersionSelect = document.getElementById('api-version-select');
+        const apiVersion = apiVersionSelect ? apiVersionSelect.value : 'rapid';
+        formData.append('api_version', apiVersion);
+        console.log(`🔧 选择API版本: ${apiVersion === 'rapid' ? '极速版' : '专业版'}`);
+        
         // 添加可选的prompt
         const modelPrompt = document.getElementById('model-prompt');
         if (modelPrompt && modelPrompt.value.trim()) {
@@ -1384,17 +1390,112 @@ function download3DModel() {
     }
 
     const modelUrl = window.currentModelUrl;
-    if (modelUrl) {
-        const link = document.createElement('a');
-        link.href = modelUrl;
-        link.download = modelUrl.split('/').pop() || 'model.glb';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showMessage('3D模型下载开始', 'success');
-    } else {
+    if (!modelUrl) {
         showMessage('无法获取模型文件', 'error');
+        return;
     }
+
+    // 创建下载选项菜单
+    const menu = document.createElement('div');
+    menu.className = 'download-menu';
+    menu.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        padding: 20px;
+        z-index: 10000;
+        min-width: 300px;
+    `;
+    
+    menu.innerHTML = `
+        <h3 style="margin: 0 0 15px 0; font-size: 18px;">选择下载格式</h3>
+        <button class="download-option" data-format="glb" style="
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        ">
+            📦 GLB格式 (Web预览)
+        </button>
+        <button class="download-option" data-format="stl" style="
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        ">
+            🖨️ STL格式 (3D打印)
+        </button>
+        <button class="download-cancel" style="
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            color: #666;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        ">取消</button>
+    `;
+    
+    document.body.appendChild(menu);
+    
+    // 添加事件监听
+    menu.querySelectorAll('.download-option').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const format = this.dataset.format;
+            
+            if (format === 'glb') {
+                // 直接下载GLB
+                const link = document.createElement('a');
+                link.href = modelUrl;
+                link.download = modelUrl.split('/').pop() || 'model.glb';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage('GLB模型下载开始', 'success');
+            } else if (format === 'stl') {
+                // 下载STL版本
+                // 移除URL开头的斜杠，保留完整路径
+                let cleanPath = modelUrl;
+                if (cleanPath.startsWith('/')) {
+                    cleanPath = cleanPath.substring(1);
+                }
+                // 移除 /models/ 前缀（如果有）
+                cleanPath = cleanPath.replace('/models/', '');
+                
+                const stlUrl = `/download-stl/${cleanPath}`;
+                console.log(`📥 下载STL: ${stlUrl}`);
+                
+                const link = document.createElement('a');
+                link.href = stlUrl;
+                link.download = modelUrl.split('/').pop().replace('.glb', '.stl') || 'model.stl';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage('STL模型下载开始（适用于3D打印）', 'success');
+            }
+            
+            document.body.removeChild(menu);
+        });
+    });
+    
+    menu.querySelector('.download-cancel').addEventListener('click', () => {
+        document.body.removeChild(menu);
+    });
 }
 
 // 进度条相关函数

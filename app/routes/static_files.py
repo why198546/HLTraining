@@ -11,8 +11,16 @@ def uploaded_file(filepath):
     """提供上传文件的访问（支持子目录）"""
     upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
     try:
+        # 检查文件扩展名，为3D模型文件设置正确的MIME类型
+        if filepath.endswith('.glb'):
+            mimetype = 'model/gltf-binary'
+        elif filepath.endswith('.stl'):
+            mimetype = 'application/sla'
+        else:
+            mimetype = None  # 让Flask自动检测
+        
         # 支持子目录路径
-        return send_from_directory(upload_folder, filepath)
+        return send_from_directory(upload_folder, filepath, mimetype=mimetype)
     except FileNotFoundError:
         return "文件不存在", 404
 
@@ -20,7 +28,15 @@ def uploaded_file(filepath):
 @static_files_bp.route('/models/<filename>')
 def model_file(filename):
     """提供3D模型文件的访问"""
-    return send_from_directory('models', filename)
+    # 为3D模型文件设置正确的MIME类型
+    if filename.endswith('.glb'):
+        mimetype = 'model/gltf-binary'
+    elif filename.endswith('.stl'):
+        mimetype = 'application/sla'
+    else:
+        mimetype = None
+    
+    return send_from_directory('models', filename, mimetype=mimetype)
 
 
 @static_files_bp.route('/creation_sessions/<path:filepath>')
@@ -36,7 +52,19 @@ def creation_session_file(filepath):
         print(f"🔍 完整路径: {full_path}")
         print(f"🔍 文件是否存在: {os.path.exists(full_path)}")
         
-        return send_from_directory(os.path.join(base_dir, 'creation_sessions'), filepath)
+        # 检查文件扩展名，为GLB和STL文件设置正确的MIME类型
+        if filepath.endswith('.glb'):
+            mimetype = 'model/gltf-binary'
+        elif filepath.endswith('.stl'):
+            mimetype = 'application/sla'
+        else:
+            mimetype = None  # 让Flask自动检测
+        
+        return send_from_directory(
+            os.path.join(base_dir, 'creation_sessions'), 
+            filepath,
+            mimetype=mimetype
+        )
     except FileNotFoundError:
         print(f"❌ 文件不存在: {filepath}")
         return "文件不存在", 404
@@ -50,5 +78,13 @@ def static_creation_session(filename):
     """静态创作会话文件"""
     session_file_path = os.path.join('creation_sessions', filename)
     if os.path.exists(session_file_path):
-        return send_from_directory('creation_sessions', filename)
+        # 为3D模型文件设置正确的MIME类型
+        if filename.endswith('.glb'):
+            mimetype = 'model/gltf-binary'
+        elif filename.endswith('.stl'):
+            mimetype = 'application/sla'
+        else:
+            mimetype = None
+        
+        return send_from_directory('creation_sessions', filename, mimetype=mimetype)
     return "文件不存在", 404

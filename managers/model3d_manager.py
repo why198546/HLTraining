@@ -44,11 +44,14 @@ class Model3DManager:
             return None
     
     @staticmethod
-    def generate_3d_model_from_image(image_path):
+    def generate_3d_model_from_image(image_path, session_id=None, version_number=1, api_version='rapid'):
         """从单张图片生成3D模型
         
         Args:
             image_path: 图片文件路径
+            session_id: 会话ID，如果提供，则直接保存到session目录
+            version_number: 版本号
+            api_version: API版本，'rapid'=极速版（默认），'pro'=专业版
             
         Returns:
             str: 3D模型文件路径（绝对路径）
@@ -57,12 +60,15 @@ class Model3DManager:
             Exception: 生成失败时抛出异常
         """
         print(f"🧊 开始3D模型生成: {image_path}")
+        if session_id:
+            print(f"💾 Session ID: {session_id}, 版本号: v{version_number}")
+        print(f"🔧 API版本: {api_version}")
         
         # 初始化3D生成器
         generator_3d = Hunyuan3DGenerator()
         
         # 生成3D模型（如果失败会抛出异常）
-        model_path = generator_3d.generate_3d_model(image_path)
+        model_path = generator_3d.generate_3d_model(image_path, session_id, version_number, api_version)
         
         print(f"✅ 3D模型生成成功: {model_path}")
         return model_path

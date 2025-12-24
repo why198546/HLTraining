@@ -1,6 +1,8 @@
 """3D模型相关路由"""
 import os
+import sys
 import uuid
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request, url_for
 from flask_login import current_user
@@ -301,10 +303,20 @@ def upload_reference_image():
 def generate_3d_model_endpoint():
     """从图片生成3D模型，支持会话版本管理和多视角输入"""
     try:
+        print("=" * 60)
+        print("📥 收到3D模型生成请求")
+        print(f"📋 请求参数: {dict(request.form)}")
+        print("=" * 60)
+        sys.stdout.flush()
+        
         # 检查是否是多视角模式
         is_multi_view = request.form.get('multi_view') == 'true'
         session_id = request.form.get('session_id')
         version_note = request.form.get('version_note', '')
+        api_version = request.form.get('api_version', 'rapid')  # 默认极速版
+        
+        print(f"🔧 API版本: {api_version}")
+        sys.stdout.flush()
         
         if is_multi_view:
             # 多视角模式
@@ -316,15 +328,28 @@ def generate_3d_model_endpoint():
             if not all([front_image, back_image, left_image, right_image]):
                 return jsonify({'error': '多视角模式需要提供所有4个视角的图片'}), 400
             
-            # 转换路径
+            # 转换路径 - 支持多种路径格式
+            def normalize_image_path(path):
+                if not path:
+                    return path
+                # 移除域名部分
+                if 'creation_sessions' in path:
+                    path = path[path.index('creation_sessions'):]
+                elif path.startswith('/uploads/'):
+                    path = path.replace('/uploads/', 'uploads/')
+                elif path.startswith('/'):
+                    path = path[1:]
+                return path
+            
             view_images = {
-                'front': front_image.replace('/uploads/', 'uploads/') if front_image.startswith('/uploads/') else front_image,
-                'back': back_image.replace('/uploads/', 'uploads/') if back_image.startswith('/uploads/') else back_image,
-                'left': left_image.replace('/uploads/', 'uploads/') if left_image.startswith('/uploads/') else left_image,
-                'right': right_image.replace('/uploads/', 'uploads/') if right_image.startswith('/uploads/') else right_image
+                'front': normalize_image_path(front_image),
+                'back': normalize_image_path(back_image),
+                'left': normalize_image_path(left_image),
+                'right': normalize_image_path(right_image)
             }
             
             print(f"🧊 开始生成3D模型（多视角模式）")
+            print(f"📂 视角图片: {view_images}")
             model_path = Model3DManager.generate_3d_model_from_multi_view(view_images)
             source_image = front_image
             
@@ -332,13 +357,49 @@ def generate_3d_model_endpoint():
             # 单图模式
             image_path = request.form.get('image_path')
             if not image_path:
+                print("❌ 错误: 缺少图片路径参数")
                 return jsonify({'error': '缺少图片路径'}), 400
             
-            if image_path.startswith('/uploads/'):
-                image_path = image_path.replace('/uploads/', 'uploads/')
+            print(f"📁 原始图片路径: {image_path}")
             
-            print(f"🧊 开始生成3D模型（单图模式）: {image_path}")
-            model_path = Model3DManager.generate_3d_model_from_image(image_path)
+            # 路径标准化 - 支持多种格式
+            # 1. creation_sessions/xxx/image.png (来自快捷操作)
+            # 2. /uploads/xxx.png (来自生成阶段)
+            # 3. uploads/xxx.png (已处理的路径)
+            if 'creation_sessions' in image_path:
+                # 提取creation_sessions路径
+                if image_path.startswith('http'):
+                    # 从完整URL中提取
+                    image_path = image_path[image_path.index('creation_sessions'):]
+                elif image_path.startswith('/'):
+                    # 从根路径中提取
+                    image_path = image_path[1:]
+                # 否则已经是正确格式
+            elif image_path.startswith('/uploads/'):
+                image_path = image_path.replace('/uploads/', 'uploads/')
+            elif image_path.startswith('/'):
+                image_path = image_path[1:]
+            
+            print(f"📁 标准化后路径: {image_path}")
+            
+            # 验证文件是否存在
+            if not os.path.exists(image_path):
+                print(f"❌ 错误: 文件不存在: {image_path}")
+                return jsonify({'error': f'图片文件不存在: {image_path}'}), 400
+            
+            print(f"✅ 文件存在，开始生成3D模型")
+            
+            # 计算当前版本号
+            version_number = 1
+            if session_id:
+                session_data = session_manager._load_session_data(session_id)
+                if session_data:
+                    # 计算已有model版本数
+                    model_versions = [v for v in session_data.get('versions', []) if v.get('type') == 'model']
+                    version_number = len(model_versions) + 1
+                    print(f"📊 当前将生成第 {version_number} 个3D模型版本")
+            
+            model_path = Model3DManager.generate_3d_model_from_image(image_path, session_id, version_number, api_version)
             source_image = image_path
         
         print(f"✅ 3D模型生成完成: {model_path}")
@@ -355,16 +416,45 @@ def generate_3d_model_endpoint():
                 'multi_view': is_multi_view
             }
             
-            version_result = session_manager.add_version(
-                session_id=session_id,
-                version_type='model',
-                file_path=model_path,
-                metadata=metadata
-            )
-            
-            if version_result['success']:
-                version_id = version_result['version_id']
+            # 添加版本信息（但不复制文件，因为已经直接保存在session中）
+            session_data = session_manager._load_session_data(session_id)
+            if session_data:
+                version_id = str(uuid.uuid4())
+                filename = os.path.basename(model_path)
+                
+                version_data = {
+                    'version_id': version_id,
+                    'type': 'model',
+                    'file_path': model_path,
+                    'filename': filename,
+                    'created_at': datetime.now().isoformat(),
+                    'metadata': metadata,
+                    'is_selected': False
+                }
+                
+                session_data['versions'].append(version_data)
+                session_data['current_step'] = 'model_generated'
+                session_manager._save_session_data(session_id, session_data)
                 session_manager.select_version(session_id, version_id)
+                
+                # 自动保存3D模型到数据库（如果用户已登录）
+                if current_user.is_authenticated:
+                    try:
+                        # 获取session中的图片路径
+                        image_versions = [v for v in session_data.get('versions', []) if v.get('type') == 'image' and v.get('is_selected')]
+                        image_path_for_db = image_versions[0]['file_path'] if image_versions else source_image
+                        
+                        # 调用保存函数，传递3D模型路径
+                        auto_save_artwork_to_db(
+                            session_id=session_id,
+                            generated_image_path=image_path_for_db,
+                            model_3d_path=model_path
+                        )
+                        print(f"🎨 3D模型已自动保存到数据库: {session_id}")
+                    except Exception as e:
+                        print(f"⚠️ 3D模型自动保存失败: {str(e)}")
+                        import traceback
+                        print(traceback.format_exc())
         
         return jsonify({
             'success': True,
@@ -374,8 +464,14 @@ def generate_3d_model_endpoint():
         })
             
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"❌ 3D模型生成错误: {str(e)}")
-        return jsonify({'error': f'生成失败: {str(e)}'}), 500
+        print(f"📋 错误堆栈:\n{error_trace}")
+        sys.stdout.flush()
+        sys.stderr.write(f"ERROR: {error_trace}\n")
+        sys.stderr.flush()
+        return jsonify({'error': f'生成失败: {str(e)}', 'trace': error_trace}), 500
 
 
 @model3d_bp.route('/generate-3d-model-sam', methods=['POST'])
@@ -442,6 +538,73 @@ def generate_3d_model_sam():
         except Exception as fallback_error:
             print(f"❌ Hunyuan3D降级也失败: {str(fallback_error)}")
             return jsonify({'error': f'生成失败: {str(e)}'}), 500
+
+
+@model3d_bp.route('/download-stl/<path:model_path>', methods=['GET'])
+def download_stl(model_path):
+    """下载3D模型的STL版本（用于3D打印）"""
+    try:
+        from flask import send_file
+        
+        print(f"📥 STL下载请求: {model_path}")
+        
+        # 处理路径 - 支持多种格式
+        if model_path.startswith('creation_sessions/'):
+            # Session路径，直接使用
+            glb_path = model_path
+        elif model_path.startswith('/creation_sessions/'):
+            # 去掉开头的斜杠
+            glb_path = model_path[1:]
+        elif model_path.startswith('models/'):
+            glb_path = model_path.replace('models/', 'uploads/3d_models/')
+        elif model_path.startswith('/models/'):
+            glb_path = model_path.replace('/models/', 'uploads/3d_models/')
+        elif not model_path.startswith('uploads/'):
+            glb_path = f'uploads/3d_models/{model_path}'
+        else:
+            glb_path = model_path
+        
+        print(f"📁 处理后的GLB路径: {glb_path}")
+        
+        # 检查GLB文件是否存在
+        if not os.path.exists(glb_path):
+            print(f"❌ GLB文件不存在: {glb_path}")
+            return jsonify({'error': f'GLB模型文件不存在: {glb_path}'}), 404
+        
+        print(f"✅ GLB文件存在")
+        
+        # 生成STL文件路径
+        stl_path = glb_path.replace('.glb', '.stl')
+        
+        # 如果STL文件不存在，尝试从GLB转换
+        if not os.path.exists(stl_path):
+            print(f"🔄 STL文件不存在，尝试从GLB转换: {glb_path}")
+            try:
+                import trimesh
+                mesh = trimesh.load(glb_path)
+                mesh.export(stl_path)
+                print(f"✅ STL文件生成成功: {stl_path}")
+            except ImportError:
+                return jsonify({'error': 'trimesh未安装，无法生成STL。请联系管理员运行: pip install trimesh'}), 500
+            except Exception as e:
+                print(f"❌ STL转换失败: {str(e)}")
+                return jsonify({'error': f'STL转换失败: {str(e)}'}), 500
+        else:
+            print(f"✅ STL文件已存在: {stl_path}")
+        
+        # 返回STL文件
+        return send_file(
+            stl_path,
+            as_attachment=True,
+            download_name=os.path.basename(stl_path),
+            mimetype='application/sla'
+        )
+    
+    except Exception as e:
+        print(f"❌ STL下载错误: {str(e)}")
+        import traceback
+        print(f"堆栈追踪:\n{traceback.format_exc()}")
+        return jsonify({'error': f'下载失败: {str(e)}'}), 500
 
 
 @model3d_bp.route('/compare-3d-engines', methods=['POST'])
