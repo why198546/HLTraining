@@ -60,35 +60,56 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 下拉菜单本地处理
-        const dropdownLocal = navMenuLocal.querySelector('.nav-dropdown');
-        if (dropdownLocal) {
+        // 下拉菜单本地处理 - 处理所有下拉菜单
+        const dropdownsLocal = navMenuLocal.querySelectorAll('.nav-dropdown');
+        console.log(`📋 找到 ${dropdownsLocal.length} 个下拉菜单`);
+        
+        dropdownsLocal.forEach(dropdownLocal => {
             const dropdownToggle = dropdownLocal.querySelector('.nav-link');
             const dropdownMenu = dropdownLocal.querySelector('.dropdown-menu');
-            dropdownToggle.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                dropdownLocal.classList.toggle('active');
-            });
-
-            const dropdownLinks = dropdownMenu ? dropdownMenu.querySelectorAll('a') : [];
-            dropdownLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    // 只在移动端关闭菜单
-                    if (window.innerWidth <= 768) {
-                        navMenuLocal.classList.remove('active');
-                        navToggleLocal.classList.remove('active');
-                        navMenuLocal.style.transform = 'translateX(-100%)';
-                    }
+            
+            if (dropdownToggle && dropdownMenu) {
+                dropdownToggle.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // 关闭其他下拉菜单
+                    dropdownsLocal.forEach(otherDropdown => {
+                        if (otherDropdown !== dropdownLocal) {
+                            otherDropdown.classList.remove('active');
+                        }
+                    });
+                    
+                    // 切换当前下拉菜单
+                    dropdownLocal.classList.toggle('active');
+                    console.log('🔽 下拉菜单切换:', dropdownLocal.classList.contains('active') ? '打开' : '关闭');
                 });
-            });
 
-            document.addEventListener('click', function (e) {
+                const dropdownLinks = dropdownMenu.querySelectorAll('a');
+                dropdownLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        console.log('🖱️ 下拉菜单项被点击:', link.textContent.trim());
+                        // 只在移动端关闭菜单
+                        if (window.innerWidth <= 768) {
+                            navMenuLocal.classList.remove('active');
+                            navToggleLocal.classList.remove('active');
+                            navMenuLocal.style.transform = 'translateX(-100%)';
+                        }
+                        // 关闭下拉菜单
+                        dropdownLocal.classList.remove('active');
+                    });
+                });
+            }
+        });
+
+        // 点击外部关闭所有下拉菜单
+        document.addEventListener('click', function (e) {
+            dropdownsLocal.forEach(dropdownLocal => {
                 if (!dropdownLocal.contains(e.target)) {
                     dropdownLocal.classList.remove('active');
                 }
             });
-        }
+        });
 
         // 页面加载时确保菜单处于关闭状态（仅在移动端）
         // 只在窗口宽度 <= 768px 时强制设置transform和移除active类

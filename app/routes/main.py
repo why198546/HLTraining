@@ -4,6 +4,8 @@ import os
 from flask import Blueprint, render_template, send_from_directory
 from flask_login import login_required
 
+from app.course_config.courses import get_all_courses, get_course
+
 main_bp = Blueprint('main', __name__)
 
 
@@ -33,30 +35,7 @@ def sunguo_class():
 @login_required
 def sunguo_lesson(lesson_key):
     """松果课堂单节课/综合练习页面"""
-    lessons = {
-        'character': {
-            'title': '第 1 节课：人物',
-            'desc': '从五官、发型、衣着等要素开始，组合出清晰的人物描述。',
-            'section': 'character'
-        },
-        'action': {
-            'title': '第 2 节课：动作',
-            'desc': '学会用动词描述姿势与状态，让画面更生动。',
-            'section': 'action'
-        },
-        'scene': {
-            'title': '第 3 节课：场景',
-            'desc': '选择环境与地点，给人物一个"发生故事"的舞台。',
-            'section': 'scene'
-        },
-        'practice': {
-            'title': '综合练习',
-            'desc': '把人物 + 动作 + 场景组合成一句完整提示词，挑战更复杂的画面。',
-            'section': 'mix'
-        }
-    }
-
-    lesson = lessons.get(lesson_key)
+    lesson = get_course(lesson_key)
     if not lesson:
         return "Not Found", 404
 
@@ -67,6 +46,12 @@ def sunguo_lesson(lesson_key):
 def tutorial():
     """教程页面"""
     return render_template('tutorial.html')
+
+
+@main_bp.route('/songuo-coin-demo')
+def songuo_coin_demo():
+    """松果币图标展示页面"""
+    return render_template('songuo_coin_demo.html')
 
 
 @main_bp.route('/test')

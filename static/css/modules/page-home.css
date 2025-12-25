@@ -1,0 +1,80 @@
+/* 首页专用样式 */
+
+/* Hero区域 */
+.hero {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: white;
+    padding: 2rem 0;
+}
+
+.hero-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Logo */
+.hero-logo-main {
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 60px auto 40px;
+}
+
+/* Footer */
+.footer {
+    background: #2c3e50;
+    color: white;
+    padding: 3rem 0 1rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.footer-section h4 {
+    margin-bottom: 1rem;
+    color: #ffd700;
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section ul li {
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid #34495e;
+    opacity: 0.8;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .hero-logo-main {
+        max-width: 80%;
+        margin: 40px auto 30px;
+    }
+    
+    .hero {
+        min-height: auto;
+        padding: 1rem 0;
+    }
+}

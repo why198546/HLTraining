@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI画布 - 无限创作空间</title>
+    
+    <!-- 关键CSS内联 - 防止闪烁 -->
+    <style>
+        body { margin: 0; padding: 0; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); }
+    </style>
+    
     <link rel="stylesheet" href="{{ url_for('static', filename='css/canvas_infinite.css') }}?v=4.3">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/history_panel.css') }}?v=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}?v=1.1">
@@ -51,11 +57,11 @@
     }
     .project-title-input:focus {
         outline: none;
-        border-color: #667eea;
+        border-color: #00704A;
     }
     .btn-save-project {
         padding: 10px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
         color: white;
         border: none;
         border-radius: 8px;

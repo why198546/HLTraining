@@ -38,11 +38,18 @@ class NanoBananaAPI:
             print(f"❌ Google Gen AI 客户端初始化失败: {str(e)}")
             self.client = None
     
-    def colorize_sketch(self, sketch_path, description="", style="cute", color_preference="colorful", expert_mode=False, aspect_ratio="1:1"):
-        """为手绘简笔画上色 - 使用Gemini 2.5 Flash Image模型（真正的Nano Banana）"""
+    def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512"):
+        """参考图+文字描述生成图片 - 使用Gemini 2.5 Flash Image模型
+        
+        功能：
+        1. 基于参考图（sketch_path）生成新图片
+        2. 可选文字描述（description）引导生成
+        3. 支持多种风格和高宽比
+        4. style="none" 时不添加任何系统提示词（专家模式）
+        """
         try:
-            print("🎨 开始使用Gemini 2.5 Flash Image (Nano Banana) 进行图像上色...")
-            print(f"🎨 风格: {style}, 色彩偏好: {color_preference}, Expert模式: {expert_mode}, 高宽比: {aspect_ratio}")
+            print("🎨 开始使用Gemini 2.5 Flash Image 进行参考图生成...")
+            print(f"🎨 风格: {style}, 高宽比: {aspect_ratio}")
             
             # 检查客户端
             if not self.client:
@@ -52,9 +59,10 @@ class NanoBananaAPI:
             with open(sketch_path, 'rb') as f:
                 image_bytes = f.read()
             
-            # Expert模式：直接使用用户输入的prompt，不添加任何额外内容
-            if expert_mode:
+            # style="none" 时为专家模式，直接使用用户输入
+            if style == "none":
                 prompt = description if description else "为这张图片上色"
+                print(f"⚡ 专家模式 - 原始 prompt: {prompt}")
             else:
                 # 风格映射
                 style_prompts = {
@@ -62,26 +70,16 @@ class NanoBananaAPI:
                     'realistic': '写实风格',
                     'anime': '日式动漫风格',
                     'fantasy': '奇幻风格',
-                    'model_3d': '3D模型专用风格，单独的主体，纯色背景，不含零碎的干扰物，高清晰度，三视图风格'
-                }
-                
-                # 色彩偏好映射
-                color_prompts = {
-                    'colorful': '色彩丰富鲜艳',
-                    'soft': '柔和色调',
-                    'bright': '明亮鲜艳',
-                    'natural': '自然色彩'
+                    'model_3d': '3D模型专用，纯白色或浅灰色单色背景，主体清晰居中，无任何背景装饰、天空、地面或环境元素'
                 }
                 
                 style_desc = style_prompts.get(style, style_prompts['cute'])
-                color_desc = color_prompts.get(color_preference, color_prompts['colorful'])
                 
                 # 加强提示词，确保AI严格遵循草图结构
                 if description:
                     prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
 内容描述：{description}
 艺术风格：{style_desc}
-色彩风格：{color_desc}
 重要要求：
 1. 必须保持原始线条的结构和位置关系
 2. 不要改变主体的形状和姿态
@@ -90,7 +88,6 @@ class NanoBananaAPI:
                 else:
                     prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
 艺术风格：{style_desc}
-色彩风格：{color_desc}
 重要要求：
 1. 必须保持原始线条的结构和位置关系
 2. 不要改变主体的形状和姿态
@@ -110,10 +107,23 @@ class NanoBananaAPI:
                     retry_count += 1
                     print(f"🔥 正在使用Gemini 2.5 Flash Image (Nano Banana)... (尝试 {retry_count}/{max_retries})")
                     
+                    # 将分辨率转换为比例格式（Gemini API 需要）
+                    if 'x' in aspect_ratio:
+                        width, height = map(int, aspect_ratio.split('x'))
+                        # 计算最简比例
+                        from math import gcd
+                        divisor = gcd(width, height)
+                        ratio_str = f"{width // divisor}:{height // divisor}"
+                    else:
+                        ratio_str = aspect_ratio
+                    
                     # 使用Gemini 2.5 Flash Image - 这才是真正的Nano Banana！
                     config = types.GenerateContentConfig(
                         response_modalities=["IMAGE"],  # 明确要求返回图片
-                        temperature=0.7
+                        temperature=0.7,
+                        image_config=types.ImageConfig(
+                            aspect_ratio=ratio_str,  # 使用比例格式
+                        )
                     )
                     
                     response = self.client.models.generate_content(
@@ -174,32 +184,30 @@ class NanoBananaAPI:
                         from io import BytesIO
                         image = Image.open(BytesIO(image_parts[0]))
                         
-                        # 调整图片尺寸以匹配aspect_ratio
-                        if aspect_ratio != "1:1":
+                        # 调整图片尺寸以匹配指定分辨率
+                        if 'x' in aspect_ratio:
+                            # 解析具体分辨率（如 "512x512"）
+                            target_width, target_height = map(int, aspect_ratio.split('x'))
                             width, height = image.size
-                            ratio_parts = aspect_ratio.split(':')
-                            target_ratio = int(ratio_parts[0]) / int(ratio_parts[1])
-                            current_ratio = width / height
                             
-                            # 如果比例不匹配，调整尺寸
-                            if abs(current_ratio - target_ratio) > 0.1:
-                                if target_ratio > current_ratio:
-                                    # 需要更宽
-                                    new_width = int(height * target_ratio)
-                                    new_height = height
-                                else:
-                                    # 需要更高
-                                    new_width = width
-                                    new_height = int(width / target_ratio)
+                            # 如果尺寸不匹配，调整图片
+                            if width != target_width or height != target_height:
+                                # 计算缩放比例，保持宽高比
+                                scale = min(target_width / width, target_height / height)
+                                new_width = int(width * scale)
+                                new_height = int(height * scale)
                                 
-                                # 创建新画布
-                                new_image = Image.new('RGB', (new_width, new_height), (255, 255, 255))
-                                # 将原图居中粘贴
-                                x_offset = (new_width - width) // 2
-                                y_offset = (new_height - height) // 2
+                                # 缩放图片
+                                image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                                
+                                # 创建目标尺寸的白色画布
+                                new_image = Image.new('RGB', (target_width, target_height), (255, 255, 255))
+                                # 将缩放后的图片居中粘贴
+                                x_offset = (target_width - new_width) // 2
+                                y_offset = (target_height - new_height) // 2
                                 new_image.paste(image, (x_offset, y_offset))
                                 image = new_image
-                                print(f"📐 调整图片尺寸以匹配 {aspect_ratio}")
+                                print(f"📐 调整图片尺寸至 {aspect_ratio}")
                         
                         # 保存上色后的图像
                         base_name = os.path.splitext(os.path.basename(sketch_path))[0]
@@ -423,22 +431,22 @@ class NanoBananaAPI:
         
         return prompt
 
-    def generate_image_from_text(self, text_prompt, style="cute", color_preference="colorful", expert_mode=False, aspect_ratio="1:1"):
+    def generate_image_from_text(self, text_prompt, style="cute", aspect_ratio="512x512"):
         """从文字描述生成图片 - 使用Gemini 2.5 Flash Image官方API，原生高宽比支持！"""
         try:
             print(f"🎨 开始使用Gemini 2.5 Flash Image官方API生成图片...")
             print(f"📝 提示词: {text_prompt}")
-            print(f"🎨 风格: {style}, 色彩偏好: {color_preference}, Expert模式: {expert_mode}")
+            print(f"🎨 风格: {style}")
             print(f"📐 原生高宽比: {aspect_ratio}")
             
             # 检查客户端
             if not self.client:
                 raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
             
-            # Expert模式：直接使用用户输入的prompt
-            if expert_mode:
+            # style="none" 时为专家模式，直接使用用户输入
+            if style == "none":
                 image_prompt = text_prompt
-                print(f"⚡ Expert模式 - 原始prompt: {image_prompt}")
+                print(f"⚡ 专家模式 - 原始prompt: {image_prompt}")
             else:
                 # 风格映射
                 style_prompts = {
@@ -446,19 +454,10 @@ class NanoBananaAPI:
                     'realistic': '写实风格',
                     'anime': '日式动漫风格',
                     'fantasy': '奇幻风格',
-                    'model_3d': '3D模型专用风格，单独的主体，纯色背景，不含零碎的干扰物，高清晰度，三视图风格'
-                }
-                
-                # 色彩偏好映射
-                color_prompts = {
-                    'colorful': '色彩丰富鲜艳',
-                    'soft': '柔和色调',
-                    'bright': '明亮鲜艳',
-                    'natural': '自然色彩'
+                    'model_3d': '3D模型专用，纯白色或浅灰色单色背景，主体清晰居中，无任何背景装饰、天空、地面或环境元素'
                 }
                 
                 style_desc = style_prompts.get(style, style_prompts['cute'])
-                color_desc = color_prompts.get(color_preference, color_prompts['colorful'])
                 
                 # 对于3D模型风格，强制移除背景描述
                 if style == 'model_3d':
@@ -479,7 +478,7 @@ class NanoBananaAPI:
                     print(f"🎯 3D模式 - 清理后的提示词: {image_prompt}")
                 else:
                     # 简化的提示词构建，保持原始意图
-                    image_prompt = f"{text_prompt}, {style_desc}, {color_desc}, 适合儿童观看的内容"
+                    image_prompt = f"{text_prompt}, {style_desc}, 适合儿童观看的内容"
             
             print(f"📝 最终提示词: {image_prompt}")
             
@@ -514,13 +513,23 @@ class NanoBananaAPI:
                         ),
                     ]
                     
+                    # 将分辨率转换为比例格式（Gemini API 需要）
+                    if 'x' in aspect_ratio:
+                        width, height = map(int, aspect_ratio.split('x'))
+                        # 计算最简比例
+                        from math import gcd
+                        divisor = gcd(width, height)
+                        ratio_str = f"{width // divisor}:{height // divisor}"
+                    else:
+                        ratio_str = aspect_ratio
+                    
                     generate_content_config = types.GenerateContentConfig(
                         response_modalities=[
                             "IMAGE",
                             "TEXT",
                         ],
                         image_config=types.ImageConfig(
-                            aspect_ratio=aspect_ratio,  # 原生高宽比支持！
+                            aspect_ratio=ratio_str,  # 使用比例格式
                         ),
                     )
                     
@@ -590,25 +599,25 @@ class NanoBananaAPI:
             print(f"❌ 文字生成图片错误: {str(e)}")
             return None
     
-    def generate_image_from_sketch(self, sketch_path, style="cute", color_preference="colorful", expert_mode=False, aspect_ratio="1:1"):
+    def generate_image_from_sketch(self, sketch_path, style="cute", aspect_ratio="1:1"):
         """从手绘图片生成图片（纯图片模式）"""
         try:
             print(f"🎨 纯图片模式：为手绘图生成AI图片 - {sketch_path}")
             
-            # 使用已有的上色方法，传入风格参数和expert_mode
-            return self.colorize_sketch(sketch_path, "", style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio)
+            # 使用参考图生成方法，传入风格参数
+            return self.generate_image_from_reference(sketch_path, "", style=style, aspect_ratio=aspect_ratio)
             
         except Exception as e:
             print(f"❌ 纯图片模式生成失败: {str(e)}")
             return None
 
-    def generate_image_from_sketch_and_text(self, sketch_path, text_prompt, style="cute", color_preference="colorful", expert_mode=False, aspect_ratio="1:1"):
+    def generate_image_from_sketch_and_text(self, sketch_path, text_prompt, style="cute", aspect_ratio="1:1"):
         """从手绘图片和文字描述生成图片（图片+文字模式）"""
         try:
             print(f"🎨 图片+文字模式：为手绘图生成AI图片 - {sketch_path}")
             
-            # 使用已有的上色方法，传入文字描述和expert_mode
-            return self.colorize_sketch(sketch_path, text_prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio)
+            # 使用参考图生成方法，传入文字描述
+            return self.generate_image_from_reference(sketch_path, text_prompt, style=style, aspect_ratio=aspect_ratio)
             
         except Exception as e:
             print(f"❌ 图片+文字模式生成失败: {str(e)}")

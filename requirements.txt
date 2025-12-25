@@ -21,4 +21,5 @@ trimesh==3.23.5
 pygltflib==1.16.0
 SQLAlchemy==2.0.23
 tencentcloud-sdk-python==3.0.1478
+qrcode==7.4.2
 

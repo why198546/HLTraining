@@ -3,16 +3,18 @@
 处理注册、登录、验证等功能
 """
 
-from flask import render_template, redirect, url_for, flash, request, current_app, session, jsonify
-from flask_login import login_user, logout_user, login_required, current_user
-from datetime import datetime, timedelta
 import random
 import string
-from auth.models import db
+from datetime import datetime, timedelta
+
+from flask import (current_app, flash, jsonify, redirect, render_template,
+                   request, session, url_for)
+from flask_login import current_user, login_required, login_user, logout_user
 
 from auth import auth_bp
-from auth.models import db, User, ParentVerification, CreationSession
-from auth.forms import KidRegistrationForm, KidLoginForm, ParentVerificationForm
+from auth.forms import (KidLoginForm, KidRegistrationForm,
+                        ParentVerificationForm)
+from auth.models import CreationSession, ParentVerification, User, db
 from utils.email_service import send_verification_email
 
 
@@ -20,7 +22,7 @@ from utils.email_service import send_verification_email
 def register():
     """儿童用户注册"""
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     
     form = KidRegistrationForm()
     
@@ -55,7 +57,7 @@ def register():
 def login():
     """用户登录"""
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     
     form = KidLoginForm()
     
@@ -74,7 +76,7 @@ def login():
             # 记录登录日志
             next_page = request.args.get('next')
             flash(f'欢迎回来，{user.nickname}！', 'success')
-            return redirect(next_page) if next_page else redirect(url_for('index'))
+            return redirect(next_page) if next_page else redirect(url_for('main.index'))
         else:
             flash('用户名或密码错误', 'error')
     
@@ -87,7 +89,7 @@ def logout():
     """用户登出"""
     flash(f'再见，{current_user.nickname}！', 'info')
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 @auth_bp.route('/verification-pending/<int:user_id>')
@@ -104,11 +106,11 @@ def parent_verify(verification_token):
         user = User.query.filter_by(verification_token=verification_token).first()
         if not user:
             flash('验证链接无效或已过期', 'error')
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
         
         if user.is_verified:
             flash('账户已经通过验证', 'info')
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
         
         form = ParentVerificationForm()
         
@@ -154,7 +156,7 @@ def resend_verification(user_id):
     
     if user.is_verified:
         flash('账户已经通过验证', 'info')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     
     # 检查是否在短时间内重复发送
     recent_verification = ParentVerification.query.filter_by(
@@ -209,10 +211,11 @@ def send_parent_verification(user):
 def profile():
     """用户个人中心"""
     print("DEBUG: Profile function called")
-    from auth.models import Artwork, CreationSession
     from datetime import datetime
-    from auth.forms import ProfileUpdateForm, PrivacySettingsForm
-    
+
+    from auth.forms import PrivacySettingsForm, ProfileUpdateForm
+    from auth.models import Artwork, CreationSession
+
     # 创建表单实例
     form = ProfileUpdateForm()
     privacy_form = PrivacySettingsForm()
@@ -234,9 +237,9 @@ def profile():
             print("DEBUG: Processing profile update")
             # 处理个人资料更新
             old_nickname = current_user.nickname
-            old_role = current_user.role
             current_user.nickname = form.nickname.data
-            current_user.role = form.role.data
+            # 安全措施：禁止用户自己修改角色，角色只能由管理员通过后台修改
+            # current_user.role = form.role.data  # 已禁用
             current_user.birth_date = form.birth_date.data
             current_user.gender = form.gender.data
             current_user.contact_phone = form.contact_phone.data
@@ -244,7 +247,6 @@ def profile():
             current_user.color_preference = form.color_preference.data
             # bio字段暂时不保存，因为User模型中没有bio字段
             print(f"DEBUG: Updating nickname from '{old_nickname}' to '{form.nickname.data}'")
-            print(f"DEBUG: Updating role from '{old_role}' to '{form.role.data}'")
             
             try:
                 db.session.commit()
@@ -388,8 +390,9 @@ def edit_profile():
 @login_required
 def my_artworks():
     """我的作品页面"""
-    from auth.models import Artwork
     from sqlalchemy import func
+
+    from auth.models import Artwork
     
     page = request.args.get('page', 1, type=int)
     
@@ -460,7 +463,7 @@ def parent_dashboard(verification_token):
     user = User.query.filter_by(verification_token=verification_token).first()
     if not user:
         flash('访问链接无效', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('main.index'))
     
     # 获取孩子的活动统计
     stats = {
@@ -471,8 +474,9 @@ def parent_dashboard(verification_token):
     }
     
     # 获取最近的创作活动
-    from auth.models import CreationSession, Artwork
     from datetime import datetime, timedelta
+
+    from auth.models import Artwork, CreationSession
     recent_sessions = CreationSession.query.filter_by(user_id=user.id).order_by(
         CreationSession.started_at.desc()
     ).limit(10).all()
@@ -645,8 +649,8 @@ def get_artwork_comments(artwork_id):
 @login_required
 def create_comment(artwork_id):
     """创建评论"""
-    from auth.models import Comment, Artwork
     from api.text_punctuation import add_punctuation_to_text
+    from auth.models import Artwork, Comment
     
     artwork = Artwork.query.get_or_404(artwork_id)
     
@@ -686,6 +690,7 @@ def create_comment(artwork_id):
 def upload_comment_audio():
     """上传评论音频文件"""
     import os
+
     from werkzeug.utils import secure_filename
     
     if 'audio' not in request.files:
@@ -752,4 +757,197 @@ def delete_comment(comment_id):
     return jsonify({
         'success': True,
         'message': '评论已删除'
+    })
+
+
+# ============ 教师管理功能 ============
+
+@auth_bp.route('/teacher/dashboard')
+@login_required
+def teacher_dashboard():
+    """教师管理后台首页"""
+    from auth.permissions import teacher_required
+
+    # 检查教师权限
+    if current_user.role != 'teacher':
+        flash('此功能仅限老师使用', 'error')
+        return redirect(url_for('main.index'))
+    
+    # 获取所有学生
+    students = User.query.filter_by(role='student').all()
+    
+    # 统计信息
+    total_students = len(students)
+    enrolled_students = sum(1 for s in students if s.is_enrolled)
+    
+    return render_template('auth/teacher_dashboard.html', 
+                         students=students,
+                         total_students=total_students,
+                         enrolled_students=enrolled_students)
+
+
+@auth_bp.route('/teacher/students')
+@login_required
+def teacher_students():
+    """学生管理页面"""
+    if current_user.role != 'teacher':
+        flash('此功能仅限老师使用', 'error')
+        return redirect(url_for('main.index'))
+    
+    students = User.query.filter_by(role='student').order_by(User.created_at.desc()).all()
+    return render_template('auth/teacher_students.html', students=students)
+
+
+@auth_bp.route('/teacher/student/<int:student_id>')
+@login_required
+def teacher_student_detail(student_id):
+    """查看学生详情和课程进度"""
+    if current_user.role != 'teacher':
+        flash('此功能仅限老师使用', 'error')
+        return redirect(url_for('main.index'))
+    
+    student = User.query.get_or_404(student_id)
+    if student.role != 'student':
+        flash('该用户不是学生', 'error')
+        return redirect(url_for('auth.teacher_students'))
+    
+    # 获取该学生的课程进度
+    from auth.models import CourseProgress
+    progress_list = CourseProgress.query.filter_by(user_id=student_id).order_by(CourseProgress.lesson_number).all()
+    
+    return render_template('auth/teacher_student_detail.html', 
+                         student=student,
+                         progress_list=progress_list)
+
+
+@auth_bp.route('/teacher/enroll-student/<int:student_id>', methods=['POST'])
+@login_required
+def enroll_student(student_id):
+    """设置学生为已报名状态"""
+    if current_user.role != 'teacher':
+        return jsonify({'success': False, 'message': '无权限'}), 403
+    
+    student = User.query.get_or_404(student_id)
+    if student.role != 'student':
+        return jsonify({'success': False, 'message': '该用户不是学生'}), 400
+    
+    student.is_enrolled = True
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': f'{student.nickname} 已报名上课'})
+
+
+@auth_bp.route('/teacher/add-tokens/<int:student_id>', methods=['POST'])
+@login_required
+def add_student_tokens(student_id):
+    """为学生添加图片生成令牌"""
+    if current_user.role != 'teacher':
+        return jsonify({'success': False, 'message': '无权限'}), 403
+    
+    data = request.get_json()
+    amount = data.get('amount', 0)
+    
+    if amount <= 0 or amount > 1000:
+        return jsonify({'success': False, 'message': '令牌数量必须在1-1000之间'}), 400
+    
+    student = User.query.get_or_404(student_id)
+    if student.role != 'student':
+        return jsonify({'success': False, 'message': '该用户不是学生'}), 400
+    
+    from auth.permissions import add_image_tokens
+    add_image_tokens(student, amount)
+    
+    return jsonify({
+        'success': True,
+        'message': f'已为 {student.nickname} 添加 {amount} 个图片生成令牌',
+        'new_balance': student.image_token_remaining
+    })
+
+
+@auth_bp.route('/teacher/confirm-lesson', methods=['POST'])
+@login_required
+def confirm_lesson():
+    """确认学生完成课程"""
+    if current_user.role != 'teacher':
+        return jsonify({'success': False, 'message': '无权限'}), 403
+    
+    data = request.get_json()
+    student_id = data.get('student_id')
+    lesson_number = data.get('lesson_number')
+    notes = data.get('notes', '')
+    
+    if not student_id or not lesson_number:
+        return jsonify({'success': False, 'message': '缺少必要参数'}), 400
+    
+    from auth.models import CourseProgress
+
+    # 查找或创建课程进度记录
+    progress = CourseProgress.query.filter_by(
+        user_id=student_id,
+        lesson_number=lesson_number
+    ).first()
+    
+    if not progress:
+        # 创建新的进度记录
+        lesson_keys = {1: 'character', 2: 'action', 3: 'scene', 4: 'practice'}
+        progress = CourseProgress(
+            user_id=student_id,
+            lesson_number=lesson_number,
+            lesson_key=lesson_keys.get(lesson_number, f'lesson{lesson_number}')
+        )
+        db.session.add(progress)
+    
+    # 设置确认状态
+    progress.is_completed = True
+    progress.is_confirmed = True
+    progress.confirmed_by = current_user.id
+    progress.confirmed_at = datetime.utcnow()
+    progress.completed_at = datetime.utcnow()
+    progress.notes = notes
+    
+    db.session.commit()
+    
+    student = User.query.get(student_id)
+    return jsonify({
+        'success': True,
+        'message': f'已确认 {student.nickname} 完成第 {lesson_number} 节课'
+    })
+
+
+@auth_bp.route('/teacher/unconfirm-lesson', methods=['POST'])
+@login_required
+def unconfirm_lesson():
+    """取消确认学生课程（如果需要重新学习）"""
+    if current_user.role != 'teacher':
+        return jsonify({'success': False, 'message': '无权限'}), 403
+    
+    data = request.get_json()
+    student_id = data.get('student_id')
+    lesson_number = data.get('lesson_number')
+    
+    if not student_id or not lesson_number:
+        return jsonify({'success': False, 'message': '缺少必要参数'}), 400
+    
+    from auth.models import CourseProgress
+    
+    progress = CourseProgress.query.filter_by(
+        user_id=student_id,
+        lesson_number=lesson_number
+    ).first()
+    
+    if not progress:
+        return jsonify({'success': False, 'message': '未找到课程进度记录'}), 404
+    
+    # 取消确认
+    progress.is_confirmed = False
+    progress.confirmed_by = None
+    progress.confirmed_at = None
+    progress.notes = None
+    
+    db.session.commit()
+    
+    student = User.query.get(student_id)
+    return jsonify({
+        'success': True,
+        'message': f'已取消确认 {student.nickname} 的第 {lesson_number} 节课'
     })

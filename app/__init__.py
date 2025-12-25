@@ -48,10 +48,23 @@ def create_app():
     from auth import auth_bp
     app.register_blueprint(auth_bp)
     
+    # 注册二维码蓝图
+    from auth.qr_routes import qr_bp
+    app.register_blueprint(qr_bp)
+    
+    # 注册管理员蓝图
+    from auth.admin_routes import admin_bp
+    app.register_blueprint(admin_bp)
+    
+    # 初始化中间件（每日token赠送等）
+    from auth.middleware import init_middleware
+    init_middleware(app)
+    
     # 注册应用路由蓝图
     from .routes import (canvas_bp, create_bp, gallery_bp, main_bp, model3d_bp,
                          static_files_bp, video_bp)
     from .routes.api import api_bp  # 从api子模块导入
+    from .routes.api_create import api_create_bp  # 创作相关API
     
     app.register_blueprint(main_bp)
     app.register_blueprint(canvas_bp, url_prefix='/canvas')
@@ -60,6 +73,7 @@ def create_app():
     app.register_blueprint(video_bp, url_prefix='/video')
     app.register_blueprint(model3d_bp)  # 不加前缀，保持原URL兼容
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(api_create_bp)  # 创作API（已包含/api前缀）
     app.register_blueprint(static_files_bp)
     
     return app

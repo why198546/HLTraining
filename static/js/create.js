@@ -2218,6 +2218,16 @@ function updateImageGenerationSuccess(result) {
     if (finalActions) {
         finalActions.style.display = 'flex';
     }
+    
+    // 显示调整区域
+    const quickAdjustSection = document.getElementById('quick-adjust-section');
+    const customAdjustSection = document.getElementById('custom-adjust-section');
+    if (quickAdjustSection) {
+        quickAdjustSection.style.display = 'block';
+    }
+    if (customAdjustSection) {
+        customAdjustSection.style.display = 'block';
+    }
 }
 
 // ========== 图片添加菜单功能 ==========

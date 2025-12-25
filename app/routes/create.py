@@ -1,4 +1,4 @@
-"""创作相关路由"""
+"""创作相关路由 - 重构为三个独立页面"""
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -7,8 +7,61 @@ create_bp = Blueprint('create', __name__)
 @create_bp.route('/')
 @login_required
 def create():
-    """创作页面"""
-    return render_template('create.html')
+    """创作主入口 - 重定向到图片创作"""
+    return redirect(url_for('create.create_image'))
+
+@create_bp.route('/image')
+@login_required
+def create_image():
+    """第1步：2D图片创作（上传线稿、AI上色、快速调整）"""
+    session_id = request.args.get('session_id')
+    return render_template('create_image.html', session_id=session_id)
+
+@create_bp.route('/3d')
+@login_required
+def create_3d():
+    """第2步：3D模型生成（可独立使用或基于2D图片）"""
+    session_id = request.args.get('session_id')
+    
+    # 如果有session_id，验证所有权
+    if session_id:
+        from auth.models import Artwork
+        artwork = Artwork.query.filter_by(session_id=session_id).first()
+        if not artwork or artwork.user_id != current_user.id:
+            flash('未找到对应的作品', 'error')
+            return redirect(url_for('create.create_image'))
+        return render_template('create_3d.html', session_id=session_id, artwork=artwork)
+    
+    # 没有session_id时，教师和管理员可以直接访问
+    if current_user.role in ['teacher', 'admin']:
+        return render_template('create_3d.html', session_id=None, artwork=None)
+    
+    # 普通学生必须先生成图片
+    flash('请先创作2D图片，再生成3D模型', 'info')
+    return redirect(url_for('create.create_image'))
+
+@create_bp.route('/video')
+@login_required
+def create_video():
+    """第3步：视频生成（可独立使用或基于2D图片）"""
+    session_id = request.args.get('session_id')
+    
+    # 如果有session_id，验证所有权
+    if session_id:
+        from auth.models import Artwork
+        artwork = Artwork.query.filter_by(session_id=session_id).first()
+        if not artwork or artwork.user_id != current_user.id:
+            flash('未找到对应的作品', 'error')
+            return redirect(url_for('create.create_image'))
+        return render_template('create_video.html', session_id=session_id, artwork=artwork)
+    
+    # 没有session_id时，教师和管理员可以直接访问
+    if current_user.role in ['teacher', 'admin']:
+        return render_template('create_video.html', session_id=None, artwork=None)
+    
+    # 普通学生必须先生成图片
+    flash('请先创作2D图片，再生成视频', 'info')
+    return redirect(url_for('create.create_image'))
 
 @create_bp.route('/edit/<int:artwork_id>')
 @login_required

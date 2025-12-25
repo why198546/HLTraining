@@ -4,8 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>作品展示 - 松果AI</title>
+    
+    <!-- 关键CSS内联 - 防止闪烁 -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            min-height: 100vh;
+        }
+        .gallery-hero {
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+        }
+    </style>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-gallery.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     
     <!-- Three.js - 使用compatible版本和正确的加载方式 -->

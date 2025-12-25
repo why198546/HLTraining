@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松果币图标展示 - 儿童AI培训平台</title>
+    <!-- PNG格式favicon更可靠 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/songuo_coin/favicon-32x32.png') }}?v=1225-1601">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/songuo_coin/favicon-16x16.png') }}?v=1225-1601">
+    <!-- 备用ICO格式 -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/songuo_coin/favicon.ico') }}?v=1225-1601">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .header .main-icon {
+            width: 120px;
+            height: 120px;
+            margin: 24px auto;
+            display: block;
+            filter: drop-shadow(0 8px 16px rgba(230, 180, 34, 0.3));
+        }
+        
+        .section {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid #E6B422;
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 24px;
+        }
+        
+        .icon-card {
+            border: 2px solid #f0f0f0;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s;
+            background: #fafafa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .icon-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-color: #E6B422;
+        }
+        
+        /* 图标包装容器：固定128px高度 */
+        .icon-wrapper {
+            width: 100%;
+            height: 128px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        /* 图标：完全保持原始尺寸 */
+        .icon-card img {
+            width: auto !important;
+            height: auto !important;
+            max-width: 128px;
+            max-height: 128px;
+            display: block;
+        }
+        
+        .icon-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+            margin-top: auto; /* 推到底部 */
+        }
+        
+        .icon-size {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .icon-filesize {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        
+        .icon-card code {
+            margin-top: auto; /* 确保在底部 */
+        }
+        
+        .usage-example {
+            background: #f5f5f5;
+            padding: 24px;
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+        
+        .usage-example h4 {
+            color: #333;
+            margin-bottom: 16px;
+        }
+        
+        .demo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(230, 180, 34, 0.1);
+            border-radius: 24px;
+            border: 2px solid #E6B422;
+            margin: 8px;
+        }
+        
+        .demo-badge img {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .demo-badge span {
+            font-weight: 600;
+            color: #E6B422;
+        }
+        
+        .demo-transaction {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+        
+        .demo-transaction img {
+            width: 32px;
+            height: 32px;
+        }
+        
+        .demo-transaction .details {
+            flex: 1;
+        }
+        
+        .demo-transaction .amount {
+            font-weight: 600;
+            font-size: 18px;
+            color: #4CAF50;
+        }
+        
+        .demo-package {
+            text-align: center;
+            padding: 24px;
+            background: white;
+            border: 2px solid #E6B422;
+            border-radius: 12px;
+            margin: 8px;
+            display: inline-block;
+        }
+        
+        .demo-package img {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 12px;
+        }
+        
+        .demo-package .price {
+            font-size: 24px;
+            color: #E6B422;
+            font-weight: 600;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #FFFBF0 0%, #FFF8E1 100%);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid #E6B422;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #E6B422;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_large_128x128.png') }}" 
+                 alt="松果币" 
+                 class="main-icon">
+            <h1>🌰 松果币图标库</h1>
+            <p class="subtitle">儿童AI培训平台 - Token图标系统</p>
+        </div>
+        
+        <!-- 统计信息 -->
+        <div class="section">
+            <h2 class="section-title">📊 图标统计</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">12</div>
+                    <div class="stat-label">图标文件数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">18.5 KB</div>
+                    <div class="stat-label">总文件大小</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">16-512px</div>
+                    <div class="stat-label">尺寸范围</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">PNG+ICO</div>
+                    <div class="stat-label">文件格式</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 标准尺寸 -->
+        <div class="section">
+            <h2 class="section-title">🎨 标准尺寸</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_tiny_16x16.png') }}" 
+                             alt="Tiny" 
+                             width="16" 
+                             height="16">
+                    </div>
+                    <div class="icon-name">Tiny</div>
+                    <div class="icon-size">16×16</div>
+                    <div class="icon-filesize">0.23 KB</div>
+                    <code>songuo_coin_tiny_16x16.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_inline_24x24.png') }}" 
+                             alt="Inline 24" 
+                             width="24" 
+                             height="24">
+                    </div>
+                    <div class="icon-name">Inline 24 ⭐</div>
+                    <div class="icon-size">24×24</div>
+                    <div class="icon-filesize">0.30 KB</div>
+                    <code>songuo_coin_inline_24x24.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_small_32x32.png') }}" 
+                             alt="Small" 
+                             width="32" 
+                             height="32">
+                    </div>
+                    <div class="icon-name">Small ⭐</div>
+                    <div class="icon-size">32×32</div>
+                    <div class="icon-filesize">0.35 KB</div>
+                    <code>songuo_coin_small_32x32.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_inline_48x48.png') }}" 
+                             alt="Inline 48" 
+                             width="48" 
+                             height="48">
+                    </div>
+                    <div class="icon-name">Inline 48</div>
+                    <div class="icon-size">48×48 (Retina)</div>
+                    <div class="icon-filesize">0.45 KB</div>
+                    <code>songuo_coin_inline_48x48.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_medium_64x64.png') }}" 
+                             alt="Medium" 
+                             width="64" 
+                             height="64">
+                    </div>
+                    <div class="icon-name">Medium ⭐</div>
+                    <div class="icon-size">64×64</div>
+                    <div class="icon-filesize">0.58 KB</div>
+                    <code>songuo_coin_medium_64x64.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_large_128x128.png') }}" 
+                             alt="Large" 
+                             width="128" 
+                             height="128">
+                    </div>
+                    <div class="icon-name">Large ⭐</div>
+                    <div class="icon-size">128×128</div>
+                    <div class="icon-filesize">1.30 KB</div>
+                    <code>songuo_coin_large_128x128.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_xlarge_256x256.png') }}" 
+                             alt="XLarge" 
+                             width="128" 
+                             height="128"
+                             style="max-width: 128px;">
+                    </div>
+                    <div class="icon-name">XLarge ⭐</div>
+                    <div class="icon-size">256×256</div>
+                    <div class="icon-filesize">2.39 KB</div>
+                    <code>songuo_coin_xlarge_256x256.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_original_512x512.png') }}" 
+                             alt="Original Full" 
+                             width="128" 
+                             height="128"
+                             style="max-width: 128px;">
+                    </div>
+                    <div class="icon-name">Original</div>
+                    <div class="icon-size">512×512</div>
+                    <div class="icon-filesize">4.84 KB</div>
+                    <code>songuo_coin_original_512x512.png</code>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 特殊用途 -->
+        <div class="section">
+            <h2 class="section-title">🔧 特殊用途</h2>
+            <div class="icon-grid">
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/apple-touch-icon.png') }}" 
+                             alt="Apple Touch" 
+                             width="180" 
+                             height="180">
+                    </div>
+                    <div class="icon-name">Apple Touch Icon</div>
+                    <div class="icon-size">180×180</div>
+                    <div class="icon-filesize">1.69 KB</div>
+                    <code>apple-touch-icon.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/android-chrome-192x192.png') }}" 
+                             alt="Android 192" 
+                             width="192" 
+                             height="192">
+                    </div>
+                    <div class="icon-name">Android Chrome 192</div>
+                    <div class="icon-size">192×192</div>
+                    <div class="icon-filesize">1.87 KB</div>
+                    <code>android-chrome-192x192.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/android-chrome-512x512.png') }}" 
+                             alt="Android 512" 
+                             width="128" 
+                             height="128"
+                             style="max-width: 128px;">
+                    </div>
+                    <div class="icon-name">Android Chrome 512</div>
+                    <div class="icon-size">512×512</div>
+                    <div class="icon-filesize">4.84 KB</div>
+                    <code>android-chrome-512x512.png</code>
+                </div>
+                
+                <div class="icon-card">
+                    <div class="icon-wrapper">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/favicon-32x32.png') }}" 
+                             alt="Favicon 32" 
+                             width="32" 
+                             height="32">
+                    </div>
+                    <div class="icon-name">Favicon ⭐</div>
+                    <div class="icon-size">16×16 / 32×32</div>
+                    <div class="icon-filesize">0.60 KB</div>
+                    <code>favicon.ico</code>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 使用示例 -->
+        <div class="section">
+            <h2 class="section-title">💡 使用示例</h2>
+            
+            <div class="usage-example">
+                <h4>1. 导航栏Token徽章</h4>
+                <div class="demo-badge">
+                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_inline_24x24.png') }}" alt="松果币">
+                    <span>1,234</span>
+                </div>
+                <div class="demo-badge">
+                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_inline_24x24.png') }}" alt="松果币">
+                    <span>5,678</span>
+                </div>
+            </div>
+            
+            <div class="usage-example">
+                <h4>2. 交易记录列表</h4>
+                <div class="demo-transaction">
+                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_small_32x32.png') }}" alt="松果币">
+                    <div class="details">
+                        <div><strong>每日签到奖励</strong></div>
+                        <div style="font-size: 12px; color: #999;">今天 08:30</div>
+                    </div>
+                    <div class="amount">+10</div>
+                </div>
+                <div class="demo-transaction">
+                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_small_32x32.png') }}" alt="松果币">
+                    <div class="details">
+                        <div><strong>生成AI图片</strong></div>
+                        <div style="font-size: 12px; color: #999;">2分钟前</div>
+                    </div>
+                    <div class="amount" style="color: #FF5252;">-50</div>
+                </div>
+            </div>
+            
+            <div class="usage-example">
+                <h4>3. 充值商品卡片</h4>
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
+                    <div class="demo-package">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_xlarge_256x256.png') }}" alt="松果币礼包">
+                        <div><strong>体验包</strong></div>
+                        <div style="font-size: 24px; color: #666; margin: 4px 0;">100 松果币</div>
+                        <div class="price">¥1.00</div>
+                    </div>
+                    <div class="demo-package" style="border-color: #E6B422; background: linear-gradient(135deg, #FFFBF0 0%, #FFF8E1 100%);">
+                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_xlarge_256x256.png') }}" alt="松果币礼包">
+                        <div><strong>热门包</strong> 🔥</div>
+                        <div style="font-size: 24px; color: #666; margin: 4px 0;">1000 松果币</div>
+                        <div class="price">¥9.90</div>
+                        <div style="font-size: 12px; color: #4CAF50;">省10%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 快速开始 -->
+        <div class="section">
+            <h2 class="section-title">🚀 快速开始</h2>
+            <p style="color: #666; margin-bottom: 16px;">复制以下代码到你的HTML模板中：</p>
+            
+            <div style="background: #2d2d2d; color: #f8f8f2; padding: 16px; border-radius: 8px; overflow-x: auto; margin-top: 12px;">
+                <pre style="margin: 0; font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6;"><!-- 1. 添加Favicon到 &lt;head&gt; -->
+&lt;link rel="icon" href="{{ url_for('static', filename='images/songuo_coin/favicon.ico') }}"&gt;
+
+<!-- 2. 导航栏Token显示 -->
+&lt;div class="token-badge"&gt;
+  &lt;img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_inline_24x24.png') }}" alt="松果币"&gt;
+  &lt;span&gt;{{ current_user.tokens }}&lt;/span&gt;
+&lt;/div&gt;
+
+<!-- 3. 个人中心余额 -->
+&lt;img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_large_128x128.png') }}" alt="松果币"&gt;</pre>
+            </div>
+            
+            <p style="margin-top: 24px; padding: 16px; background: #E3F2FD; border-radius: 8px; border-left: 4px solid #2196F3;">
+                <strong>📖 完整使用指南</strong>：查看 
+                <a href="{{ url_for('static', filename='images/songuo_coin/USAGE_GUIDE.md') }}" 
+                   style="color: #2196F3; text-decoration: none; font-weight: 600;">USAGE_GUIDE.md</a>
+                了解更多详细用法和最佳实践。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

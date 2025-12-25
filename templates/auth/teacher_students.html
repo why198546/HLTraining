@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生管理 - AI创意工坊</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-auth.css') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <style>
+        /* 修复导航栏样式冲突 */
+        .header .navbar { background: var(--primary-gradient); }
+        .header .nav-dropdown { position: relative; }
+        .header .dropdown-menu { 
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            min-width: 180px;
+            z-index: 1000;
+            padding: 0.5rem 0;
+        }
+        .header .nav-dropdown:hover .dropdown-menu { display: block; }
+        .header .dropdown-menu li { list-style: none; }
+        .header .dropdown-menu a {
+            display: block;
+            padding: 0.5rem 1rem;
+            color: #333;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .header .dropdown-menu a:hover { background: #f0f0f0; }
+        
+        /* 修复fixed header导致的過挡 */
+        body { padding-top: 80px !important; }
+        
+        /* 修复模态框层级问题 */
+        .modal { z-index: 1055 !important; }
+        .modal-backdrop { z-index: 1050 !important; }
+        
+        /* 返回按钮样式 - 星巴克绿配色 */
+        .back-button-wrapper {
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            padding: 15px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .back-button-wrapper .container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .back-button-wrapper .btn-back {
+            background: #FFD700;
+            color: #00704A;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .back-button-wrapper .btn-back:hover {
+            background: #FFC700;
+            transform: translateX(-3px);
+            box-shadow: 0 2px 8px rgba(255,215,0,0.4);
+        }
+        .back-button-wrapper .page-title {
+            color: white;
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        
+        /* 令牌数字显示 - 使用更高优先级 */
+        #studentsTable .badge {
+            font-size: 0.9rem !important;
+            padding: 6px 12px !important;
+            font-weight: 600 !important;
+            border-radius: 6px !important;
+            display: inline-block !important;
+            min-width: 60px !important;
+            text-align: center !important;
+            line-height: 1.5 !important;
+            white-space: nowrap !important;
+        }
+        #studentsTable .badge.bg-success {
+            background-color: #28a745 !important;
+            color: #ffffff !important;
+        }
+        #studentsTable .badge.bg-secondary {
+            background-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+        #studentsTable .badge.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000000 !important;
+        }
+        #studentsTable .badge.bg-danger {
+            background-color: #dc3545 !important;
+            color: #ffffff !important;
+        }
+        #studentsTable .badge.bg-secondary {
+            background-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+        
+        /* 表格样式优化 */
+        #studentsTable {
+            font-size: 0.95rem;
+        }
+        #studentsTable thead th {
+            background: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            white-space: nowrap;
+        }
+        #studentsTable td {
+            vertical-align: middle !important;
+            padding: 12px 8px !important;
+            position: relative !important;
+        }
+        #studentsTable tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* 报名状态列 */
+        #studentsTable td:nth-child(5) {
+            min-width: 140px;
+        }
+        
+        /* 操作列按钮布局 */
+        #studentsTable td:last-child {
+            white-space: nowrap;
+        }
+        #studentsTable .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            margin: 2px;
+        }
+        
+        /* 调整列宽 */
+        #studentsTable th:nth-child(1) { width: 50px; } /* ID */
+        #studentsTable th:nth-child(2) { width: 80px; } /* 昵称 */
+        #studentsTable th:nth-child(3) { width: 100px; } /* 用户名 */
+        #studentsTable th:nth-child(4) { width: 180px; } /* 家长邮箱 */
+        #studentsTable th:nth-child(5) { width: 140px; } /* 报名状态 */
+        #studentsTable th:nth-child(6) { width: 100px; text-align: center; } /* 剩余令牌 */
+        #studentsTable th:nth-child(7) { width: 150px; } /* 注册时间 */
+        #studentsTable th:nth-child(8) { width: 180px; } /* 操作 */
+        
+        #studentsTable td:nth-child(6) { text-align: center; } /* 令牌居中 */
+    </style>
+</head>
+<body>
+{% include 'components/header.html' %}
+
+<!-- 返回按钮区域 -->
+<div class="back-button-wrapper">
+    <div class="container">
+        <a href="{{ url_for('auth.teacher_dashboard') }}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> 返回教师后台
+        </a>
+        <h1 class="page-title">
+            <i class="fas fa-users"></i> 学生管理
+        </h1>
+    </div>
+</div>
+
+<div class="container">
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>昵称</th>
+                            <th>用户名</th>
+                            <th>家长邮箱</th>
+                            <th>报名状态</th>
+                            <th>剩余令牌</th>
+                            <th>注册时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.id }}</td>
+                            <td>{{ student.nickname }}</td>
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.parent_email }}</td>
+                            <td>
+                                {% if student.is_enrolled %}
+                                    <span style="display: inline-block; background-color: #28a745; color: white; padding: 6px 12px; font-size: 0.875rem; border-radius: 4px; font-weight: 600;">已报名</span>
+                                {% else %}
+                                    <span style="display: inline-block; background-color: #6c757d; color: white; padding: 6px 12px; font-size: 0.875rem; border-radius: 4px; font-weight: 600;">未报名</span>
+                                    <button class="btn btn-sm btn-success ms-1" 
+                                            onclick="enrollStudent({{ student.id }}, '{{ student.nickname }}')">
+                                        设为报名
+                                    </button>
+                                {% endif %}
+                            </td>
+                            <td>{{ student.image_token_remaining|default(0) }}</td>
+                            <td>{{ student.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <div class="d-flex gap-1 justify-content-start">
+                                    <a href="{{ url_for('auth.teacher_student_detail', student_id=student.id) }}" 
+                                       class="btn btn-sm btn-info" title="查看详情">
+                                        <i class="fas fa-eye"></i> 详情
+                                    </a>
+                                    <button class="btn btn-sm btn-warning" 
+                                            onclick="showAddTokensModal({{ student.id }}, '{{ student.nickname }}')"
+                                            title="充值令牌">
+                                        <i class="fas fa-coins"></i> 充值
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加令牌模态框 -->
+<div class="modal fade" id="addTokensModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">为学生充值图片生成令牌</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>学生：<strong id="modalStudentName"></strong></p>
+                <div class="mb-3">
+                    <label for="tokenAmount" class="form-label">充值数量（1-1000）</label>
+                    <input type="number" class="form-control" id="tokenAmount" min="1" max="1000" value="50">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="addTokens()">确认充值</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentStudentId = null;
+
+function showAddTokensModal(studentId, studentName) {
+    currentStudentId = studentId;
+    document.getElementById('modalStudentName').textContent = studentName;
+    document.getElementById('tokenAmount').value = 50;
+    new bootstrap.Modal(document.getElementById('addTokensModal')).show();
+}
+
+function addTokens() {
+    const amount = parseInt(document.getElementById('tokenAmount').value);
+    
+    if (amount < 1 || amount > 1000) {
+        alert('令牌数量必须在1-1000之间');
+        return;
+    }
+    
+    fetch(`/auth/teacher/add-tokens/${currentStudentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: amount })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('充值失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('充值失败');
+    });
+}
+
+function enrollStudent(studentId, studentName) {
+    if (!confirm(`确定要将 ${studentName} 设为已报名状态吗？`)) {
+        return;
+    }
+    
+    fetch(`/auth/teacher/enroll-student/${studentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('操作失败：' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('操作失败');
+    });
+}
+</script>
+
+<!-- jQuery (DataTables依赖) -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#studentsTable').DataTable({
+        language: {
+            "sProcessing": "处理中...",
+            "sLengthMenu": "显示 _MENU_ 项结果",
+            "sZeroRecords": "没有匹配结果",
+            "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+            "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+            "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+            "sSearch": "搜索:",
+            "oPaginate": {
+                "sFirst": "首页",
+                "sPrevious": "上页",
+                "sNext": "下页",
+                "sLast": "末页"
+            }
+        },
+        pageLength: 25,
+        order: [[0, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: 7 }
+        ]
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

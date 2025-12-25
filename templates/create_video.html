@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松果AI - 视频生成</title>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            min-height: 100vh;
+        }
+    </style>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-create-video.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+
+    <main class="main-content create-video-page">
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1><i class="fas fa-video"></i> 视频生成</h1>
+                <p>{% if artwork %}基于你的2D图片生成动态视频{% else %}上传图片或文字描述生成视频{% endif %}</p>
+            </div>
+
+            {% if artwork and artwork.colored_image %}
+            <!-- 有源图片：基于图片生成 -->
+            <div class="source-section">
+                <h3><i class="fas fa-image"></i> 源图片</h3>
+                <div class="source-image-container">
+                    <img src="{{ artwork.get_file_urls()['colored_image'] }}" alt="源图片" id="source-image">
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3><i class="fas fa-cog"></i> 视频设置</h3>
+                
+                <div class="form-group">
+                    <label>视频动作描述</label>
+                    <textarea id="video-prompt" class="creation-input"
+                        placeholder="例如：让小猫咪挥动手臂，眨眨眼睛..." rows="3"></textarea>
+                    <small>描述你希望图片中的元素如何动起来</small>
+                </div>
+
+                <div class="form-group">
+                    <label>视频比例</label>
+                    <div class="ratio-group">
+                        <button class="ratio-btn active" data-ratio="16:9">
+                            <i class="fas fa-tv"></i>
+                            <span>16:9 横屏</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="9:16">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>9:16 竖屏</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>视频时长</label>
+                    <div class="duration-selector">
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="3" checked>
+                            <span>3秒</span>
+                        </label>
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="5">
+                            <span>5秒</span>
+                        </label>
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="10">
+                            <span>10秒</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="btn-primary btn-large" onclick="generateVideo()">
+                    <i class="fas fa-video"></i> 生成视频
+                </button>
+            </div>
+            {% else %}
+            <!-- 无源图片：独立生成模式 -->
+            <div class="creation-input-area">
+                <h3><i class="fas fa-lightbulb"></i> 输入方式</h3>
+                <div class="input-tabs">
+                    <button class="tab-btn active" data-tab="text" onclick="switchVideoTab('text')">
+                        <i class="fas fa-font"></i> 文字描述
+                    </button>
+                    <button class="tab-btn" data-tab="image" onclick="switchVideoTab('image')">
+                        <i class="fas fa-image"></i> 上传图片
+                    </button>
+                </div>
+
+                <!-- 文字描述输入 -->
+                <div id="text-input" class="tab-content active">
+                    <textarea id="video-prompt-text" class="creation-input" 
+                        placeholder="描述你想生成的动画视频，例如：一只可爱的小猫咪在草地上跑步，挥动着尾巴"
+                        rows="4"></textarea>
+                </div>
+
+                <!-- 图片上传 -->
+                <div id="image-input" class="tab-content" style="display: none;">
+                    <div class="upload-area" onclick="document.getElementById('video-image').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>点击或拖拽上传图片</p>
+                        <small>支持JPG、PNG格式</small>
+                    </div>
+                    <input type="file" id="video-image" accept="image/*" style="display: none;" 
+                        onchange="handleImageUploadForVideo(event)">
+                    <div id="uploaded-preview-video" style="display: none;">
+                        <img id="uploaded-img-video" alt="上传的图片">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>动作描述（可选）</label>
+                        <textarea id="video-prompt-image" class="creation-input"
+                            placeholder="描述图片中的元素如何动起来" rows="2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3><i class="fas fa-cog"></i> 视频设置</h3>
+                
+                <div class="form-group">
+                    <label>视频比例</label>
+                    <div class="ratio-group">
+                        <button class="ratio-btn active" data-ratio="16:9">
+                            <i class="fas fa-tv"></i>
+                            <span>16:9 横屏</span>
+                        </button>
+                        <button class="ratio-btn" data-ratio="9:16">
+                            <i class="fas fa-mobile-alt"></i>
+                            <span>9:16 竖屏</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>视频时长</label>
+                    <div class="duration-selector">
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="3" checked>
+                            <span>3秒</span>
+                        </label>
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="5">
+                            <span>5秒</span>
+                        </label>
+                        <label class="duration-option">
+                            <input type="radio" name="duration" value="10">
+                            <span>10秒</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="btn-primary btn-large" onclick="generateVideoDirect()">
+                    <i class="fas fa-video"></i> 生成视频
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- 视频预览区 -->
+            <div class="preview-section" id="preview-section" style="display: none;">
+                <h3><i class="fas fa-film"></i> 视频预览</h3>
+                <div class="video-container">
+                    <video id="generated-video" controls>
+                        <source src="" type="video/mp4">
+                        您的浏览器不支持视频播放
+                    </video>
+                </div>
+                
+                <div class="video-actions">
+                    <button class="btn-secondary" onclick="downloadVideo()">
+                        <i class="fas fa-download"></i> 下载视频
+                    </button>
+                    <button class="btn-primary" onclick="saveAndFinish()">
+                        <i class="fas fa-check"></i> 保存并完成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading遮罩 -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-text">正在生成视频...</p>
+            <small>视频生成需要较长时间，请耐心等待</small>
+        </div>
+    </div>
+
+    <input type="hidden" id="session-id" value="{{ session_id }}">
+
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/create_video.js') }}"></script>
+</body>
+</html>

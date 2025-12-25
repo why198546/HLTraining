@@ -4,7 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>松果AI - 儿童版</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- 关键CSS内联 - 防止闪烁 -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+        }
+    </style>
+    
+    <!-- 模块化CSS：核心 + 首页专用 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-home.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -29,10 +41,10 @@
                         <span class="card-title">松果课堂</span>
                         <span class="card-desc">美术+AI主题课程，分人物、动作、场景、综合四大板块</span>
                     </a>
-                    <a class="hero-card hero-practice" href="{{ url_for('create.create') }}">
+                    <a class="hero-card hero-practice" href="{{ url_for('create.create_image') }}">
                         <span class="card-icon"><i class="fas fa-pencil-alt"></i></span>
                         <span class="card-title">松果创意</span>
-                        <span class="card-desc">上传线稿，开始AI创作练习</span>
+                        <span class="card-desc">文字描述或上传线稿，开始AI创作之旅</span>
                     </a>
                     <a class="hero-card hero-gallery" href="{{ url_for('gallery.gallery') }}">
                         <span class="card-icon"><i class="fas fa-images"></i></span>
@@ -44,12 +56,6 @@
                 <!-- 功能介绍卡片（已移除，根据需求隐藏） -->
                 
                 <!-- 中间部分仅保留四个入口，移除CTA按钮 -->
-            </div>
-        </section>
-
-        <!-- 作品展示区域移除，仅保留中间部分 -->
-                
-
             </div>
         </section>
     </main>

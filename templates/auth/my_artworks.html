@@ -6,7 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
     <title>我的作品 - AI创意工坊</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-gallery.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/artwork-modal-edit.css') }}">
     
     <!-- Three.js - 使用compatible版本和正确的加载方式 -->

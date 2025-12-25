@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松果AI - 3D模型生成</title>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            min-height: 100vh;
+        }
+    </style>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-create-3d.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    {% include 'components/header.html' %}
+
+    <main class="main-content create-3d-page">
+        <div class="container">
+            <!-- 页面标题 -->
+            <div class="page-header">
+                <h1><i class="fas fa-cube"></i> 3D模型生成</h1>
+                <p>{% if artwork %}基于你的2D图片生成3D模型{% else %}上传图片或文字描述生成3D模型{% endif %}</p>
+            </div>
+
+            {% if artwork and artwork.colored_image %}
+            <!-- 有源图片：基于图片生成 -->
+            <div class="source-section">
+                <h3><i class="fas fa-image"></i> 源图片</h3>
+                <div class="source-image-container">
+                    <img src="{{ artwork.get_file_urls()['colored_image'] }}" alt="源图片" id="source-image">
+                </div>
+            </div>
+
+            <div class="options-section">
+                <h3><i class="fas fa-cog"></i> 生成选项</h3>
+                <div class="options-grid">
+                    <label class="option-card">
+                        <input type="radio" name="model-quality" value="fast" checked>
+                        <div class="option-content">
+                            <i class="fas fa-bolt"></i>
+                            <span>快速生成</span>
+                            <small>约1分钟</small>
+                        </div>
+                    </label>
+                    <label class="option-card">
+                        <input type="radio" name="model-quality" value="high">
+                        <div class="option-content">
+                            <i class="fas fa-gem"></i>
+                            <span>高质量</span>
+                            <small>约3分钟</small>
+                        </div>
+                    </label>
+                </div>
+                
+                <button class="btn-primary btn-large" onclick="generate3D()">
+                    <i class="fas fa-cube"></i> 生成3D模型
+                </button>
+            </div>
+            {% else %}
+            <!-- 无源图片：独立生成模式 -->
+            <div class="creation-input-area">
+                <!-- 文字描述或上传图片 -->
+                <div class="prompt-input-container">
+                    <h3><i class="fas fa-lightbulb"></i> 输入方式</h3>
+                    <div class="input-tabs">
+                        <button class="tab-btn active" data-tab="text" onclick="switchTab('text')">
+                            <i class="fas fa-font"></i> 文字描述
+                        </button>
+                        <button class="tab-btn" data-tab="image" onclick="switchTab('image')">
+                            <i class="fas fa-image"></i> 上传图片
+                        </button>
+                    </div>
+
+                    <!-- 文字描述输入 -->
+                    <div id="text-input" class="tab-content active">
+                        <textarea id="model-prompt" class="creation-input" 
+                            placeholder="描述你想生成的3D模型，例如：一个可爱的小恐龙，绿色的身体，大大的眼睛"
+                            rows="4"></textarea>
+                    </div>
+
+                    <!-- 图片上传 -->
+                    <div id="image-input" class="tab-content" style="display: none;">
+                        <div class="upload-area" onclick="document.getElementById('model-image').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>点击或拖拽上传图片</p>
+                            <small>支持JPG、PNG格式</small>
+                        </div>
+                        <input type="file" id="model-image" accept="image/*" style="display: none;" 
+                            onchange="handleImageUploadFor3D(event)">
+                        <div id="uploaded-preview-3d" style="display: none;">
+                            <img id="uploaded-img-3d" alt="上传的图片">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="options-section">
+                    <h3><i class="fas fa-cog"></i> 生成选项</h3>
+                    <div class="options-grid">
+                        <label class="option-card">
+                            <input type="radio" name="model-quality" value="fast" checked>
+                            <div class="option-content">
+                                <i class="fas fa-bolt"></i>
+                                <span>快速生成</span>
+                                <small>约1分钟</small>
+                            </div>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="model-quality" value="high">
+                            <div class="option-content">
+                                <i class="fas fa-gem"></i>
+                                <span>高质量</span>
+                                <small>约3分钟</small>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <button class="btn-primary btn-large" onclick="generate3DDirect()">
+                        <i class="fas fa-cube"></i> 生成3D模型
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 3D模型预览区 -->
+            <div class="preview-section" id="preview-section" style="display: none;">
+                <h3><i class="fas fa-eye"></i> 3D模型预览</h3>
+                <div id="model-container" class="model-viewer"></div>
+                
+                <div class="model-actions">
+                    <button class="btn-secondary" onclick="downloadModel()">
+                        <i class="fas fa-download"></i> 下载模型
+                    </button>
+                    <button class="btn-primary" onclick="continueToVideo()">
+                        <i class="fas fa-video"></i> 继续生成视频
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading遮罩 -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-text">正在生成3D模型...</p>
+            <small>这可能需要几分钟，请耐心等待</small>
+        </div>
+    </div>
+
+    <input type="hidden" id="session-id" value="{{ session_id }}">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="{{ url_for('static', filename='js/toast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/create_3d.js') }}"></script>
+</body>
+</html>

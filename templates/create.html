@@ -5,7 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI创作工坊 - 开始创作</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20251219-3">
+    
+    <!-- 关键CSS内联 - 防止闪烁 -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            min-height: 100vh;
+        }
+    </style>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-create.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -167,8 +179,8 @@
                                 </select>
                             </div>
                             <div class="option-group">
-                                <label>色彩偏好：</label>
-                                <select id="color-preference" class="style-select">
+                                <label style="display: none;">色彩偏好：</label>
+                                <select id="color-preference" class="style-select" style="display: none;">
                                     <option value="colorful">色彩丰富</option>
                                     <option value="pastel">柔和色调</option>
                                     <option value="bright">明亮鲜艳</option>
@@ -294,7 +306,7 @@
                     </div>
 
                     <!-- 快速调整按钮 -->
-                    <div class="quick-adjust-buttons">
+                    <div class="quick-adjust-buttons" id="quick-adjust-section" style="display: none;">
                         <h4><i class="fas fa-magic"></i> 快速调整</h4>
                         <div class="quick-buttons-grid">
                             <button class="quick-btn" onclick="quickAdjust('remove-background')">
@@ -325,7 +337,7 @@
                     </div>
 
                     <!-- 自定义调整输入 -->
-                    <div class="custom-adjust-section">
+                    <div class="custom-adjust-section" id="custom-adjust-section" style="display: none;">
                         <h4><i class="fas fa-edit"></i> 自定义调整</h4>
                         <textarea id="adjustment-prompt" class="adjustment-input"
                             placeholder="例如：让颜色更鲜艳一些，改变背景为森林，添加彩虹效果..." rows="3"></textarea>

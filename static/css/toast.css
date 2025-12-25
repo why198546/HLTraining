@@ -94,7 +94,7 @@
 .voice-recording-indicator {
     margin-top: 15px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
     border-radius: 12px;
     text-align: center;
     color: white;
@@ -156,3 +156,4 @@
     font-size: 13px;
     opacity: 0.9;
 }
+

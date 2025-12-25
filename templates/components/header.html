@@ -15,17 +15,56 @@
         </a>
         <ul class="nav-menu">
             <li><a href="{{ url_for('main.index') }}" class="nav-link {{ 'active' if request.endpoint == 'main.index' }}">首页</a></li>
-            <li><a href="{{ url_for('create.create') }}" class="nav-link {{ 'active' if request.endpoint == 'create.create' }}">开始创作</a></li>
+            <li class="nav-dropdown">
+                <a href="#" class="nav-link {{ 'active' if 'create' in request.endpoint }}">
+                    开始创作
+                    <i class="fas fa-chevron-down"></i>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="{{ url_for('create.create_image') }}"><i class="fas fa-image"></i> 生成图片</a></li>
+                    {% if current_user.is_authenticated and current_user.role in ['teacher', 'admin'] %}
+                    <li><a href="{{ url_for('create.create_3d') }}"><i class="fas fa-cube"></i> 生成3D模型</a></li>
+                    <li><a href="{{ url_for('create.create_video') }}"><i class="fas fa-video"></i> 生成视频</a></li>
+                    {% endif %}
+                </ul>
+            </li>
             <li><a href="{{ url_for('canvas.canvas') }}" class="nav-link {{ 'active' if request.endpoint == 'canvas.canvas' }}">AI画布</a></li>
             <li><a href="{{ url_for('gallery.gallery') }}" class="nav-link {{ 'active' if request.endpoint == 'gallery.gallery' }}">作品展示</a></li>
             <li><a href="{{ url_for('main.tutorial') }}" class="nav-link {{ 'active' if request.endpoint == 'main.tutorial' }}">使用教程</a></li>
             {% if current_user.is_authenticated %}
                 <li><a href="{{ url_for('auth.my_artworks') }}" class="nav-link {{ 'active' if request.endpoint == 'auth.my_artworks' }}">我的作品</a></li>
                 <li class="nav-dropdown">
-                    <a href="#" class="nav-link">{{ current_user.nickname }} <i class="fas fa-chevron-down"></i></a>
+                    <a href="#" class="nav-link">
+                        {{ current_user.nickname }}
+                        {% if current_user.role != 'teacher' %}
+                        <span class="token-badge" style="display: inline-block; background: {% if current_user.image_token_remaining > 10 %}#28a745{% elif current_user.image_token_remaining > 0 %}#ffc107{% else %}#dc3545{% endif %}; color: {% if current_user.image_token_remaining > 10 or current_user.image_token_remaining == 0 %}white{% else %}#333{% endif %}; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 5px; font-weight: 600;">
+                            <i class="fas fa-coins"></i> {{ current_user.image_token_remaining }}
+                        </span>
+                        {% else %}
+                        <span class="token-badge" style="display: inline-block; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 5px; font-weight: 600;">
+                            <i class="fas fa-infinity"></i>
+                        </span>
+                        {% endif %}
+                        <i class="fas fa-chevron-down"></i>
+                    </a>
                     <ul class="dropdown-menu">
-                        <li><a href="{{ url_for('auth.profile') }}">我的资料</a></li>
-                        <li><a href="{{ url_for('auth.logout') }}">退出登录</a></li>
+                        {% if current_user.role != 'teacher' %}
+                        <li style="padding: 8px 16px; border-bottom: 1px solid #eee; background: #f8f9fa;">
+                            <small style="color: #666;">剩余图片生成令牌</small><br>
+                            <strong style="font-size: 1.2rem; color: {% if current_user.image_token_remaining > 10 %}#28a745{% elif current_user.image_token_remaining > 0 %}#ffc107{% else %}#dc3545{% endif %};">{{ current_user.image_token_remaining }}</strong>
+                        </li>
+                        {% endif %}
+                        <li><a href="{{ url_for('auth.profile') }}"><i class="fas fa-user"></i> 我的资料</a></li>
+                        {% if current_user.role == 'teacher' %}
+                        <li><a href="{{ url_for('auth.teacher_dashboard') }}"><i class="fas fa-chalkboard-teacher"></i> 教师后台</a></li>
+                        <li><a href="{{ url_for('qr.generate_qrcode') }}"><i class="fas fa-qrcode"></i> 生成二维码</a></li>
+                        <li><a href="{{ url_for('qr.list_qrcodes') }}"><i class="fas fa-list"></i> 二维码列表</a></li>
+                        {% endif %}
+                        {% if current_user.role == 'admin' %}
+                        <li><a href="/admin/dashboard"><i class="fas fa-cog"></i> 管理员后台</a></li>
+                        <li><a href="{{ url_for('qr.generate_qrcode') }}"><i class="fas fa-qrcode"></i> 生成二维码</a></li>
+                        {% endif %}
+                        <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
                     </ul>
                 </li>
             {% else %}

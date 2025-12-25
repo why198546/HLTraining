@@ -5,7 +5,7 @@
 
 import os
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask_login import UserMixin
 from flask_sqlalchemy import SQLAlchemy
@@ -44,11 +44,22 @@ class User(UserMixin, db.Model):
     color_preference = db.Column(db.String(20), default='vibrant')  # 色彩偏好
     privacy_settings = db.Column(db.JSON)  # 隐私设置JSON
     
+    # 权限管理
+    image_token_remaining = db.Column(db.Integer, default=50)  # 剩余图片生成令牌，新用户默认50张
+    is_enrolled = db.Column(db.Boolean, default=False)  # 是否已报名上课
+    
+    # 游客系统（新增）
+    daily_token_amount = db.Column(db.Integer, default=0)  # 每日赠送token数量（游客10，正式学生30）
+    trial_end_date = db.Column(db.DateTime, nullable=True)  # 游客试用结束日期
+    last_token_grant_date = db.Column(db.Date, nullable=True)  # 上次赠送token日期
+    course_type = db.Column(db.String(50), nullable=True)  # 课程类型（trial_course/formal_course）
+    
     # 关联关系
     artworks = db.relationship('Artwork', backref='author', lazy=True, cascade='all, delete-orphan')
     sessions = db.relationship('CreationSession', backref='user', lazy=True, cascade='all, delete-orphan')
+    course_progress = db.relationship('CourseProgress', foreign_keys='CourseProgress.user_id', backref='student', lazy=True, cascade='all, delete-orphan')
     
-    def __init__(self, username, nickname, parent_email, password, birth_date=None, gender=None, contact_phone=None, mailing_address=None):
+    def __init__(self, username, nickname, parent_email, password, birth_date=None, gender=None, contact_phone=None, mailing_address=None, role='visitor'):
         self.username = username
         self.nickname = nickname
         self.birth_date = birth_date
@@ -56,6 +67,7 @@ class User(UserMixin, db.Model):
         self.contact_phone = contact_phone
         self.mailing_address = mailing_address
         self.parent_email = parent_email
+        self.role = role
         self.set_password(password)
         self.verification_token = str(uuid.uuid4())
         self.privacy_settings = {
@@ -63,6 +75,22 @@ class User(UserMixin, db.Model):
             'show_age': False,
             'allow_parent_reports': True
         }
+        
+        # 根据角色设置初始token和权限
+        if role == 'visitor':
+            self.daily_token_amount = 10
+            self.image_token_remaining = 10  # 游客初始10个token
+            self.trial_end_date = datetime.utcnow() + timedelta(days=7)  # 7天试用期
+            self.last_token_grant_date = date.today()  # 注册当天已赠送
+        elif role == 'student':
+            self.daily_token_amount = 0  # 未报名学生不自动赠送
+            self.image_token_remaining = 0
+        elif role == 'teacher':
+            self.daily_token_amount = 0  # 教师无限token，不需要自动赠送
+            self.image_token_remaining = 999999  # 教师token设为极大值
+        elif role == 'admin':
+            self.daily_token_amount = 0
+            self.image_token_remaining = 999999
     
     def get_age(self):
         """根据出生日期动态计算年龄"""
@@ -90,6 +118,76 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """验证密码"""
         return check_password_hash(self.password_hash, password)
+    
+    # ========== 游客系统相关方法 ==========
+    
+    def is_trial_expired(self):
+        """检查游客试用期是否已过期"""
+        if self.role != 'visitor' or not self.trial_end_date:
+            return False
+        return datetime.utcnow() > self.trial_end_date
+    
+    def get_trial_days_left(self):
+        """获取试用期剩余天数"""
+        if self.role != 'visitor' or not self.trial_end_date:
+            return None
+        days_left = (self.trial_end_date - datetime.utcnow()).days
+        return max(0, days_left)
+    
+    def can_use_3d_model(self):
+        """检查是否可以使用3D建模功能"""
+        # 只有正式学生、教师、管理员可以使用
+        return self.role in ['teacher', 'admin'] or (self.role == 'student' and self.is_enrolled)
+    
+    def can_use_video_generation(self):
+        """检查是否可以使用视频生成功能"""
+        # 只有正式学生、教师、管理员可以使用
+        return self.role in ['teacher', 'admin'] or (self.role == 'student' and self.is_enrolled)
+    
+    def grant_daily_tokens(self):
+        """赠送每日token"""
+        today = date.today()
+        
+        # 如果今天已经赠送过，不重复赠送
+        if self.last_token_grant_date == today:
+            return False
+        
+        # 游客检查试用期
+        if self.role == 'visitor':
+            if self.is_trial_expired():
+                return False
+            self.image_token_remaining += self.daily_token_amount
+            self.last_token_grant_date = today
+            return True
+        
+        # 正式学生每日赠送
+        elif self.role == 'student' and self.is_enrolled and self.daily_token_amount > 0:
+            self.image_token_remaining += self.daily_token_amount
+            self.last_token_grant_date = today
+            return True
+        
+        return False
+    
+    def upgrade_to_trial_student(self, additional_tokens=50):
+        """升级为体验课学生（扫描体验课二维码）"""
+        if self.role == 'visitor':
+            self.role = 'student'
+        self.is_enrolled = False
+        self.course_type = 'trial_course'
+        self.image_token_remaining += additional_tokens
+        self.trial_end_date = None  # 清除试用期限制
+        self.daily_token_amount = 0  # 体验课学生不自动赠送token
+        db.session.commit()
+    
+    def upgrade_to_formal_student(self):
+        """升级为正式学生（扫描正式课程二维码）"""
+        self.role = 'student'
+        self.is_enrolled = True
+        self.course_type = 'formal_course'
+        self.daily_token_amount = 30  # 每天赠送30个token
+        self.trial_end_date = None  # 清除试用期限制
+        self.last_token_grant_date = date.today()
+        db.session.commit()
     
     def get_id(self):
         """Flask-Login要求的方法"""
@@ -501,3 +599,192 @@ class CanvasProject(db.Model):
         self.chat_history.append(message)
         self.updated_at = datetime.utcnow()
 
+
+class CourseProgress(db.Model):
+    """课程进度模型 - 追踪学生的课程学习进度"""
+    __tablename__ = 'course_progress'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    lesson_number = db.Column(db.Integer, nullable=False)  # 课程编号（1, 2, 3...）
+    lesson_key = db.Column(db.String(50), nullable=False)  # 课程标识（如 'lesson1', 'lesson2'）
+    
+    # 进度状态
+    is_completed = db.Column(db.Boolean, default=False)  # 是否完成
+    is_confirmed = db.Column(db.Boolean, default=False)  # 老师是否确认
+    confirmed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # 确认老师的ID
+    confirmed_at = db.Column(db.DateTime, nullable=True)  # 确认时间
+    
+    # 学习记录
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)  # 开始时间
+    completed_at = db.Column(db.DateTime, nullable=True)  # 完成时间
+    notes = db.Column(db.Text, nullable=True)  # 老师备注
+    
+    # 创建唯一约束：每个学生的每节课只有一条记录
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'lesson_number', name='unique_user_lesson'),
+    )
+    
+    # 关联关系
+    confirming_teacher = db.relationship('User', foreign_keys=[confirmed_by])
+    
+    def __init__(self, user_id, lesson_number, lesson_key):
+        self.user_id = user_id
+        self.lesson_number = lesson_number
+        self.lesson_key = lesson_key
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'lesson_number': self.lesson_number,
+            'lesson_key': self.lesson_key,
+            'is_completed': self.is_completed,
+            'is_confirmed': self.is_confirmed,
+            'confirmed_by': self.confirmed_by,
+            'confirmed_at': self.confirmed_at.isoformat() if self.confirmed_at else None,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'notes': self.notes
+        }
+
+
+class Course(db.Model):
+    """课程二维码模型 - 存储生成的课程二维码信息"""
+    __tablename__ = 'courses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    course_code = db.Column(db.String(100), unique=True, nullable=False, index=True)  # UUID唯一代码
+    course_name = db.Column(db.String(100), nullable=False)  # 课程名称
+    course_key = db.Column(db.String(50), nullable=True)  # 课程key（来自courses.py配置）
+    course_type = db.Column(db.String(50), nullable=False)  # 课程类型：trial_course/formal_course
+    
+    # 创建者信息
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # 创建者ID
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 创建时间
+    
+    # 使用限制
+    max_uses = db.Column(db.Integer, nullable=True)  # 最大使用次数（None表示无限制）
+    current_uses = db.Column(db.Integer, default=0)  # 当前使用次数
+    expires_at = db.Column(db.DateTime, nullable=True)  # 过期时间（None表示永久有效）
+    
+    # 状态
+    is_active = db.Column(db.Boolean, default=True)  # 是否激活
+    qr_image_path = db.Column(db.String(200))  # 二维码图片路径
+    
+    # 统计信息
+    description = db.Column(db.Text)  # 课程描述
+    
+    # 关联关系
+    creator = db.relationship('User', foreign_keys=[created_by], backref='created_courses')
+    enrollments = db.relationship('CourseEnrollment', backref='course', lazy=True, cascade='all, delete-orphan')
+    
+    def __init__(self, course_code, course_name, course_type, created_by, course_key=None, 
+                 max_uses=None, expires_at=None, description=None):
+        self.course_code = course_code
+        self.course_name = course_name
+        self.course_key = course_key
+        self.course_type = course_type
+        self.created_by = created_by
+        self.max_uses = max_uses
+        self.expires_at = expires_at
+        self.description = description
+    
+    def is_valid(self):
+        """检查课程二维码是否有效"""
+        # 检查是否激活
+        if not self.is_active:
+            return False, '该二维码已被停用'
+        
+        # 检查是否过期
+        if self.expires_at and datetime.utcnow() > self.expires_at:
+            return False, '该二维码已过期'
+        
+        # 检查使用次数
+        if self.max_uses and self.current_uses >= self.max_uses:
+            return False, '该二维码使用次数已达上限'
+        
+        return True, '有效'
+    
+    def increment_usage(self):
+        """增加使用次数"""
+        self.current_uses += 1
+        db.session.commit()
+    
+    def get_usage_stats(self):
+        """获取使用统计"""
+        return {
+            'total_enrollments': len(self.enrollments),
+            'current_uses': self.current_uses,
+            'max_uses': self.max_uses if self.max_uses else '无限制',
+            'remaining_uses': (self.max_uses - self.current_uses) if self.max_uses else '无限制',
+            'is_expired': self.expires_at and datetime.utcnow() > self.expires_at if self.expires_at else False,
+            'expires_at': self.expires_at.strftime('%Y-%m-%d %H:%M') if self.expires_at else '永久有效'
+        }
+    
+    def to_dict(self):
+        """转换为字典"""
+        valid, msg = self.is_valid()
+        return {
+            'id': self.id,
+            'course_code': self.course_code,
+            'course_name': self.course_name,
+            'course_key': self.course_key,
+            'course_type': self.course_type,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat(),
+            'max_uses': self.max_uses,
+            'current_uses': self.current_uses,
+            'expires_at': self.expires_at.isoformat() if self.expires_at else None,
+            'is_active': self.is_active,
+            'is_valid': valid,
+            'validation_message': msg,
+            'qr_image_path': self.qr_image_path,
+            'description': self.description
+        }
+
+
+class CourseEnrollment(db.Model):
+    """课程报名记录 - 记录学生扫描二维码的历史"""
+    __tablename__ = 'course_enrollments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False)  # 课程ID
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # 学生ID
+    
+    # 扫描信息
+    scanned_at = db.Column(db.DateTime, default=datetime.utcnow)  # 扫描时间
+    ip_address = db.Column(db.String(50))  # 扫描时的IP地址
+    user_agent = db.Column(db.String(500))  # 扫描时的浏览器信息
+    
+    # 升级结果
+    previous_role = db.Column(db.String(20))  # 扫描前的角色
+    new_role = db.Column(db.String(20))  # 扫描后的角色
+    tokens_granted = db.Column(db.Integer, default=0)  # 赠送的token数量
+    
+    # 关联关系
+    student = db.relationship('User', foreign_keys=[user_id], backref='enrollments')
+    
+    def __init__(self, course_id, user_id, previous_role, new_role, tokens_granted=0, 
+                 ip_address=None, user_agent=None):
+        self.course_id = course_id
+        self.user_id = user_id
+        self.previous_role = previous_role
+        self.new_role = new_role
+        self.tokens_granted = tokens_granted
+        self.ip_address = ip_address
+        self.user_agent = user_agent
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'course_id': self.course_id,
+            'user_id': self.user_id,
+            'scanned_at': self.scanned_at.isoformat(),
+            'previous_role': self.previous_role,
+            'new_role': self.new_role,
+            'tokens_granted': self.tokens_granted,
+            'ip_address': self.ip_address
+        }

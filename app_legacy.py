@@ -1,28 +1,35 @@
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 import os
 import uuid
-from werkzeug.utils import secure_filename
-from PIL import Image
+from datetime import datetime
+
 import cv2
 import numpy as np
 from dotenv import load_dotenv
-from datetime import datetime
+from flask import (Flask, jsonify, render_template, request, send_file,
+                   send_from_directory)
+from PIL import Image
+from werkzeug.utils import secure_filename
 
 # 加载环境变量（必须在导入其他模块之前）
 load_dotenv()
 
-from api.nano_banana import NanoBananaAPI
-from api.hunyuan3d import Hunyuan3DGenerator
-from api.sam3d_api import SAM3DAPI
-from managers.gallery_manager import GalleryManager
-from managers.creation_session_manager import CreationSessionManager
 import json
 
 # 用户管理系统导入
-from flask_login import LoginManager, login_required, current_user
-from auth.models import db, User, Artwork, CreationSession, CanvasProject
+from flask_login import LoginManager, current_user, login_required
+
+from api.hunyuan3d import Hunyuan3DGenerator
+from api.nano_banana import NanoBananaAPI
+from api.sam3d_api import SAM3DAPI
 from auth import auth_bp
+from auth.models import (Artwork, CanvasProject, CourseProgress,
+                         CreationSession, User, db)
+from auth.permissions import (consume_image_token, enrolled_required,
+                              image_token_required, lesson_access_required,
+                              teacher_required)
 from auth.routes import *
+from managers.creation_session_manager import CreationSessionManager
+from managers.gallery_manager import GalleryManager
 from utils.email_service import init_mail
 
 # 获取项目根目录
@@ -123,6 +130,21 @@ init_mail(app)
 # 注册蓝图
 app.register_blueprint(auth_bp)
 
+# 注册二维码蓝图
+from auth.qr_routes import qr_bp
+
+app.register_blueprint(qr_bp)
+
+# 注册管理员蓝图
+from auth.admin_routes import admin_bp
+
+app.register_blueprint(admin_bp)
+
+# 初始化中间件（每日token赠送等）
+from auth.middleware import init_middleware
+
+init_middleware(app)
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -214,9 +236,10 @@ def generate_3d_model_from_multi_view(view_images):
 def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, prompt=None):
     """自动保存作品到数据库"""
     try:
-        from auth.models import Artwork
         import glob
-        
+
+        from auth.models import Artwork
+
         # 验证必需的图片路径
         if not generated_image_path:
             print(f"⚠️ 没有生成图片路径，跳过保存")
@@ -324,8 +347,9 @@ def auto_save_artwork_to_db(session_id, generated_image_path, sketch_path=None, 
 def index():
     """主页"""
     # 获取最新的4个作品用于首页展示
-    from auth.models import Artwork, User
     from sqlalchemy import desc
+
+    from auth.models import Artwork, User
     
     latest_artworks = Artwork.query.filter_by(
         is_public=True
@@ -344,7 +368,7 @@ def create():
 def edit_artwork(artwork_id):
     """编辑作品页面"""
     from auth.models import Artwork
-    
+
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
     
@@ -364,7 +388,7 @@ def edit_artwork(artwork_id):
 def update_artwork(artwork_id):
     """更新作品信息"""
     from auth.models import Artwork, db
-    
+
     # 获取作品并检查权限
     artwork = Artwork.query.get_or_404(artwork_id)
     
@@ -432,9 +456,10 @@ def update_artwork(artwork_id):
 @app.route('/gallery')
 def gallery():
     """显示作品画廊"""
-    from auth.models import Artwork, User
     from sqlalchemy import desc
-    
+
+    from auth.models import Artwork, User
+
     # 获取所有公开的作品，按创建时间降序排列
     artworks = Artwork.query.filter_by(
         is_public=True
@@ -602,7 +627,7 @@ def canvas_chat():
         
         # 使用简单的关键词匹配判断意图（原有逻辑）
         import re
-        
+
         # 修改意图的关键词
         modify_keywords = ['修改', '改成', '换', '变成', '调整', '优化', '改进', '让它', '把它', '更', '加上', '去掉', '删除', '移除']
         
@@ -671,7 +696,7 @@ def canvas_chat():
 def detect_and_split_multi_generation(prompt, forced_intent=None):
     """智能检测并拆解多张图片生成请求"""
     import re
-    
+
     # 如果强制意图不是生成，则不处理
     if forced_intent and forced_intent != 'generate':
         return {'is_multi': False}
@@ -1072,8 +1097,9 @@ def simple_test():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     """提供上传的文件访问"""
-    from flask import send_file
     import mimetypes
+
+    from flask import send_file
     
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     
@@ -1204,6 +1230,8 @@ def delete_version(session_id):
         return jsonify({'error': f'删除版本失败: {str(e)}'}), 500
 
 @app.route('/generate-image', methods=['POST'])
+@login_required
+@image_token_required
 def generate_image():
     """统一的图片生成接口 - 支持文字和图片混合输入，支持会话版本管理"""
     import sys
@@ -1213,6 +1241,9 @@ def generate_image():
     sys.stderr.flush()
     app.logger.error("🚀🚀🚀 收到图片生成请求")
     try:
+        # 消耗一个图片令牌
+        consume_image_token(current_user)
+        
         prompt = request.form.get('prompt', '').strip()
         style = request.form.get('style', 'cute')
         color_preference = request.form.get('color_preference', 'colorful')
@@ -2172,12 +2203,12 @@ def generate_artwork_info_api():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/generate-video', methods=['POST'])
+@teacher_required
 def generate_video():
-    """生成视频"""
+    """生成视频 - 仅限教师使用"""
     try:
-        from api.veo31 import get_veo_api
-        
         from api.prompt_translator import translate_prompt
+        from api.veo31 import get_veo_api
         
         data = request.get_json()
         session_id = data.get('session_id')
@@ -2363,7 +2394,7 @@ def feature_artwork(artwork_id):
     """设置作品为推荐作品"""
     try:
         from auth.models import Artwork
-        
+
         # 获取作品
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
         if not artwork:
@@ -2492,9 +2523,10 @@ def increment_view(artwork_id):
 def public_gallery():
     """公共作品展示页面"""
     try:
-        from auth.models import Artwork, User
         from sqlalchemy import desc
-        
+
+        from auth.models import Artwork, User
+
         # 获取所有公开的推荐作品
         featured_artworks = Artwork.query.filter_by(
             is_public=True, 
@@ -2577,8 +2609,9 @@ def get_artwork_api(artwork_id):
 def delete_artwork_api(artwork_id):
     """删除作品API"""
     try:
-        from auth.models import Artwork, ArtworkVote
         import os
+
+        from auth.models import Artwork, ArtworkVote
         
         artwork = Artwork.query.filter_by(id=artwork_id, user_id=current_user.id).first()
         if not artwork:
@@ -2768,8 +2801,9 @@ def api_generate_image():
 def fetch_image_from_url():
     """从URL获取图片并保存到本地"""
     try:
-        import requests
         from io import BytesIO
+
+        import requests
         
         data = request.get_json()
         image_url = data.get('url', '').strip()

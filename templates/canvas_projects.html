@@ -7,7 +7,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title>AI画布项目 - 松鼠艺术</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🎨</text></svg>">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- 关键CSS内联 - 防止闪烁 -->
+    <style>
+        body { margin: 0; padding: 0; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); }
+    </style>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-canvas.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -45,7 +52,7 @@
             align-items: center;
             margin-bottom: 30px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #00704A;
         }
         
         .section-header h2 {
@@ -57,12 +64,12 @@
         }
         
         .section-header h2 i {
-            color: #667eea;
+            color: #00704A;
         }
         
         .btn-new-project {
             padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
             color: white;
             border: none;
             border-radius: 8px;
@@ -172,8 +179,8 @@
         
         .btn-action:hover {
             background: #f8f9ff;
-            border-color: #667eea;
-            color: #667eea;
+            border-color: #00704A;
+            color: #00704A;
         }
         
         .btn-action.danger:hover {
