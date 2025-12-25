@@ -77,7 +77,7 @@ def generate_image():
             print("❌ Token不足")
             return jsonify({
                 'success': False,
-                'error': '松果币不足，请联系教师充值'
+                'error': 'Token不足，请联系教师充值'
             }), 403
         
         # 获取参数
