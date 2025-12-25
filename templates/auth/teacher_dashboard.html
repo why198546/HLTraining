@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,14 +11,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-auth.css') }}">
     <style>
         /* 修复导航栏样式冲突 */
-        .header .navbar { background: var(--primary-gradient); }
-        
+        .header .navbar {
+            background: var(--primary-gradient);
+        }
+
         /* 优化卡片和按钮配色 */
         .card {
             border-radius: 12px;
             border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
+
         .card-header {
             background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
             color: white;
@@ -25,32 +29,45 @@
             border-radius: 12px 12px 0 0 !important;
             font-weight: 600;
         }
+
         .btn-primary {
             background: #FFD700;
             border: none;
             color: #00704A;
             font-weight: 600;
         }
+
         .btn-primary:hover {
             background: #FFC700;
             color: #00704A;
-            box-shadow: 0 2px 8px rgba(255,215,0,0.4);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
         }
-        .header .nav-dropdown { position: relative; }
-        .header .dropdown-menu { 
+
+        .header .nav-dropdown {
+            position: relative;
+        }
+
+        .header .dropdown-menu {
             display: none;
             position: absolute;
             top: 100%;
             right: 0;
             background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border-radius: 8px;
             min-width: 180px;
             z-index: 1000;
             padding: 0.5rem 0;
         }
-        .header .nav-dropdown:hover .dropdown-menu { display: block; }
-        .header .dropdown-menu li { list-style: none; }
+
+        .header .nav-dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        .header .dropdown-menu li {
+            list-style: none;
+        }
+
         .header .dropdown-menu a {
             display: block;
             padding: 0.5rem 1rem;
@@ -58,120 +75,131 @@
             text-decoration: none;
             transition: background 0.2s;
         }
-        .header .dropdown-menu a:hover { background: #f0f0f0; }
-        
+
+        .header .dropdown-menu a:hover {
+            background: #f0f0f0;
+        }
+
         /* 修复fixed header导致的過挡 */
-        body { padding-top: 80px !important; }
-        
+        body {
+            padding-top: 80px !important;
+        }
+
         /* 修复模态框层级问题 */
-        .modal { z-index: 1055 !important; }
-        .modal-backdrop { z-index: 1050 !important; }
+        .modal {
+            z-index: 1055 !important;
+        }
+
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
     </style>
 </head>
-<body>
-{% include 'components/header.html' %}
-<div class="container mt-4">
-    <h1 class="mb-4">
-        <i class="fas fa-chalkboard-teacher"></i> 教师管理后台
-    </h1>
-    
-    <!-- 统计卡片 -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">总学生数</h5>
-                    <h2>{{ total_students }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">已报名学生</h5>
-                    <h2>{{ enrolled_students }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">未报名学生</h5>
-                    <h2>{{ total_students - enrolled_students }}</h2>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 快速操作 -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5>快速操作</h5>
-                </div>
-                <div class="card-body">
-                    <a href="{{ url_for('auth.teacher_students') }}" class="btn btn-primary me-2">
-                        <i class="fas fa-users"></i> 学生管理
-                    </a>
-                    <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
-                        <i class="fas fa-home"></i> 返回首页
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 最近注册的学生 -->
-    <div class="card">
-        <div class="card-header">
-            <h5>最近注册的学生（最多显示10人）</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>昵称</th>
-                            <th>用户名</th>
-                            <th>报名状态</th>
-                            <th>剩余令牌</th>
-                            <th>注册时间</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students[:10] %}
-                        <tr>
-                            <td>{{ student.nickname }}</td>
-                            <td>{{ student.username }}</td>
-                            <td>
-                                {% if student.is_enrolled %}
-                                    <span class="badge bg-success">已报名</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">未报名</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ student.image_token_remaining }}</td>
-                            <td>{{ student.created_at.strftime('%Y-%m-%d') }}</td>
-                            <td>
-                                <a href="{{ url_for('auth.teacher_student_detail', student_id=student.id) }}" 
-                                   class="btn btn-sm btn-info">
-                                    查看详情
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <a href="{{ url_for('auth.teacher_students') }}" class="btn btn-primary mt-2">
-                查看全部学生 →
-            </a>
-        </div>
-    </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<body>
+    {% include 'components/header.html' %}
+    <div class="container mt-4">
+        <h1 class="mb-4">
+            <i class="fas fa-chalkboard-teacher"></i> 教师管理后台
+        </h1>
+
+        <!-- 统计卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">总学生数</h5>
+                        <h2>{{ total_students }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">已报名学生</h5>
+                        <h2>{{ enrolled_students }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">未报名学生</h5>
+                        <h2>{{ total_students - enrolled_students }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速操作 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>快速操作</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('auth.teacher_students') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-users"></i> 学生管理
+                        </a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                            <i class="fas fa-home"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近注册的学生 -->
+        <div class="card">
+            <div class="card-header">
+                <h5>最近注册的学生（最多显示10人）</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>昵称</th>
+                                <th>用户名</th>
+                                <th>报名状态</th>
+                                <th>注册时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students[:10] %}
+                            <tr>
+                                <td>{{ student.nickname }}</td>
+                                <td>{{ student.username }}</td>
+                                <td>
+                                    {% if student.is_enrolled %}
+                                    <span class="badge bg-success">已报名</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">未报名</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ student.image_token_remaining }}</td>
+                                <td>{{ student.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <a href="{{ url_for('auth.teacher_student_detail', student_id=student.id) }}"
+                                        class="btn btn-sm btn-info">
+                                        查看详情
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <a href="{{ url_for('auth.teacher_students') }}" class="btn btn-primary mt-2">
+                    查看全部学生 →
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

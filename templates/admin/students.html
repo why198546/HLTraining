@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,56 +14,65 @@
             color: white;
             padding: 20px;
         }
+
         .card {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             border-radius: 15px;
             backdrop-filter: blur(10px);
             margin-bottom: 20px;
         }
+
         .table {
             color: white;
         }
+
         .table thead {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
         }
+
         .back-link {
             display: inline-block;
             color: white;
             text-decoration: none;
             margin-bottom: 20px;
             padding: 10px 20px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 8px;
             transition: all 0.3s;
         }
+
         .back-link:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             color: white;
             transform: translateX(-5px);
         }
+
         .nav-tabs .nav-link {
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
         }
+
         .nav-tabs .nav-link.active {
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             border: none;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <a href="{{ url_for('admin.dashboard') }}" class="back-link">
             <i class="fas fa-arrow-left me-2"></i>返回管理后台
         </a>
-        
+
         <h2 class="mb-4"><i class="fas fa-user-graduate me-2"></i>学生管理</h2>
-        
+
         <!-- 标签页 -->
         <ul class="nav nav-tabs mb-3" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="formal-tab" data-bs-toggle="tab" data-bs-target="#formal" type="button">
+                <button class="nav-link active" id="formal-tab" data-bs-toggle="tab" data-bs-target="#formal"
+                    type="button">
                     正式学生 ({{ formal_students.total }})
                 </button>
             </li>
@@ -72,12 +82,13 @@
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="prospects-tab" data-bs-toggle="tab" data-bs-target="#prospects" type="button">
+                <button class="nav-link" id="prospects-tab" data-bs-toggle="tab" data-bs-target="#prospects"
+                    type="button">
                     意向学员 ({{ prospects.total }})
                 </button>
             </li>
         </ul>
-        
+
         <!-- 标签页内容 -->
         <div class="tab-content">
             <!-- 批量操作工具栏 -->
@@ -101,7 +112,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 正式学生 -->
             <div class="tab-pane fade show active" id="formal" role="tabpanel">
                 <div class="card">
@@ -111,11 +122,11 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th><input type="checkbox" id="selectAllFormal" onchange="toggleSelectAll(this, 'formal')"></th>
+                                        <th>此字段已被替换</th>
                                         <th>ID</th>
                                         <th>用户名</th>
                                         <th>昵称</th>
-                                        <th>Token</th>
+                                        <th>松果币</th>
                                         <th>每日赠送</th>
                                         <th>注册时间</th>
                                         <th>操作</th>
@@ -124,7 +135,8 @@
                                 <tbody>
                                     {% for student in formal_students.items %}
                                     <tr>
-                                        <td><input type="checkbox" class="user-checkbox formal-checkbox" value="{{ student.id }}" onchange="updateSelectedCount()"></td>
+                                        <td><input type="checkbox" class="user-checkbox formal-checkbox"
+                                                value="{{ student.id }}" onchange="updateSelectedCount()"></td>
                                         <td>{{ student.id }}</td>
                                         <td>{{ student.username }}</td>
                                         <td>{{ student.nickname }}</td>
@@ -132,7 +144,8 @@
                                         <td>{{ student.daily_token_amount or 0 }}</td>
                                         <td>{{ student.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-info" onclick="resetPassword({{ student.id }}, '{{ student.nickname }}')">
+                                            <button class="btn btn-sm btn-info"
+                                                onclick="resetPassword({{ student.id }}, '{{ student.nickname }}')">
                                                 <i class="fas fa-key me-1"></i>重置密码
                                             </button>
                                         </td>
@@ -141,7 +154,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- 分页 -->
                         {% if formal_students.pages > 1 %}
                         <nav>
@@ -151,17 +164,17 @@
                                     <a class="page-link" href="?page={{ formal_students.prev_num }}">上一页</a>
                                 </li>
                                 {% endif %}
-                                
+
                                 {% for page_num in formal_students.iter_pages() %}
-                                    {% if page_num %}
-                                    <li class="page-item {{ 'active' if page_num == formal_students.page }}">
-                                        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                                    </li>
-                                    {% else %}
-                                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                                    {% endif %}
+                                {% if page_num %}
+                                <li class="page-item {{ 'active' if page_num == formal_students.page }}">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
                                 {% endfor %}
-                                
+
                                 {% if formal_students.has_next %}
                                 <li class="page-item">
                                     <a class="page-link" href="?page={{ formal_students.next_num }}">下一页</a>
@@ -178,7 +191,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 体验学生 -->
             <div class="tab-pane fade" id="trial" role="tabpanel">
                 <div class="card">
@@ -188,11 +201,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th><input type="checkbox" id="selectAllTrial" onchange="toggleSelectAll(this, 'trial')"></th>
+                                        <th><input type="checkbox" id="selectAllTrial"
+                                                onchange="toggleSelectAll(this, 'trial')"></th>
                                         <th>ID</th>
                                         <th>用户名</th>
                                         <th>昵称</th>
-                                        <th>Token</th>
+                                        <th>松果币</th>
                                         <th>每日赠送</th>
                                         <th>注册时间</th>
                                         <th>操作</th>
@@ -201,7 +215,8 @@
                                 <tbody>
                                     {% for student in trial_students.items %}
                                     <tr>
-                                        <td><input type="checkbox" class="user-checkbox trial-checkbox" value="{{ student.id }}" onchange="updateSelectedCount()"></td>
+                                        <td><input type="checkbox" class="user-checkbox trial-checkbox"
+                                                value="{{ student.id }}" onchange="updateSelectedCount()"></td>
                                         <td>{{ student.id }}</td>
                                         <td>{{ student.username }}</td>
                                         <td>{{ student.nickname }}</td>
@@ -209,10 +224,12 @@
                                         <td>{{ student.daily_token_amount or 0 }}</td>
                                         <td>{{ student.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-success" onclick="upgradeTo({{ student.id }}, 'formal', '{{ student.nickname }}')">
+                                            <button class="btn btn-sm btn-success"
+                                                onclick="upgradeTo({{ student.id }}, 'formal', '{{ student.nickname }}')">
                                                 <i class="fas fa-arrow-up me-1"></i>转为正式
                                             </button>
-                                            <button class="btn btn-sm btn-info" onclick="resetPassword({{ student.id }}, '{{ student.nickname }}')">
+                                            <button class="btn btn-sm btn-info"
+                                                onclick="resetPassword({{ student.id }}, '{{ student.nickname }}')">
                                                 <i class="fas fa-key me-1"></i>重置密码
                                             </button>
                                         </td>
@@ -221,7 +238,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- 分页 -->
                         {% if trial_students.pages > 1 %}
                         <nav>
@@ -231,17 +248,17 @@
                                     <a class="page-link" href="?page={{ trial_students.prev_num }}">上一页</a>
                                 </li>
                                 {% endif %}
-                                
+
                                 {% for page_num in trial_students.iter_pages() %}
-                                    {% if page_num %}
-                                    <li class="page-item {{ 'active' if page_num == trial_students.page }}">
-                                        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                                    </li>
-                                    {% else %}
-                                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                                    {% endif %}
+                                {% if page_num %}
+                                <li class="page-item {{ 'active' if page_num == trial_students.page }}">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
                                 {% endfor %}
-                                
+
                                 {% if trial_students.has_next %}
                                 <li class="page-item">
                                     <a class="page-link" href="?page={{ trial_students.next_num }}">下一页</a>
@@ -258,7 +275,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- 意向学员 -->
             <div class="tab-pane fade" id="prospects" role="tabpanel">
                 <div class="card">
@@ -268,11 +285,12 @@
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
-                                        <th><input type="checkbox" id="selectAllProspects" onchange="toggleSelectAll(this, 'prospects')"></th>
+                                        <th><input type="checkbox" id="selectAllProspects"
+                                                onchange="toggleSelectAll(this, 'prospects')"></th>
                                         <th>ID</th>
                                         <th>用户名</th>
                                         <th>昵称</th>
-                                        <th>Token</th>
+                                        <th>松果币</th>
                                         <th>试用到期</th>
                                         <th>注册时间</th>
                                         <th>操作</th>
@@ -281,29 +299,32 @@
                                 <tbody>
                                     {% for prospect in prospects.items %}
                                     <tr>
-                                        <td><input type="checkbox" class="user-checkbox prospects-checkbox" value="{{ prospect.id }}" onchange="updateSelectedCount()"></td>
+                                        <td><input type="checkbox" class="user-checkbox prospects-checkbox"
+                                                value="{{ prospect.id }}" onchange="updateSelectedCount()"></td>
                                         <td>{{ prospect.id }}</td>
                                         <td>{{ prospect.username }}</td>
                                         <td>{{ prospect.nickname }}</td>
                                         <td>{{ prospect.image_token_remaining }}</td>
                                         <td>
                                             {% if prospect.trial_end_date %}
-                                                {{ prospect.trial_end_date.strftime('%Y-%m-%d') }}
-                                                {% if prospect.is_trial_expired() %}
-                                                    <span class="badge bg-danger">已过期</span>
-                                                {% else %}
-                                                    <span class="badge bg-success">{{ prospect.get_trial_days_left() }}天</span>
-                                                {% endif %}
+                                            {{ prospect.trial_end_date.strftime('%Y-%m-%d') }}
+                                            {% if prospect.is_trial_expired() %}
+                                            <span class="badge bg-danger">已过期</span>
                                             {% else %}
-                                                -
+                                            <span class="badge bg-success">{{ prospect.get_trial_days_left() }}天</span>
+                                            {% endif %}
+                                            {% else %}
+                                            -
                                             {% endif %}
                                         </td>
                                         <td>{{ prospect.created_at.strftime('%Y-%m-%d') }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-info" onclick="resetPassword({{ prospect.id }}, '{{ prospect.nickname }}')">
+                                            <button class="btn btn-sm btn-info"
+                                                onclick="resetPassword({{ prospect.id }}, '{{ prospect.nickname }}')">
                                                 <i class="fas fa-key me-1"></i>重置密码
                                             </button>
-                                            <button class="btn btn-sm btn-success" onclick="changeRole({{ prospect.id }}, 'student', '学生')">
+                                            <button class="btn btn-sm btn-success"
+                                                onclick="changeRole({{ prospect.id }}, 'student', '学生')">
                                                 升为学生
                                             </button>
                                         </td>
@@ -312,7 +333,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        
+
                         <!-- 分页 -->
                         {% if prospects.pages > 1 %}
                         <nav>
@@ -322,17 +343,17 @@
                                     <a class="page-link" href="?page={{ prospects.prev_num }}">上一页</a>
                                 </li>
                                 {% endif %}
-                                
+
                                 {% for page_num in prospects.iter_pages() %}
-                                    {% if page_num %}
-                                    <li class="page-item {{ 'active' if page_num == prospects.page }}">
-                                        <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                                    </li>
-                                    {% else %}
-                                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                                    {% endif %}
+                                {% if page_num %}
+                                <li class="page-item {{ 'active' if page_num == prospects.page }}">
+                                    <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
                                 {% endfor %}
-                                
+
                                 {% if prospects.has_next %}
                                 <li class="page-item">
                                     <a class="page-link" href="?page={{ prospects.next_num }}">下一页</a>
@@ -351,7 +372,7 @@
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // 转换为正式学生
@@ -360,20 +381,20 @@
                 if (!confirm(`确定要将 "${nickname}" 升级为正式学生吗？\n\n升级后：\n- 成为永久会员\n- 已购课程永久可看\n- 不会被降级`)) {
                     return;
                 }
-                
+
                 // 调用update_user_role，同时设置is_enrolled=True
                 const formData = new FormData();
                 formData.append('role', 'student');
                 formData.append('is_enrolled', 'true');
-                
+
                 try {
                     const response = await fetch(`{{ url_for("admin.update_user_role", user_id=0) }}`.replace('/0', `/${userId}`), {
                         method: 'POST',
                         body: formData
                     });
-                    
+
                     const data = await response.json();
-                    
+
                     if (data.success) {
                         alert('升级成功！该用户已成为正式学生');
                         location.reload();
@@ -385,24 +406,24 @@
                 }
             }
         }
-        
+
         // 修改用户角色（意向学员升为体验学生）
         async function changeRole(userId, newRole, roleName) {
             if (!confirm(`确定要将用户升级为 "${roleName}" 吗？`)) {
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('role', newRole);
-            
+
             try {
                 const response = await fetch(`{{ url_for("admin.update_user_role", user_id=0) }}`.replace('/0', `/${userId}`), {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     alert('升级成功！');
                     location.reload();
@@ -413,31 +434,31 @@
                 alert('升级失败：' + error.message);
             }
         }
-        
+
         // 单个重置密码
         async function resetPassword(userId, nickname) {
             const newPassword = prompt(`为用户 "${nickname}" 设置新密码:\n\n密码长度至少6位`, '');
-            
+
             if (!newPassword) {
                 return;
             }
-            
+
             if (newPassword.length < 6) {
                 alert('密码长度至少6位');
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('new_password', newPassword);
-            
+
             try {
                 const response = await fetch(`{{ url_for("admin.reset_user_password", user_id=0) }}`.replace('/0', `/${userId}`), {
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     alert(`成功重置 "${nickname}" 的密码`);
                 } else {
@@ -447,13 +468,13 @@
                 alert('重置失败：' + error.message);
             }
         }
-        
+
         // 更新选中数量
         function updateSelectedCount() {
             const checked = document.querySelectorAll('.user-checkbox:checked');
             document.getElementById('selectedCount').textContent = `已选择: ${checked.length} 人`;
         }
-        
+
         // 全选/清除
         function selectAll() {
             const activeTab = document.querySelector('.tab-pane.active');
@@ -461,19 +482,19 @@
             checkboxes.forEach(cb => cb.checked = true);
             updateSelectedCount();
         }
-        
+
         function clearSelection() {
             document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
             updateSelectedCount();
         }
-        
+
         // 切换全选
         function toggleSelectAll(checkbox, type) {
             const checkboxes = document.querySelectorAll(`.${type}-checkbox`);
             checkboxes.forEach(cb => cb.checked = checkbox.checked);
             updateSelectedCount();
         }
-        
+
         // 显示批量重置密码模态框
         function showBatchPasswordModal() {
             const checked = document.querySelectorAll('.user-checkbox:checked');
@@ -481,30 +502,30 @@
                 alert('请先选择要重置密码的用户');
                 return;
             }
-            
+
             const newPassword = prompt(`批量重置 ${checked.length} 个用户的密码:\n\n请输入新密码（至少6位）`, '');
-            
+
             if (!newPassword) {
                 return;
             }
-            
+
             if (newPassword.length < 6) {
                 alert('密码长度至少6位');
                 return;
             }
-            
+
             if (!confirm(`确定要为 ${checked.length} 个用户重置密码吗？\n\n新密码: ${newPassword}`)) {
                 return;
             }
-            
+
             batchResetPassword(newPassword);
         }
-        
+
         // 批量重置密码
         async function batchResetPassword(newPassword) {
             const checked = document.querySelectorAll('.user-checkbox:checked');
             const userIds = Array.from(checked).map(cb => parseInt(cb.value));
-            
+
             try {
                 const response = await fetch(`{{ url_for("admin.batch_reset_password") }}`, {
                     method: 'POST',
@@ -516,9 +537,9 @@
                         new_password: newPassword
                     })
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (data.success) {
                     let msg = `成功重置 ${data.success_count} 个用户的密码`;
                     if (data.failed && data.failed.length > 0) {
@@ -535,4 +556,5 @@
         }
     </script>
 </body>
+
 </html>

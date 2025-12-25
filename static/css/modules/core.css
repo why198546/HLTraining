@@ -20,6 +20,7 @@
 #main-content {
     display: none;
 }
+
 /* 全局样式 */
 * {
     margin: 0;
@@ -27,10 +28,24 @@
     box-sizing: border-box;
 }
 
+/* 松果币图标样式 */
+.token-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    background-image: url('/static/images/songuo_coin/songuo_coin_inline_24x24.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    vertical-align: middle;
+}
+
 /* 主题配色：星巴克绿 + 少量白色 */
 :root {
-    --primary-color: #006241;        /* Starbucks Green */
-    --primary-color-dark: #004f35;   /* Dark Green */
+    --primary-color: #006241;
+    /* Starbucks Green */
+    --primary-color-dark: #004f35;
+    /* Dark Green */
     --primary-color-soft: rgba(0, 98, 65, 0.12);
     --primary-shadow: rgba(0, 98, 65, 0.35);
     --page-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-dark) 100%);
@@ -70,8 +85,8 @@
     border-radius: 16px;
     padding: 16px 20px;
     text-decoration: none;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -81,7 +96,7 @@
 
 .hero-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
 .hero-card .card-title {
@@ -104,31 +119,63 @@
     justify-content: center;
     margin-bottom: 10px;
     color: #fff;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-.hero-course .card-icon { background: var(--primary-color); }
-.hero-practice .card-icon { background: var(--primary-color); }
-.hero-gallery .card-icon { background: var(--primary-color); }
-.hero-about .card-icon { background: var(--primary-color); }
+.hero-course .card-icon {
+    background: var(--primary-color);
+}
 
-.hero-course:hover { box-shadow: 0 10px 24px var(--primary-shadow); }
-.hero-practice:hover { box-shadow: 0 10px 24px var(--primary-shadow); }
-.hero-gallery:hover { box-shadow: 0 10px 24px var(--primary-shadow); }
-.hero-about:hover { box-shadow: 0 10px 24px var(--primary-shadow); }
+.hero-practice .card-icon {
+    background: var(--primary-color);
+}
+
+.hero-gallery .card-icon {
+    background: var(--primary-color);
+}
+
+.hero-about .card-icon {
+    background: var(--primary-color);
+}
+
+.hero-course:hover {
+    box-shadow: 0 10px 24px var(--primary-shadow);
+}
+
+.hero-practice:hover {
+    box-shadow: 0 10px 24px var(--primary-shadow);
+}
+
+.hero-gallery:hover {
+    box-shadow: 0 10px 24px var(--primary-shadow);
+}
+
+.hero-about:hover {
+    box-shadow: 0 10px 24px var(--primary-shadow);
+}
 
 @media (max-width: 992px) {
-    .hero-actions { grid-template-columns: repeat(2, minmax(200px, 1fr)); max-width: 720px; }
+    .hero-actions {
+        grid-template-columns: repeat(2, minmax(200px, 1fr));
+        max-width: 720px;
+    }
 }
 
 @media (max-width: 600px) {
-    .hero-actions { grid-template-columns: 1fr; padding: 0 12px; }
-    .hero-card { padding: 18px; }
+    .hero-actions {
+        grid-template-columns: 1fr;
+        padding: 0 12px;
+    }
+
+    .hero-card {
+        padding: 18px;
+    }
 }
 
 /* 松果课堂 */
 .classroom-page {
-    padding-top: 96px; /* 预留固定导航栏高度 */
+    padding-top: 96px;
+    /* 预留固定导航栏高度 */
     padding-bottom: 40px;
 }
 
@@ -137,7 +184,7 @@
 }
 
 .breadcrumb-link {
-    color: rgba(255,255,255,0.92);
+    color: rgba(255, 255, 255, 0.92);
     text-decoration: none;
     font-weight: 700;
 }
@@ -161,7 +208,7 @@
 }
 
 .classroom-subtitle {
-    color: rgba(255,255,255,0.92);
+    color: rgba(255, 255, 255, 0.92);
     text-align: center;
     margin-bottom: 18px;
 }
@@ -189,11 +236,11 @@
 }
 
 .class-section {
-    background: rgba(255,255,255,0.95);
-    border: 1px solid rgba(0,0,0,0.06);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     border-radius: 18px;
     padding: 18px;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
 }
 
 .class-section h2 {
@@ -227,7 +274,7 @@
     width: 100%;
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.12);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     outline: none;
 }
 
@@ -235,7 +282,7 @@
     width: 100%;
     padding: 10px 12px;
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.12);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     outline: none;
     resize: vertical;
     line-height: 1.5;
@@ -440,18 +487,18 @@
         grid-template-columns: 1fr;
         gap: 10px;
     }
-    
+
     .feature-group {
         flex-wrap: nowrap;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
     }
-    
+
     .feature-label {
         min-width: 70px;
         flex-shrink: 0;
     }
-    
+
     .feature-detector-content {
         max-height: none;
     }
@@ -565,11 +612,11 @@
 .classroom-result {
     margin-top: 18px;
     margin-bottom: 20px;
-    background: rgba(255,255,255,0.95);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 18px;
     padding: 16px;
     border: 2px solid #4CAF50;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.10);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.10);
     min-height: 200px;
     display: flex;
     align-items: center;
@@ -705,7 +752,7 @@
 }
 
 .example-card {
-    border: 1px solid rgba(0,0,0,0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
     overflow: hidden;
     background: #fff;
@@ -867,18 +914,18 @@ body {
     border-radius: 20px;
     padding: 22px 26px;
     text-decoration: none;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.09);
-    border: 1px solid rgba(0,0,0,0.06);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.09);
+    border: 1px solid rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    transition: transform 0.18s cubic-bezier(.2,.9,.2,1), box-shadow 0.18s ease;
+    transition: transform 0.18s cubic-bezier(.2, .9, .2, 1), box-shadow 0.18s ease;
 }
 
 .hero-card:hover {
     transform: translateY(-6px) scale(1.02);
-    box-shadow: 0 18px 40px rgba(0,0,0,0.14);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
 }
 
 .hero-card .card-title {
@@ -891,6 +938,7 @@ body {
     font-size: 15px;
     color: #666;
 }
+
 .hero-card .card-icon {
     width: 56px;
     height: 56px;
@@ -900,7 +948,7 @@ body {
     justify-content: center;
     margin-bottom: 12px;
     color: #fff;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
     font-size: 20px;
 }
 
@@ -1049,12 +1097,12 @@ body {
         font-size: 0.85rem;
         padding: 0.4rem 0.75rem;
     }
-    
+
     .nav-link.btn-primary {
         font-size: 0.85rem;
         padding: 7px 16px;
     }
-    
+
     .navbar {
         padding: 0.75rem 1rem;
     }
@@ -1097,10 +1145,11 @@ body {
         position: fixed;
         inset: 0;
         /* semi-transparent background to indicate clickable area and darken content */
-        background: rgba(0,0,0,0.3);
+        background: rgba(0, 0, 0, 0.3);
         /* pointer-events: auto - overlay captures clicks */
         pointer-events: auto;
-        z-index: 9999; /* BELOW nav-menu (10001) so nav-menu clicks work */
+        z-index: 9999;
+        /* BELOW nav-menu (10001) so nav-menu clicks work */
         cursor: pointer;
     }
 
@@ -1151,12 +1200,12 @@ body {
         padding-top: 0.4rem;
     }
 
-    .nav-dropdown > .nav-link {
+    .nav-dropdown>.nav-link {
         background: rgba(255, 255, 255, 0.1);
         font-weight: 600;
     }
 
-    .nav-dropdown.active > .nav-link {
+    .nav-dropdown.active>.nav-link {
         background: rgba(255, 255, 255, 0.15);
     }
 
