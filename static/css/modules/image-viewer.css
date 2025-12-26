@@ -1,0 +1,202 @@
+/* ========== 全屏图片查看器样式 ========== */
+
+.image-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.image-viewer.active {
+    display: flex;
+}
+
+.image-viewer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 1;
+}
+
+.image-viewer-img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 2;
+    cursor: zoom-out;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+}
+
+/* 关闭按钮 */
+.image-viewer-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 32px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* 打印按钮 */
+.image-viewer-print {
+    position: absolute;
+    top: 10px;
+    right: 70px;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-print:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* 前后导航按钮 */
+.image-viewer-prev,
+.image-viewer-next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 40px;
+    cursor: pointer;
+    z-index: 3;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-viewer-prev {
+    left: 10px;
+}
+
+.image-viewer-next {
+    right: 10px;
+}
+
+.image-viewer-prev:hover,
+.image-viewer-next:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* 计数器 */
+.image-viewer-counter {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 16px;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 16px;
+    border-radius: 20px;
+}
+
+/* 移动设备响应式 */
+@media (max-width: 768px) {
+    .image-viewer-close {
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .image-viewer-print {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+        top: 10px;
+        right: 60px;
+    }
+    
+    .image-viewer-prev,
+    .image-viewer-next {
+        width: 40px;
+        height: 40px;
+        font-size: 28px;
+    }
+    
+    .image-viewer-prev {
+        left: 10px;
+    }
+    
+    .image-viewer-next {
+        right: 10px;
+    }
+    
+    .image-viewer-counter {
+        bottom: 20px;
+        font-size: 14px;
+    }
+}
+
+/* 打印样式 */
+@media print {
+    .image-viewer {
+        position: static;
+        background: white;
+        display: block;
+    }
+    
+    .image-viewer-overlay,
+    .image-viewer-close,
+    .image-viewer-print,
+    .image-viewer-prev,
+    .image-viewer-next,
+    .image-viewer-counter {
+        display: none !important;
+    }
+    
+    .image-viewer-img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+}

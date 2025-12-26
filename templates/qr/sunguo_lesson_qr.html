@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松果课堂 - 课程分享</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .qr-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .qr-header {
+            margin-bottom: 30px;
+        }
+        
+        .qr-header h1 {
+            color: #00704A;
+            font-size: 24px;
+            margin: 0 0 10px 0;
+        }
+        
+        .qr-header p {
+            color: #666;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .qr-info-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .qr-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+            color: #333;
+        }
+        
+        .qr-info-item i {
+            font-size: 18px;
+            color: #00704A;
+            min-width: 24px;
+        }
+        
+        .qr-info-item strong {
+            color: #28a745;
+            font-size: 16px;
+        }
+        
+        .reward-banner {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #333;
+        }
+        
+        .reward-banner i {
+            color: #ff6b6b;
+            margin-right: 8px;
+        }
+        
+        .qr-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 112, 74, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .status-success {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .status-error {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    {% include 'components/header.html' %}
+    
+    <div class="qr-content">
+        <div class="qr-header">
+            <h1><i class="fas fa-graduation-cap"></i> 松果课堂</h1>
+            {% if current_user.is_authenticated %}
+                <!-- 学生身份展示 -->
+                {% if user_identity %}
+                    <p style="color: #00704A; margin: 8px 0; font-size: 14px;">
+                        <i class="fas fa-user-check"></i> {{ user_identity }}
+                    </p>
+                {% endif %}
+                <!-- 领取结果 -->
+                {% if reward_info.success %}
+                    <p class="status-success"><i class="fas fa-check-circle"></i> 松果币已赠送！</p>
+                {% else %}
+                    <p class="status-error"><i class="fas fa-exclamation-circle"></i> {{ reward_info.message }}</p>
+                {% endif %}
+            {% else %}
+                <p style="color: #666;">感谢分享课程！</p>
+            {% endif %}
+        </div>
+        
+        {% if course %}
+            <div class="qr-info-box">
+                <div class="qr-info-item">
+                    <i class="fas fa-book"></i>
+                    <span><strong>课程：</strong> {{ course.course_name }}</span>
+                </div>
+                
+                {% if course.expires_at %}
+                    <div class="qr-info-item">
+                        <i class="fas fa-calendar"></i>
+                        <span><strong>有效期：</strong> {{ course.expires_at.strftime('%Y年%m月%d日') }}</span>
+                    </div>
+                {% endif %}
+                
+                {% if course.max_uses %}
+                    <div class="qr-info-item">
+                        <i class="fas fa-chart-pie"></i>
+                        <span><strong>剩余次数：</strong> {{ (course.max_uses - course.current_uses) or 0 }}/{{ course.max_uses }}</span>
+                    </div>
+                {% endif %}
+                
+                {% if course.tokens_reward > 0 %}
+                    <div class="qr-info-item">
+                        <i class="fas fa-gift"></i>
+                        <span><strong>赠送松果币：</strong> {{ course.tokens_reward }}</span>
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if current_user.is_authenticated and reward_info.success and course.tokens_reward > 0 %}
+                <div class="reward-banner">
+                    <i class="fas fa-coins"></i> <strong>+{{ course.tokens_reward }}</strong> 松果币已到账！
+                </div>
+            {% endif %}
+        {% endif %}
+        
+        <p style="color: #666; line-height: 1.8; margin: 20px 0;">
+            {% if current_user.is_authenticated %}
+                {% if reward_info.success %}
+                    <i class="fas fa-smile"></i> 恭喜！您已成功领取课程奖励。<br>
+                    现在可以进入课堂继续学习了。
+                {% else %}
+                    感谢您的关注！<br>点击下方按钮进入课程学习。
+                {% endif %}
+            {% else %}
+                <i class="fas fa-user-lock"></i> 请先登录，扫码即可赠送松果币！<br>
+                点击下方按钮登录或进入课堂。
+            {% endif %}
+        </p>
+        
+        <div class="qr-actions">
+            <a href="{{ url_for('main.sunguo_class') }}" class="btn btn-primary">
+                <i class="fas fa-book"></i> 进入松果课堂
+            </a>
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> 登录账户
+                </a>
+            {% endif %}
+            <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> 返回首页
+            </a>
+        </div>
+    </div>
+</body>
+</html>

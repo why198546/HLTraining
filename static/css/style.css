@@ -14649,10 +14649,12 @@ to {
     justify-content: center;
     opacity: 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
 }
 
 .generated-image-item:hover .image-print-btn {
     opacity: 1;
+    pointer-events: auto;
 }
 
 .image-print-btn:hover {
@@ -14663,6 +14665,7 @@ to {
 @media (max-width: 768px) {
     .image-print-btn {
         opacity: 1;
+        pointer-events: auto;
         width: 32px;
         height: 32px;
         font-size: 16px;

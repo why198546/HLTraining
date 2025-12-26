@@ -430,9 +430,9 @@ document.querySelectorAll('.prompt-form').forEach(form => {
         formData.append('expert_mode', 'true');
         formData.append('style', styleToUse);
         formData.append('color_preference', colorPreference);
-        formData.append('aspect_ratio', '1:1');
-        formData.append('width', '512');  // 使用512x512快速生成
-        formData.append('height', '512');
+        formData.append('aspect_ratio', '2:3');  // A4纸张比例（竖版）
+        formData.append('width', '512');
+        formData.append('height', '768');  // 512x768用于A4打印
         formData.append('num_images', '1');  // 每次只生成1张
         
         const resp = await fetch('/api/generate-image', {
@@ -472,8 +472,8 @@ document.querySelectorAll('.prompt-form').forEach(form => {
             placeholder.classList.remove('loading-placeholder');
             const imageUrl = `${data.image_url}?t=${Date.now()}`;
             placeholder.innerHTML = `
-              <img src="${imageUrl}" alt="AI生成图片 ${i + 1}" class="ai-image-thumbnail" />
-              <button class="image-print-btn" onclick="printImage('${data.image_url}')" title="打印这张图片">🖨️</button>
+              <img src="${imageUrl}" alt="AI生成图片 ${i + 1}" class="ai-image-thumbnail" data-index="${i}" data-image-url="${data.image_url}" />
+              <button class="image-print-btn" data-image-url="${data.image_url}" type="button" title="打印这张图片">🖨️</button>
             `;
           }
         } else {
@@ -520,6 +520,13 @@ const ImageViewer = {
 
   init() {
     this.viewer = document.getElementById('image-viewer');
+    
+    // ⚠️ 重要：检查viewer是否存在
+    if (!this.viewer) {
+      console.error('❌ 找不到 #image-viewer 元素');
+      return;
+    }
+    
     this.overlay = this.viewer.querySelector('.image-viewer-overlay');
     this.closeBtn = this.viewer.querySelector('.image-viewer-close');
     this.printBtn = this.viewer.querySelector('.image-viewer-print');
@@ -528,95 +535,213 @@ const ImageViewer = {
     this.counter = this.viewer.querySelector('.image-viewer-counter');
     this.img = this.viewer.querySelector('.image-viewer-img');
 
+    // 检查所有元素是否存在
+    if (!this.overlay || !this.closeBtn || !this.img) {
+      console.error('❌ 图片查看器的某些元素未找到');
+      return;
+    }
+
     // 关闭按钮
-    this.closeBtn.addEventListener('click', () => this.close());
-    this.overlay.addEventListener('click', () => this.close());
+    this.closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.close();
+    });
+    
+    this.overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.close();
+    });
+    
+    // 双击图片退出viewer
+    this.img.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('👆 双击图片 - 退出');
+      this.close();
+    }, { passive: false });
     
     // 打印按钮
-    this.printBtn.addEventListener('click', () => this.print());
+    if (this.printBtn) {
+      this.printBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.print();
+      });
+    }
 
     // 切换按钮
-    this.prevBtn.addEventListener('click', () => this.navigate(-1));
-    this.nextBtn.addEventListener('click', () => this.navigate(1));
+    if (this.prevBtn) {
+      this.prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.navigate(-1);
+      });
+    }
+    
+    if (this.nextBtn) {
+      this.nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.navigate(1);
+      });
+    }
 
     // 键盘导航
     document.addEventListener('keydown', (e) => {
-      if (this.viewer.style.display !== 'none') {
-        if (e.key === 'ArrowLeft') this.navigate(-1);
-        if (e.key === 'ArrowRight') this.navigate(1);
-        if (e.key === 'Escape') this.close();
+      // 只在查看器可见时处理键盘事件
+      if (this.viewer.classList.contains('active')) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          this.navigate(-1);
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          this.navigate(1);
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          this.close();
+        }
       }
     });
 
-    // 双击关闭
-    this.img.addEventListener('click', (e) => {
-      const now = Date.now();
-      const timeDiff = now - this.lastClickTime;
-      
-      if (timeDiff < 300) {
-        // 双击
-        this.close();
-      }
-      this.lastClickTime = now;
-    });
-
-    // 触摸滑动
+    // 触摸事件：左右滑动切换图片
     this.img.addEventListener('touchstart', (e) => {
       this.touchStartX = e.touches[0].clientX;
       this.touchStartY = e.touches[0].clientY;
-    });
+      console.log(`👆 触摸开始 - X: ${this.touchStartX}, Y: ${this.touchStartY}`);
+    }, { passive: true });
 
     this.img.addEventListener('touchend', (e) => {
+      if (this.touchStartX === 0) return;
+      
       const touchEndX = e.changedTouches[0].clientX;
       const touchEndY = e.changedTouches[0].clientY;
       const deltaX = touchEndX - this.touchStartX;
       const deltaY = touchEndY - this.touchStartY;
 
-      // 水平滑动距离大于垂直滑动，且超过50px
-      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
-        if (deltaX > 0) {
-          this.navigate(-1); // 右滑显示上一张
-        } else {
-          this.navigate(1); // 左滑显示下一张
-        }
-      }
-    });
+      console.log(`👆 触摸结束 - deltaX: ${deltaX}, deltaY: ${deltaY}`);
 
-    // 为生成的图片添加点击事件（使用事件委托）
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('ai-image-thumbnail')) {
-        const allImages = document.querySelectorAll('.ai-image-thumbnail');
-        this.images = Array.from(allImages).map(img => img.src);
-        this.currentIndex = Array.from(allImages).indexOf(e.target);
-        this.open(this.currentIndex);
+      // 判断是否为左右滑动（水平距离 > 垂直距离，且超过50px阈值）
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        e.preventDefault();
+        
+        if (deltaX > 0) {
+          // 右滑 → 显示上一张
+          console.log('👉 右滑 - 上一张');
+          this.navigate(-1);
+        } else {
+          // 左滑 → 显示下一张
+          console.log('👈 左滑 - 下一张');
+          this.navigate(1);
+        }
+        
+        this.touchStartX = 0;
+        this.touchStartY = 0;
       }
-    });
+    }, { passive: false });
+
+    // ⚠️ 重要改动：移除img元素上的所有点击事件监听
+    // 原因：这些监听器会与外层的委托事件冲突，导致页面冻结
+    // 所有交互都通过viewer层级的委托事件处理（见DOMContentLoaded部分）
+    
+    console.log('✅ 图片查看器初始化完成（支持键盘导航和触摸滑动）');
   },
 
   open(index) {
-    this.currentIndex = index;
-    this.updateImage();
-    this.viewer.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    console.log(`🖼️ 打开图片查看器，图片数: ${this.images.length}`);
+    
+    if (!this.images || this.images.length === 0) {
+      console.error('❌ 没有可查看的图片');
+      return;
+    }
+    
+    this.currentIndex = Math.min(index, this.images.length - 1);
+    
+    // ⚠️ 关键改进：使用class切换和RAF，避免竞态条件
+    setTimeout(() => {
+      // 第1步：添加active class（显示查看器）
+      this.viewer.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      
+      // 第2步：在RAF中加载图片，确保在viewer显示之后
+      requestAnimationFrame(() => {
+        this.updateImage();
+      });
+      
+      console.log('✅ 图片查看器已打开');
+    }, 0);
   },
 
   close() {
-    this.viewer.style.display = 'none';
+    console.log('❌ 关闭图片查看器');
+    
+    // 移除active class（隐藏查看器）
+    this.viewer.classList.remove('active');
     document.body.style.overflow = '';
+    
+    // 清理资源
+    setTimeout(() => {
+      this.currentIndex = 0;
+      this.images = [];
+    }, 300); // 等待CSS动画完成（可选）
   },
 
   navigate(direction) {
+    if (!this.images || this.images.length === 0) {
+      console.warn('⚠️ 没有图片可导航');
+      return;
+    }
+    
+    const prevIndex = this.currentIndex;
     this.currentIndex = (this.currentIndex + direction + this.images.length) % this.images.length;
-    this.updateImage();
+    
+    // 只在确实改变时更新
+    if (prevIndex !== this.currentIndex) {
+      console.log(`⬅️➡️ 切换图片: ${prevIndex + 1} → ${this.currentIndex + 1}`);
+      this.updateImage();
+    }
   },
 
   updateImage() {
-    this.img.src = this.images[this.currentIndex];
-    this.counter.textContent = `${this.currentIndex + 1} / ${this.images.length}`;
-    
-    // 更新按钮显示状态
-    this.prevBtn.style.display = this.images.length > 1 ? 'flex' : 'none';
-    this.nextBtn.style.display = this.images.length > 1 ? 'flex' : 'none';
+    try {
+      if (!this.images || this.images.length === 0) {
+        console.warn('⚠️ 没有图片可显示');
+        return;
+      }
+      
+      const currentSrc = this.images[this.currentIndex];
+      if (!currentSrc) {
+        console.error('❌ 无效的图片索引:', this.currentIndex);
+        return;
+      }
+      
+      // 第一层RAF：准备URL
+      requestAnimationFrame(() => {
+        const urlWithCache = currentSrc.includes('?') 
+          ? currentSrc + '&t=' + Date.now()
+          : currentSrc + '?t=' + Date.now();
+        
+        // 第二层RAF：实际赋值，确保不阻塞渲染
+        requestAnimationFrame(() => {
+          this.img.src = urlWithCache;
+          
+          // 计数器更新
+          if (this.counter) {
+            this.counter.textContent = `${this.currentIndex + 1} / ${this.images.length}`;
+          }
+          
+          // 更新按钮显示状态
+          if (this.prevBtn) {
+            this.prevBtn.style.display = this.images.length > 1 ? 'flex' : 'none';
+          }
+          if (this.nextBtn) {
+            this.nextBtn.style.display = this.images.length > 1 ? 'flex' : 'none';
+          }
+          
+          console.log(`📄 已加载图片 ${this.currentIndex + 1}/${this.images.length}`);
+        });
+      });
+    } catch (error) {
+      console.error('❌ 更新图片时出错:', error);
+    }
   },
 
   print() {
@@ -758,5 +883,57 @@ function showToast(message, type = 'info') {
 
 // 初始化图片查看器
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('🎬 DOMContentLoaded - 初始化图片查看器');
+  
   ImageViewer.init();
+  
+  // ==================== 简化的单一事件委托 ====================
+  // 使用最简单的逻辑：检查点击目标是什么，然后处理
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    const printBtn = target.closest('.image-print-btn');
+    const thumbnail = target.closest('.ai-image-thumbnail');
+    
+    // 情况1：点击了打印按钮
+    if (printBtn) {
+      console.log('🖨️ 点击打印按钮');
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      
+      const imageUrl = printBtn.dataset.imageUrl;
+      if (imageUrl) {
+        printImage(imageUrl);
+      }
+      return;
+    }
+    
+    // 情况2：点击了图片（但不是打印按钮）
+    if (thumbnail && !printBtn) {
+      console.log('🖼️ 点击了图片缩略图');
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // ⚠️ 关键：使用setTimeout异步处理，避免在事件处理器中阻塞
+      setTimeout(() => {
+        const allImages = document.querySelectorAll('.ai-image-thumbnail');
+        if (allImages.length > 0) {
+          ImageViewer.images = Array.from(allImages).map(img => img.src);
+          ImageViewer.currentIndex = Array.from(allImages).indexOf(thumbnail);
+          
+          console.log(`📸 打开图片查看器 - 图片索引: ${ImageViewer.currentIndex}/${ImageViewer.images.length}`);
+          
+          if (ImageViewer.currentIndex >= 0 && ImageViewer.currentIndex < ImageViewer.images.length) {
+            ImageViewer.open(ImageViewer.currentIndex);
+          }
+        }
+      }, 0);
+      
+      return;
+    }
+  }, false); // 单一冒泡监听器
 });
+
+
+
+

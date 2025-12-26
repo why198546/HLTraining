@@ -6,6 +6,7 @@
   <title>{{ lesson.title }} - 松果课堂</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/image-viewer.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -21,6 +22,14 @@
 
       <h1 class="classroom-title">{{ lesson.title }}</h1>
       <p class="classroom-subtitle">{{ lesson.desc }}</p>
+
+      {% if current_user.is_authenticated and current_user.role in ['teacher', 'admin'] %}
+      <div class="lesson-actions">
+        <button class="btn-qrcode" id="qrBtn" data-lesson-key="{{ lesson_key }}" data-lesson-title="{{ lesson.title }}">
+          <i class="fas fa-qrcode"></i> 生成课程二维码
+        </button>
+      </div>
+      {% endif %}
 
       <div class="classroom-sections">
         <div class="class-section">
@@ -384,7 +393,7 @@
   </main>
 
   <!-- 全屏图片查看器 -->
-  <div id="image-viewer" class="image-viewer" style="display: none;">
+  <div id="image-viewer" class="image-viewer">
     <div class="image-viewer-overlay"></div>
     <button class="image-viewer-close">×</button>
     <button class="image-viewer-print" title="打印图片">🖨️</button>
@@ -393,6 +402,250 @@
     <div class="image-viewer-counter"></div>
     <img class="image-viewer-img" src="" alt="" />
   </div>
+
+  <script>
+    // 松果课堂课程二维码生成功能
+    document.addEventListener('DOMContentLoaded', function() {
+      const qrBtn = document.getElementById('qrBtn');
+      if (!qrBtn) return;
+      
+      qrBtn.addEventListener('click', async function() {
+        const lessonKey = this.dataset.lessonKey;
+        const lessonTitle = this.dataset.lessonTitle;
+        
+        // 显示参数设置对话框
+        showQRParamsModal(lessonKey, lessonTitle);
+      });
+    });
+    
+    function showQRParamsModal(lessonKey, lessonTitle) {
+      const modal = document.createElement('div');
+      modal.className = 'qr-params-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      `;
+      
+      content.innerHTML = `
+        <h2 style="margin-top: 0; color: #333;">生成课程二维码</h2>
+        <p style="color: #666; margin-bottom: 20px;">《${lessonTitle}》</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+          <div>
+            <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600;">最大使用次数</label>
+            <input type="number" id="maxUses" placeholder="留空表示无限制" min="1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+            <small style="color: #999;">限制此二维码最多被扫码次数</small>
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600;">有效期（天）</label>
+            <input type="number" id="expiresDays" placeholder="留空表示永久有效" min="1" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+            <small style="color: #999;">二维码在几天后过期</small>
+          </div>
+          
+          <div>
+            <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600;">赠送松果币</label>
+            <input type="number" id="tokensReward" placeholder="0" min="0" value="10" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+            <small style="color: #999;">每个学生扫码赠送的松果币数量</small>
+          </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+          <button id="confirmBtn" style="
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+          "><i class="fas fa-check"></i> 生成</button>
+          <button id="cancelBtn" style="
+            flex: 1;
+            padding: 12px 20px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          ">取消</button>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      document.getElementById('confirmBtn').addEventListener('click', async function() {
+        const maxUses = document.getElementById('maxUses').value || null;
+        const expiresDays = document.getElementById('expiresDays').value || null;
+        const tokensReward = document.getElementById('tokensReward').value || 0;
+        
+        modal.remove();
+        await generateQRCode(lessonKey, lessonTitle, maxUses, expiresDays, tokensReward);
+      });
+      
+      document.getElementById('cancelBtn').addEventListener('click', function() {
+        modal.remove();
+      });
+      
+      // 点击背景关闭
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+    
+    async function generateQRCode(lessonKey, lessonTitle, maxUses, expiresDays, tokensReward) {
+      try {
+        const qrBtn = document.getElementById('qrBtn');
+        qrBtn.disabled = true;
+        qrBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+        
+        const response = await fetch('{{ url_for("qr.generate_sunguo_lesson_qrcode") }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lesson_key: lessonKey,
+            lesson_title: lessonTitle,
+            max_uses: maxUses,
+            expires_days: expiresDays,
+            tokens_reward: tokensReward
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          showQRModal(result.qr_code_url, result.lesson_title, result.download_url, 
+                     result.validity_info, result.tokens_reward, result.max_uses);
+        } else {
+          alert('生成二维码失败: ' + (result.error || '未知错误'));
+        }
+      } catch (error) {
+        console.error('错误:', error);
+        alert('生成二维码失败，请稍后重试');
+      } finally {
+        document.getElementById('qrBtn').disabled = false;
+        document.getElementById('qrBtn').innerHTML = '<i class="fas fa-qrcode"></i> 生成课程二维码';
+      }
+    }
+    
+    function showQRModal(qrUrl, lessonTitle, downloadUrl, validityInfo, tokensReward, maxUses) {
+      // 创建模态框
+      const modal = document.createElement('div');
+      modal.className = 'qr-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 420px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      `;
+      
+      let infoHtml = '';
+      if (validityInfo) {
+        infoHtml += `<p style="color: #666; margin: 8px 0; font-size: 0.95rem;"><i class="fas fa-calendar"></i> ${validityInfo}</p>`;
+      }
+      if (maxUses) {
+        infoHtml += `<p style="color: #666; margin: 8px 0; font-size: 0.95rem;"><i class="fas fa-chart-pie"></i> 最多扫码 ${maxUses} 次</p>`;
+      }
+      if (tokensReward > 0) {
+        infoHtml += `<p style="color: #28a745; margin: 8px 0; font-size: 0.95rem;"><i class="fas fa-gift"></i> 每次扫码赠送 <strong>${tokensReward}</strong> 松果币</p>`;
+      }
+      
+      content.innerHTML = `
+        <h2 style="margin-top: 0; color: #333;">课程二维码已生成</h2>
+        <p style="color: #666; margin: 10px 0 20px;">《${lessonTitle}》</p>
+        <img src="${qrUrl}" alt="课程二维码" style="width: 250px; height: 250px; border: 2px solid #eee; border-radius: 10px; margin: 20px 0;">
+        ${infoHtml}
+        <p style="color: #999; font-size: 0.9rem; margin-top: 15px;">扫描二维码分享课程</p>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button id="downloadBtn" style="
+            flex: 1;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          "><i class="fas fa-download"></i> 下载二维码</button>
+          <button id="closeBtn" style="
+            flex: 1;
+            padding: 10px 20px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+          ">关闭</button>
+        </div>
+      `;
+      
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      document.getElementById('closeBtn').addEventListener('click', function() {
+        modal.remove();
+      });
+      
+      document.getElementById('downloadBtn').addEventListener('click', function() {
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = '课程二维码.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+      
+      // 点击背景关闭
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          modal.remove();
+        }
+      });
+    }
+  </script>
 
   <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>

@@ -706,6 +706,9 @@ class Course(db.Model):
     current_uses = db.Column(db.Integer, default=0)  # 当前使用次数
     expires_at = db.Column(db.DateTime, nullable=True)  # 过期时间（None表示永久有效）
     
+    # 奖励信息
+    tokens_reward = db.Column(db.Integer, default=0)  # 扫码赠送的松果币数量
+    
     # 状态
     is_active = db.Column(db.Boolean, default=True)  # 是否激活
     qr_image_path = db.Column(db.String(200))  # 二维码图片路径
@@ -718,7 +721,7 @@ class Course(db.Model):
     enrollments = db.relationship('CourseEnrollment', backref='course', lazy=True, cascade='all, delete-orphan')
     
     def __init__(self, course_code, course_name, course_type, created_by, course_key=None, 
-                 max_uses=None, expires_at=None, description=None):
+                 max_uses=None, expires_at=None, description=None, tokens_reward=0):
         self.course_code = course_code
         self.course_name = course_name
         self.course_key = course_key
@@ -727,6 +730,7 @@ class Course(db.Model):
         self.max_uses = max_uses
         self.expires_at = expires_at
         self.description = description
+        self.tokens_reward = tokens_reward
     
     def is_valid(self):
         """检查课程二维码是否有效"""
@@ -778,7 +782,8 @@ class Course(db.Model):
             'is_valid': valid,
             'validation_message': msg,
             'qr_image_path': self.qr_image_path,
-            'description': self.description
+            'description': self.description,
+            'tokens_reward': self.tokens_reward
         }
 
 
