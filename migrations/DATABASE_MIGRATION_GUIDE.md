@@ -508,6 +508,27 @@ db.session.commit()
 - Chrome: `Ctrl + Shift + Delete`
 - 或在代码中添加缓存版本号：`<link href="style.css?v=2">`
 
+### Q4: 缺失用户表字段错误
+
+**错误信息**：`OperationalError: no such column: users.image_token_remaining`
+
+**原因**：数据库模型更新后，数据库表结构未同步
+
+**解决方案**：
+```bash
+# 运行自动修复脚本
+python migrations/add_missing_user_columns.py
+
+# 或手动添加字段（SQLite）
+sqlite3 instance/hltraining.db
+ALTER TABLE users ADD COLUMN image_token_remaining INTEGER DEFAULT 50;
+ALTER TABLE users ADD COLUMN is_enrolled BOOLEAN DEFAULT 0;
+ALTER TABLE users ADD COLUMN daily_token_amount INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN trial_end_date DATETIME;
+ALTER TABLE users ADD COLUMN last_token_grant_date DATE;
+ALTER TABLE users ADD COLUMN course_type VARCHAR(50);
+```
+
 ---
 
 ## 📚 相关文档
@@ -522,6 +543,7 @@ db.session.commit()
 
 | 日期 | 修改人 | 说明 |
 |------|--------|------|
+| 2025-12-26 | GitHub Copilot | 添加用户表缺失字段修复方案（image_token_remaining等） |
 | 2025-12-25 | GitHub Copilot | 创建文档：添加session_id和版本历史字段支持分步工作流 |
 
 ---

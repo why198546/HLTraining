@@ -1,0 +1,2 @@
+id,username,nickname,parent_email,role,image_token_remaining,daily_token_amount,trial_end_date,last_token_grant_date,course_type,created_at
+1,why,"王老师",parent@example.com,teacher,50,0,,,,"2025-10-25 05:57:30.953013"

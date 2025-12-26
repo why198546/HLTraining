@@ -1,5 +1,7 @@
 """Flask应用工厂"""
 import os
+import time
+from pathlib import Path
 
 from flask import Flask
 from flask_login import LoginManager
@@ -75,5 +77,26 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(api_create_bp)  # 创作API（已包含/api前缀）
     app.register_blueprint(static_files_bp)
+    
+    # 添加自动版本号到模板上下文
+    @app.context_processor
+    def inject_version():
+        """为模板注入静态文件版本号（基于文件修改时间）"""
+        def get_static_version(filename):
+            """获取静态文件的版本号（基于修改时间戳）"""
+            try:
+                static_path = Path(app.static_folder) / filename
+                if static_path.exists():
+                    # 使用文件修改时间戳作为版本号
+                    mtime = int(static_path.stat().st_mtime)
+                    return str(mtime)
+                else:
+                    # 文件不存在时使用当前时间戳
+                    return str(int(time.time()))
+            except Exception:
+                # 出错时使用当前时间戳
+                return str(int(time.time()))
+        
+        return dict(static_version=get_static_version)
     
     return app

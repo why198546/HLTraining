@@ -308,8 +308,6 @@ def canvas_modify():
             image_path,
             new_prompt,
             style='realistic',
-            color_preference='colorful',
-            expert_mode=False,
             aspect_ratio='1:1'
         )
         
