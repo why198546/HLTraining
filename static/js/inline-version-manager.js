@@ -230,7 +230,7 @@ class InlineVersionManager {
             await this.loadSelectedVersions();
             this.updateUI();
         } catch (error) {
-            console.error('❌ 加载版本失败:', error);
+            hldebug.error('❌ 加载版本失败:', error);
         } finally {
             this.loadingVersions = false;
         }
@@ -278,7 +278,6 @@ class InlineVersionManager {
     updateThumbnailsGrid(versions) {
         const thumbnailsGrid = document.querySelector('.thumbnails-grid');
         if (!thumbnailsGrid) {
-            console.warn('⚠️ 未找到 .thumbnails-grid 元素');
             return;
         }
         
@@ -411,11 +410,11 @@ class InlineVersionManager {
                 this.currentSessionId = result.session_id;
                 this.updateFormSessionIds();
             } else {
-                console.error('❌ 创建会话失败:', result.error);
+                hldebug.error('❌ 创建会话失败:', result.error);
                 alert('创建会话失败，请刷新页面重试');
             }
         } catch (error) {
-            console.error('❌ 创建会话网络错误:', error);
+            hldebug.error('❌ 创建会话网络错误:', error);
             alert('网络错误，请检查连接后重试');
         }
     }
@@ -467,7 +466,7 @@ class InlineVersionManager {
                 this.updateMainDisplay();
             }
         } catch (error) {
-            console.error('❌ 选择版本失败:', error);
+            hldebug.error('❌ 选择版本失败:', error);
         }
     }
 
@@ -610,7 +609,7 @@ class InlineVersionManager {
         }
 
         if (!this.currentSessionId) {
-            console.error('❌ 会话ID不存在:', this.currentSessionId);
+            hldebug.error('❌ 会话ID不存在:', this.currentSessionId);
             alert('会话未正确创建，请刷新页面重试');
             return;
         }
@@ -623,7 +622,7 @@ class InlineVersionManager {
     showSaveDialog() {
         // 再次确认会话ID
         if (!this.currentSessionId) {
-            console.error('❌ 创建保存对话框时会话ID为空');
+            hldebug.error('❌ 创建保存对话框时会话ID为空');
             alert('会话ID丢失，请刷新页面重试');
             return;
         }
@@ -705,7 +704,7 @@ class InlineVersionManager {
                 alert('保存失败：' + result.error);
             }
         } catch (error) {
-            console.error('❌ 保存失败:', error);
+            hldebug.error('❌ 保存失败:', error);
             alert('保存失败，请重试');
         }
     }
@@ -749,7 +748,7 @@ class InlineVersionManager {
                 }
             }
         } catch (error) {
-            console.error('❌ 自动选择最新版本失败:', error);
+            hldebug.error('❌ 自动选择最新版本失败:', error);
         }
     }
     
@@ -757,7 +756,6 @@ class InlineVersionManager {
     generateMore() {
         // 检查是否在生成阶段且有必要的参数
         if (this.currentStage !== 2) {
-            console.warn('⚠️ 当前不在生成阶段');
             return;
         }
         
@@ -765,7 +763,7 @@ class InlineVersionManager {
         if (typeof generateImage === 'function') {
             generateImage();
         } else {
-            console.error('❌ generateImage 函数未定义');
+            hldebug.error('❌ generateImage 函数未定义');
         }
     }
 

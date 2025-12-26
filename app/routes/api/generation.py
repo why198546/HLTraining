@@ -15,6 +15,7 @@ from api.prompt_translator import translate_prompt
 from api.sam3d_api import SAM3DAPI
 from app.utils import allowed_file, normalize_path_for_url, preprocess_sketch
 from managers.creation_session_manager import CreationSessionManager
+from app import db
 
 generation_api_bp = Blueprint('generation_api', __name__)
 
@@ -83,6 +84,21 @@ def api_generate_image():
             print("❌ 缺少必要参数")
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
+        # 检查用户松果币是否足够（教师和管理员不检查）
+        if current_user and current_user.is_authenticated:
+            if current_user.role not in ['teacher', 'admin']:
+                if hasattr(current_user, 'image_token_remaining'):
+                    tokens_needed = num_images  # 生成几张图需要几个币
+                    if current_user.image_token_remaining < tokens_needed:
+                        print(f"❌ 用户 {current_user.username} 松果币不足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
+                        return jsonify({
+                            'error': f'松果币不足！需要{tokens_needed}个，当前剩余{current_user.image_token_remaining}个。请联系老师充值。',
+                            'remaining_tokens': current_user.image_token_remaining
+                        }), 403
+                    print(f"✅ 用户 {current_user.username} 松果币充足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
+                else:
+                    print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
+        
         # 如果提示词中包含人物但未指定国籍，默认添加"中国人形象"
         if prompt:
             has_nationality = bool(re.search(r'外国|美国|日本|韩国|欧洲|英国|法国|德国|俄罗斯|印度|非洲|澳大利亚|加拿大|意大利|西班牙|巴西|墨西哥|阿拉伯|泰国|越南|新加坡|马来西亚|菲律宾', prompt, re.IGNORECASE))
@@ -122,66 +138,78 @@ def api_generate_image():
         
         # 智能分析prompt，检测10个核心特征，动态生成差异化描述
         def analyze_and_generate_variations(prompt_text, num_variations=4):
-            """分析prompt中已提到的特征，为未提到的特征生成差异化描述"""
+            """分析prompt中已提到的特征，为未提到的特征生成差异化描述
+            返回: (variations, detected_features_dict)"""
             import random
             
             # 10个核心特征及其检测关键词和变化选项
             features = {
                 'gender': {
                     'keywords': ['男孩', '女孩', '男', '女', '男生', '女生', '小伙', '姑娘', '闪男', '闪女'],
-                    'options': []  # 性别通常会明确，不建议变化
+                    'options': [],
+                    'index': 0
                 },
                 'body': {
                     'keywords': ['胖', '瘦', '壮', '苗条', '强壮', '纤细', '肥胖', '削瘦', '身材', '胖嘟嘟', '壮实', '结实'],
-                    'options': ['偏瘦身材', '身材适中', '偏胖身材', '匀称身材']
+                    'options': ['偏瘦身材', '身材适中', '偏胖身材', '匀称身材'],
+                    'index': 1
                 },
                 'hair_length': {
                     'keywords': ['长发', '短发', '中长发', '齐肩发', '披肩发', '长头发', '短头发', '头发'],
-                    'options': ['短发', '中长发', '长发', '齐肩发']
+                    'options': ['短发', '中长发', '长发', '齐肩发'],
+                    'index': 2
                 },
                 'hair_style': {
                     'keywords': ['卷发', '直发', '波浪', '自然卷', '微卷', '卷头发', '直头发', '平头', '寸头', '光头', '马尾', '辫子', '发型'],
-                    'options': ['直发', '微卷发', '卷发', '自然发']
+                    'options': ['直发', '微卷发', '卷发', '自然发'],
+                    'index': 3
                 },
                 'skin': {
                     'keywords': ['皮肤黑', '皮肤白', '肤色', '黑皮肤', '白皮肤', '皮肤', '黑', '白', '黑黑', '白白', '黑黑的', '白白的', '黑色', '白色', '黝黑', '白皙', '深色', '浅色', '深色皮肤', '浅色皮肤'],
-                    'options': ['皮肤白皙', '皮肤偏黑', '皮肤中等', '健康肤色']
+                    'options': ['皮肤白皙', '皮肤偏黑', '皮肤中等', '健康肤色'],
+                    'index': 4
                 },
                 'eyes': {
                     'keywords': ['大眼睛', '小眼睛', '眼睛大', '眼睛小', '单眼皮', '双眼皮', '眼睛', '大眼', '小眼'],
-                    'options': ['大眼睛', '小眼睛', '中等眼睛', '明亮眼睛']
+                    'options': ['大眼睛', '小眼睛', '中等眼睛', '明亮眼睛'],
+                    'index': 5
                 },
                 'nose': {
                     'keywords': ['大鼻子', '小鼻子', '高鼻梁', '低鼻梁', '挺鼻', '鼻子大', '鼻子小', '塌鼻子', '鼻梁', '鼻子', '高高的鼻子', '高高的鼻梁'],
-                    'options': ['小巧鼻子', '高挺鼻梁', '中等鼻子', '秀气鼻子']
+                    'options': ['小巧鼻子', '高挺鼻梁', '中等鼻子', '秀气鼻子'],
+                    'index': 6
                 },
                 'mouth': {
                     'keywords': ['大嘴', '小嘴', '嘴大', '嘴小', '樱桃小嘴', '嘴巴'],
-                    'options': ['嘴巴适中', '小嘴', '嘴型饱满', '嘴型秀气']
+                    'options': ['嘴巴适中', '小嘴', '嘴型饱满', '嘴型秀气'],
+                    'index': 7
                 },
                 'lips': {
                     'keywords': ['厚嘴唇', '薄嘴唇', '嘴唇厚', '嘴唇薄', '嘴唇', '肥厚的嘴唇', '肥肥的嘴唇', '肥嘴唇'],
-                    'options': ['薄嘴唇', '嘴唇适中', '厚嘴唇', '嘴唇自然']
+                    'options': ['薄嘴唇', '嘴唇适中', '厚嘴唇', '嘴唇自然'],
+                    'index': 8
                 },
                 'ears': {
                     'keywords': ['大耳朵', '小耳朵', '耳朵大', '耳朵小', '耳朵'],
-                    'options': ['小耳朵', '耳朵适中', '大耳朵', '耳朵秀气']
+                    'options': ['小耳朵', '耳朵适中', '大耳朵', '耳朵秀气'],
+                    'index': 9
                 }
             }
             
             # 检测prompt中已提到的特征
-            mentioned_features = set()
+            mentioned_features = {}
             for feature_name, feature_data in features.items():
                 for keyword in feature_data['keywords']:
                     if keyword in prompt_text:
-                        mentioned_features.add(feature_name)
+                        # 返回特征索引和检测到的关键词
+                        mentioned_features[feature_data['index']] = keyword
                         break
             
             print(f"🔍 检测到已提及的特征: {mentioned_features}")
             
             # 为未提及的特征生成差异化选项
             unmentioned_features = {k: v for k, v in features.items() 
-                                   if k not in mentioned_features and v['options']}
+                                   if v['index'] not in mentioned_features and v['options']}
             
             # 生成num_variations个变化描述
             variations = []
@@ -200,10 +228,10 @@ def api_generate_image():
                     variations.append(f"，第{i+1}个版本")
             
             print(f"✨ 生成的差异化描述: {variations}")
-            return variations
+            return variations, mentioned_features
         
-        # 智能生成变化因子
-        variations = analyze_and_generate_variations(prompt, num_images)
+        # 智能生成变化因子和检测特征
+        variations, mentioned_features = analyze_and_generate_variations(prompt, num_images)
         
         # 生成多张图片
         generated_images = []
@@ -301,12 +329,31 @@ def api_generate_image():
             'image_urls': relative_paths,  # 所有图片的URL数组
             'image_path': relative_path,
             'version_id': version_id,
+            'detected_features': mentioned_features,  # 返回检测到的特征
             'message': f'成功生成 {len(relative_paths)} 张图片！'
         }
         
         # 如果有上传的图片，也返回原始图片路径
         if sketch_path:
             response_data['original_image_url'] = normalize_path_for_url(sketch_path)
+        
+        # 扣除用户的松果币（教师和管理员不扣）
+        if current_user and current_user.is_authenticated:
+            if current_user.role not in ['teacher', 'admin']:
+                # 每生成一张图扣1个币，num_images张就扣num_images个币
+                if hasattr(current_user, 'image_token_remaining'):
+                    tokens_to_deduct = num_images
+                    current_user.image_token_remaining -= tokens_to_deduct
+                    db.session.commit()
+                    response_data['remaining_tokens'] = current_user.image_token_remaining
+                    print(f"💰 已为用户 {current_user.username} 扣除 {tokens_to_deduct} 个松果币，剩余: {current_user.image_token_remaining}")
+                else:
+                    print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
+            else:
+                # 教师和管理员不扣币
+                if hasattr(current_user, 'image_token_remaining'):
+                    response_data['remaining_tokens'] = current_user.image_token_remaining
+                    print(f"✅ 用户 {current_user.username} 是 {current_user.role}，无需扣币")
         
         return jsonify(response_data)
             

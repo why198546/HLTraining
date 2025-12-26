@@ -38,7 +38,7 @@ class NanoBananaAPI:
             print(f"❌ Google Gen AI 客户端初始化失败: {str(e)}")
             self.client = None
     
-    def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512"):
+    def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512", temperature=1, top_p=0.95, seed=None):
         """参考图+文字描述生成图片 - 使用Gemini 2.5 Flash Image模型
         
         功能：
@@ -46,6 +46,8 @@ class NanoBananaAPI:
         2. 可选文字描述（description）引导生成
         3. 支持多种风格和高宽比
         4. style="none" 时不添加任何系统提示词（专家模式）
+        5. temperature参数控制生成的创意程度（0.0-1.0）
+        6. seed参数用于控制随机性（不同seed会产生不同结果）
         """
         try:
             print("🎨 开始使用Gemini 2.5 Flash Image 进行参考图生成...")
@@ -64,35 +66,22 @@ class NanoBananaAPI:
                 prompt = description if description else "为这张图片上色"
                 print(f"⚡ 专家模式 - 原始 prompt: {prompt}")
             else:
-                # 风格映射
+                # 风格映射 - 简化提示词，加快生成速度
                 style_prompts = {
-                    'cute': '可爱卡通风格',
-                    'realistic': '写实风格',
-                    'anime': '日式动漫风格',
-                    'fantasy': '奇幻风格',
-                    'model_3d': '3D模型专用，纯白色或浅灰色单色背景，主体清晰居中，无任何背景装饰、天空、地面或环境元素'
+                    'cute': '卡通',
+                    'realistic': '写实',
+                    'anime': '动漫',
+                    'fantasy': '奇幻',
+                    'model_3d': '白色背景，清晰主体'
                 }
                 
                 style_desc = style_prompts.get(style, style_prompts['cute'])
                 
-                # 加强提示词，确保AI严格遵循草图结构
+                # 简化提示词 - 减少复杂度，加快生成
                 if description:
-                    prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
-内容描述：{description}
-艺术风格：{style_desc}
-重要要求：
-1. 必须保持原始线条的结构和位置关系
-2. 不要改变主体的形状和姿态
-3. 在线条范围内填充颜色和细节
-4. 保持画面清晰，适合儿童观看"""
+                    prompt = f"这张素描是{description}，请按照线条上色。风格：{style_desc}"
                 else:
-                    prompt = f"""请严格按照这张手绘简笔画的线条结构和构图进行上色和填充细节。
-艺术风格：{style_desc}
-重要要求：
-1. 必须保持原始线条的结构和位置关系
-2. 不要改变主体的形状和姿态
-3. 在线条范围内填充颜色和细节
-4. 保持画面清晰，适合儿童观看"""
+                    prompt = f"给这张素描上色，保持线条结构。风格：{style_desc}"
             
             print(f"🎨 用户描述：{description or '使用默认风格'}")
             print(f"📝 上色提示词: {prompt}")
@@ -118,13 +107,20 @@ class NanoBananaAPI:
                         ratio_str = aspect_ratio
                     
                     # 使用Gemini 2.5 Flash Image - 这才是真正的Nano Banana！
-                    config = types.GenerateContentConfig(
-                        response_modalities=["IMAGE"],  # 明确要求返回图片
-                        temperature=0.7,
-                        image_config=types.ImageConfig(
+                    config_kwargs = {
+                        'response_modalities': ["IMAGE"],  # 明确要求返回图片
+                        'temperature': temperature,  # 使用传入的temperature参数（官方默认值1）
+                        'top_p': top_p,  # 核采样参数，控制多样性（官方默认值0.95）
+                        'image_config': types.ImageConfig(
                             aspect_ratio=ratio_str,  # 使用比例格式
                         )
-                    )
+                    }
+                    
+                    # 如果提供了seed参数，添加到配置中
+                    if seed is not None:
+                        config_kwargs['seed'] = int(seed)
+                    
+                    config = types.GenerateContentConfig(**config_kwargs)
                     
                     response = self.client.models.generate_content(
                         model='models/gemini-2.5-flash-image',  # 使用Gemini 2.5 Flash Image
@@ -211,7 +207,9 @@ class NanoBananaAPI:
                         
                         # 保存上色后的图像
                         base_name = os.path.splitext(os.path.basename(sketch_path))[0]
-                        colored_filename = f"{base_name}_colored.jpg"
+                        # 为每张图添加UUID确保唯一性（防止覆盖）
+                        import uuid
+                        colored_filename = f"{base_name}_colored_{uuid.uuid4().hex}.jpg"
                         output_path = os.path.join(self.upload_folder, colored_filename)
                         
                         # 保存图片
@@ -219,6 +217,7 @@ class NanoBananaAPI:
                         
                         print(f"✅ Gemini上色完成: {output_path}")
                         print(f"📐 高宽比: {aspect_ratio}")
+                        print(f"🆔 文件名: {colored_filename}")
                         return output_path
                     else:
                         # 检查是否有文本响应

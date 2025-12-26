@@ -1,5 +1,4 @@
 // 无限画布 JavaScript
-console.log('=== Canvas Infinite.js 已加载 ===');
 
 // Session管理系统 - 支持至少50步历史记录
 class InfiniteCanvasSession {
@@ -37,7 +36,6 @@ class InfiniteCanvasSession {
             this.currentStep++;
         }
         
-        console.log(`[Infinite Session] 已保存状态 ${this.currentStep + 1}/${this.history.length}`);
         return true;
     }
     
@@ -45,7 +43,6 @@ class InfiniteCanvasSession {
     undo() {
         if (this.canUndo()) {
             this.currentStep--;
-            console.log(`[Infinite Session] 撤销到步骤 ${this.currentStep + 1}/${this.history.length}`);
             return this.getCurrentState();
         }
         return null;
@@ -55,7 +52,6 @@ class InfiniteCanvasSession {
     redo() {
         if (this.canRedo()) {
             this.currentStep++;
-            console.log(`[Infinite Session] 重做到步骤 ${this.currentStep + 1}/${this.history.length}`);
             return this.getCurrentState();
         }
         return null;
@@ -95,7 +91,6 @@ class InfiniteCanvasSession {
     clear() {
         this.history = [];
         this.currentStep = -1;
-        console.log('[Infinite Session] 历史记录已清空');
     }
 }
 
@@ -205,7 +200,6 @@ function init() {
     updateHistoryButtons();
     
     // 显示session信息
-    console.log('[Infinite Session] 已创建新会话:', infiniteSession.getInfo());
 }
 
 // ============ 事件监听器设置 ============
@@ -1050,7 +1044,7 @@ async function generateMultipleImages(tasks) {
                 successCount++;
             } else {
                 failCount++;
-                console.error(`生成第${currentNum}张失败:`, data.error);
+                hldebug.error(`生成第${currentNum}张失败:`, data.error);
             }
             
             // 稍微延迟，避免请求过快
@@ -1059,7 +1053,7 @@ async function generateMultipleImages(tasks) {
             }
         } catch (error) {
             failCount++;
-            console.error(`生成第${currentNum}张出错:`, error);
+            hldebug.error(`生成第${currentNum}张出错:`, error);
         }
     }
     
@@ -1183,7 +1177,6 @@ function parseMultiGenerationPrompt(prompt) {
             let count = parseChineseNumber(countStr) || parseInt(countStr);
             
             if (count && description) {
-                console.log(`[Multi] 识别到数量: ${countStr} -> ${count}, 描述: ${description}`);
                 return { count, description };
             }
         }
@@ -1731,7 +1724,6 @@ function restoreCanvasState(stateData) {
     updateZoomDisplay();
     updateHistoryButtons();
     
-    console.log('[Infinite Canvas] 状态已恢复');
 }
 
 // 撤销操作
@@ -1809,7 +1801,6 @@ function updateHistoryButtons() {
     
     // 在控制台显示session信息（调试用）
     if (info.totalSteps > 0) {
-        console.log(`[Infinite History] 步骤: ${info.currentStep}/${info.totalSteps} | 撤销: ${info.canUndo} | 重做: ${info.canRedo}`);
     }
 }
 
@@ -1829,10 +1820,8 @@ function updateToolbarPosition(position) {
     
     if (position === 'right') {
         toolbar.classList.add('avoid-right');
-        console.log('[Toolbar] 移到左侧避让面板');
     } else {
         toolbar.classList.add('avoid-left');
-        console.log('[Toolbar] 保持在右侧');
     }
 }
 
@@ -1935,7 +1924,6 @@ function initPanelDragAndResize() {
             btn.classList.toggle('active', btn.dataset.position === newPosition);
         });
         
-        console.log('[Panel] 吸附到位置:', newPosition);
     });
     
     // ===== 面板调整大小功能 =====
@@ -2013,7 +2001,6 @@ function initPanelDragAndResize() {
                 localStorage.setItem('chatPanelHeight', height);
             }
             
-            console.log('[Panel] 尺寸已保存:', panel.style.width, height);
         }
     });
 }
@@ -2021,7 +2008,6 @@ function initPanelDragAndResize() {
 // 确保聊天面板初始显示
     if (floatingChat) {
         floatingChat.classList.remove('minimized');
-        console.log('[Chat] 聊天面板已初始化并显示');
         
         // 从localStorage恢复位置和尺寸
         const savedPosition = localStorage.getItem('chatPanelPosition') || 'left';
@@ -2049,7 +2035,6 @@ function initPanelDragAndResize() {
     positionBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const position = btn.dataset.position;
-            console.log('[Panel] 切换到位置:', position);
             
             floatingChat.setAttribute('data-position', position);
             localStorage.setItem('chatPanelPosition', position);
@@ -2085,7 +2070,6 @@ function initPanelDragAndResize() {
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
             const tab = btn.dataset.tab;
-            console.log('[Tab] 切换到标签:', tab);
             
             // 更新标签按钮状态
             tabBtns.forEach(b => b.classList.remove('active'));
@@ -2093,13 +2077,11 @@ function initPanelDragAndResize() {
             
             // 切换标签页内容
             if (tab === 'chat') {
-                console.log('[Tab] 显示聊天标签');
                 chatTabContent.style.display = 'flex';
                 historyTabContent.style.display = 'none';
                 chatPanelInput.style.display = 'block';
                 historyFooter.style.display = 'none';
             } else if (tab === 'history') {
-                console.log('[Tab] 显示历史记录标签');
                 chatTabContent.style.display = 'none';
                 historyTabContent.style.display = 'flex';
                 chatPanelInput.style.display = 'none';
@@ -2107,10 +2089,8 @@ function initPanelDragAndResize() {
                 
                 // 刷新历史记录
                 if (historyPanel) {
-                    console.log('[Tab] 更新历史记录');
                     historyPanel.update();
                 } else {
-                    console.warn('[Tab] historyPanel未初始化');
                 }
             }
         });
@@ -2200,7 +2180,6 @@ function initVoiceInput() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        console.warn('[Voice] 浏览器不支持语音识别');
         btnVoice.style.display = 'none';
         return;
     }
@@ -2218,17 +2197,15 @@ function initVoiceInput() {
             recognition.stop();
             isRecording = false;
             btnVoice.classList.remove('recording');
-            console.log('[Voice] 停止录音');
         } else {
             // 开始录音
             try {
                 recognition.start();
                 isRecording = true;
                 btnVoice.classList.add('recording');
-                console.log('[Voice] 开始录音');
                 showToast('正在录音，请说话...', 'info');
             } catch (error) {
-                console.error('[Voice] 启动录音失败:', error);
+                hldebug.error('[Voice] 启动录音失败:', error);
                 showToast('启动录音失败', 'error');
             }
         }
@@ -2258,13 +2235,12 @@ function initVoiceInput() {
                 charCount.textContent = promptInput.value.length;
             }
             
-            console.log('[Voice] 识别结果:', finalTranscript);
             showToast('识别成功', 'success');
         }
     };
     
     recognition.onerror = (event) => {
-        console.error('[Voice] 识别错误:', event.error);
+        hldebug.error('[Voice] 识别错误:', event.error);
         isRecording = false;
         btnVoice.classList.remove('recording');
         
@@ -2283,6 +2259,5 @@ function initVoiceInput() {
     recognition.onend = () => {
         isRecording = false;
         btnVoice.classList.remove('recording');
-        console.log('[Voice] 录音结束');
     };
 }

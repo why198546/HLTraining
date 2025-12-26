@@ -60,6 +60,9 @@
                         <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入">
                           <i class="fas fa-microphone"></i>
                         </button>
+                        <button type="button" class="camera-input-btn" onclick="openCameraModal(event)" title="拍照上传">
+                          <i class="fas fa-camera"></i>
+                        </button>
                         <button type="button" class="ai-optimize-btn" onclick="optimizePromptManually(event)" title="AI优化">
                           <i class="fas fa-magic"></i>
                         </button>
@@ -93,29 +96,29 @@
                     <div class="feature-selector-grid">
                       <div class="feature-group">
                         <span class="feature-label" data-feature="gender">性别：</span>
-                        <button type="button" class="feature-btn" data-feature="gender" data-value="男孩">👦 男孩</button>
-                        <button type="button" class="feature-btn" data-feature="gender" data-value="女孩">👧 女孩</button>
+                        <button type="button" class="feature-btn" data-feature="gender" data-value="性别男孩">👦 男孩</button>
+                        <button type="button" class="feature-btn" data-feature="gender" data-value="性别女孩">👧 女孩</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="body">体型：</span>
-                        <button type="button" class="feature-btn" data-feature="body" data-value="胖">胖胖的</button>
-                        <button type="button" class="feature-btn" data-feature="body" data-value="瘦">瘦瘦的</button>
-                        <button type="button" class="feature-btn" data-feature="body" data-value="适中">正常</button>
+                        <button type="button" class="feature-btn" data-feature="body" data-value="体型偏胖">胖胖的</button>
+                        <button type="button" class="feature-btn" data-feature="body" data-value="体型偏瘦">瘦瘦的</button>
+                        <button type="button" class="feature-btn" data-feature="body" data-value="体型正常">正常</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="hair_length">头发长度：</span>
-                        <button type="button" class="feature-btn" data-feature="hair_length" data-value="长发">长发</button>
-                        <button type="button" class="feature-btn" data-feature="hair_length" data-value="短发">短发</button>
+                        <button type="button" class="feature-btn" data-feature="hair_length" data-value="头发长度长">长发</button>
+                        <button type="button" class="feature-btn" data-feature="hair_length" data-value="头发长度短">短发</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="hair_style">头发类型：</span>
-                        <button type="button" class="feature-btn" data-feature="hair_style" data-value="卷发">卷发</button>
-                        <button type="button" class="feature-btn" data-feature="hair_style" data-value="直发">直发</button>
+                        <button type="button" class="feature-btn" data-feature="hair_style" data-value="头发卷">卷发</button>
+                        <button type="button" class="feature-btn" data-feature="hair_style" data-value="头发直">直发</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="skin">皮肤：</span>
-                        <button type="button" class="feature-btn" data-feature="skin" data-value="深色皮肤">深色</button>
-                        <button type="button" class="feature-btn" data-feature="skin" data-value="浅色皮肤">浅色</button>
+                        <button type="button" class="feature-btn" data-feature="skin" data-value="皮肤较深">深色</button>
+                        <button type="button" class="feature-btn" data-feature="skin" data-value="皮肤较浅">浅色</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="eyes">眼睛：</span>
@@ -129,8 +132,8 @@
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="mouth">嘴巴：</span>
-                        <button type="button" class="feature-btn" data-feature="mouth" data-value="大嘴">大嘴</button>
-                        <button type="button" class="feature-btn" data-feature="mouth" data-value="小嘴">小嘴</button>
+                        <button type="button" class="feature-btn" data-feature="mouth" data-value="嘴巴较大">大嘴</button>
+                        <button type="button" class="feature-btn" data-feature="mouth" data-value="嘴巴较小">小嘴</button>
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="lips">嘴唇：</span>
@@ -139,8 +142,8 @@
                       </div>
                       <div class="feature-group">
                         <span class="feature-label" data-feature="ears">耳朵：</span>
-                        <button type="button" class="feature-btn" data-feature="ears" data-value="大耳朵">大耳朵</button>
-                        <button type="button" class="feature-btn" data-feature="ears" data-value="小耳朵">小耳朵</button>
+                        <button type="button" class="feature-btn" data-feature="ears" data-value="耳朵较大">大耳朵</button>
+                        <button type="button" class="feature-btn" data-feature="ears" data-value="耳朵较小">小耳朵</button>
                       </div>
                     </div>
                   </div>
@@ -157,15 +160,15 @@
               <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
               <div class="example-grid">
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_kid.svg') }}" alt="人物示例图 1" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_kid.png') }}" alt="人物示例图 1" />
                   <div class="example-prompt">一个10岁的小朋友，短发，圆脸，大眼睛，微笑，穿蓝色校服，卡通插画，干净背景</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_robot.svg') }}" alt="人物示例图 2" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_robot.png') }}" alt="人物示例图 2" />
                   <div class="example-prompt">一个可爱的小机器人，圆润外形，发光眼睛，配色清爽，卡通插画，简洁背景</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_kid.svg') }}" alt="人物示例图 3" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/character_explorer.png') }}" alt="人物示例图 3" />
                   <div class="example-prompt">一个勇敢的小探险家，戴红色帽子，背小背包，表情自信，卡通插画，明亮色彩</div>
                 </div>
               </div>
@@ -197,6 +200,9 @@
                         <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入">
                           <i class="fas fa-microphone"></i>
                         </button>
+                        <button type="button" class="camera-input-btn" onclick="openCameraModal(event)" title="拍照上传">
+                          <i class="fas fa-camera"></i>
+                        </button>
                         <button type="button" class="ai-optimize-btn" onclick="optimizePromptManually(event)" title="AI优化">
                           <i class="fas fa-magic"></i>
                         </button>
@@ -229,15 +235,15 @@
               <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
               <div class="example-grid">
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="动作示例图 1" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.png') }}" alt="动作示例图 1" />
                   <div class="example-prompt">一个小朋友在操场上跑步，全身，姿势自然，四肢完整，表情开心，卡通插画，干净背景</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_jump.svg') }}" alt="动作示例图 2" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_jump.png') }}" alt="动作示例图 2" />
                   <div class="example-prompt">一个小朋友跳跃起来，双手举高，全身，动作夸张但自然，卡通插画，明亮色彩</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="动作示例图 3" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_wave.png') }}" alt="动作示例图 3" />
                   <div class="example-prompt">一个可爱的小机器人挥手打招呼，半身，动作清晰，表情友好，卡通插画，简洁背景</div>
                 </div>
               </div>
@@ -269,6 +275,9 @@
                         <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入">
                           <i class="fas fa-microphone"></i>
                         </button>
+                        <button type="button" class="camera-input-btn" onclick="openCameraModal(event)" title="拍照上传">
+                          <i class="fas fa-camera"></i>
+                        </button>
                         <button type="button" class="ai-optimize-btn" onclick="optimizePromptManually(event)" title="AI优化">
                           <i class="fas fa-magic"></i>
                         </button>
@@ -301,15 +310,15 @@
               <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
               <div class="example-grid">
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="场景示例图 1" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.png') }}" alt="场景示例图 1" />
                   <div class="example-prompt">明亮的教室，黑板、课桌、窗户，阳光照进来，色彩丰富，卡通插画，画面简洁</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_park.svg') }}" alt="场景示例图 2" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_park.png') }}" alt="场景示例图 2" />
                   <div class="example-prompt">阳光明媚的公园，草地、大树、小路，天空有白云，色彩明亮，卡通插画，主体突出</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="场景示例图 3" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_living.png') }}" alt="场景示例图 3" />
                   <div class="example-prompt">温馨的家里客厅，沙发、地毯、窗帘，暖色灯光，画面干净，卡通插画，细节适中</div>
                 </div>
               </div>
@@ -341,6 +350,9 @@
                         <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入">
                           <i class="fas fa-microphone"></i>
                         </button>
+                        <button type="button" class="camera-input-btn" onclick="openCameraModal(event)" title="拍照上传">
+                          <i class="fas fa-camera"></i>
+                        </button>
                         <button type="button" class="ai-optimize-btn" onclick="optimizePromptManually(event)" title="AI优化">
                           <i class="fas fa-magic"></i>
                         </button>
@@ -373,15 +385,15 @@
               <h3 class="examples-title">参考示例（标准图像 + 提示词）</h3>
               <div class="example-grid">
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/action_run.svg') }}" alt="综合示例图 1" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/practice_1.png') }}" alt="综合示例图 1" />
                   <div class="example-prompt">一个小朋友，短发，微笑，穿蓝色校服；正在操场上跑步，全身，姿势自然，四肢完整；背景简单；卡通插画，色彩明亮</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_park.svg') }}" alt="综合示例图 2" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/practice_2.png') }}" alt="综合示例图 2" />
                   <div class="example-prompt">一个可爱的小机器人；挥手打招呼，半身；背景是阳光明媚的公园，有草地和大树；卡通插画，清爽配色，主体突出</div>
                 </div>
                 <div class="example-card">
-                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/scene_classroom.svg') }}" alt="综合示例图 3" />
+                  <img class="example-image" src="{{ url_for('static', filename='images/sunguo_examples/practice_3.png') }}" alt="综合示例图 3" />
                   <div class="example-prompt">一个认真听课的小朋友，表情专注；坐在课桌前；明亮的教室里有黑板和窗户，阳光照进来；卡通插画，细节适中，画面干净</div>
                 </div>
               </div>
@@ -401,6 +413,71 @@
     <button class="image-viewer-next">›</button>
     <div class="image-viewer-counter"></div>
     <img class="image-viewer-img" src="" alt="" />
+  </div>
+
+  <!-- 拍照模态框 -->
+  <div id="camera-modal" class="camera-modal" style="display: none;">
+    <div class="camera-modal-overlay"></div>
+    <div class="camera-modal-content">
+      <div class="camera-modal-header">
+        <h2>拍照或上传参考图片</h2>
+        <button class="camera-modal-close" onclick="closeCameraModal()" type="button">×</button>
+      </div>
+      
+      <div class="camera-modal-body">
+        <div class="camera-tabs">
+          <button class="camera-tab-btn" data-tab="upload" onclick="switchCameraTab('upload')">📁 上传图片</button>
+          <button class="camera-tab-btn" data-tab="camera" onclick="switchCameraTab('camera')">📷 拍照</button>
+        </div>
+        
+        <div class="camera-tab-content" id="camera-tab">
+          <div class="camera-preview-area" style="position: relative;">
+            <video id="camera-video" class="camera-video" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div id="camera-status" class="camera-status" style="display: none;"></div>
+            <!-- 摄像头切换按钮 -->
+            <button class="camera-switch-btn" onclick="switchCameraDevice(event)" type="button" title="切换前后摄像头">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="camera-controls">
+            <button id="camera-start-btn" class="camera-btn camera-btn-primary" onclick="startCamera()" type="button">
+              <i class="fas fa-play"></i> 启动摄像头
+            </button>
+            <button id="camera-capture-btn" class="camera-btn camera-btn-primary" onclick="capturePhoto()" type="button" style="display: none;">
+              <i class="fas fa-camera"></i> 拍照
+            </button>
+            <button id="camera-retake-btn" class="camera-btn camera-btn-secondary" onclick="retakePhoto()" type="button" style="display: none;">
+              <i class="fas fa-redo"></i> 重新拍照
+            </button>
+            <button id="camera-use-btn" class="camera-btn camera-btn-success" onclick="usePhoto()" type="button" style="display: none;">
+              <i class="fas fa-check"></i> 使用这张照片
+            </button>
+          </div>
+          <p class="camera-hint">💡 拍照时请把人物或场景放在画面正中间，光线要充足</p>
+        </div>
+        
+        <div class="camera-tab-content" id="upload-tab">
+          <div class="upload-area" onclick="triggerFileInput()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>点击或拖拽上传图片</p>
+            <small>支持 JPG, PNG 等常见格式</small>
+          </div>
+          <input id="file-input" type="file" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+          <div id="upload-preview" class="upload-preview" style="display: none;">
+            <img id="upload-preview-img" src="" alt="">
+            <div class="upload-preview-buttons">
+              <button class="camera-btn camera-btn-secondary" onclick="clearUploadPreview()" type="button">
+                <i class="fas fa-times"></i> 清除
+              </button>
+              <button class="camera-btn camera-btn-success" onclick="useUploadedPhoto()" type="button">
+                <i class="fas fa-check"></i> 使用这张图
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -647,7 +724,9 @@
     }
   </script>
 
+  <script src="{{ url_for('static', filename='js/debug-logger.js') }}"></script>
   <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/camera-input.js') }}"></script>
   <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
 </body>
 </html>

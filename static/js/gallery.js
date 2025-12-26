@@ -182,7 +182,7 @@ function setupArtworkInteractions() {
                        document.querySelector('.gallery-grid');
     
     if (!galleryGrid) {
-        console.error('Gallery grid not found!');
+        hldebug.error('Gallery grid not found!');
         return;
     }
     
@@ -190,7 +190,6 @@ function setupArtworkInteractions() {
     galleryGrid.addEventListener('click', function(e) {
         // 忽略来自导航栏的点击
         if (e.target.closest('.nav-menu') || e.target.closest('.nav-toggle') || e.target.closest('.navbar')) {
-            console.log('🚫 Gallery: 忽略导航栏内的点击');
             return;
         }
         
@@ -677,7 +676,7 @@ async function likeArtwork(artworkId) {
             showMessage(result.error || '点赞失败', 'error');
         }
     } catch (error) {
-        console.error('点赞失败:', error);
+        hldebug.error('点赞失败:', error);
         showMessage('点赞失败，请稍后重试', 'error');
     }
 }
@@ -695,10 +694,9 @@ async function incrementViewCount(artworkId) {
         const result = await response.json();
         
         if (result.success) {
-            console.log(`作品 ${artworkId} 浏览次数已更新: ${result.view_count}`);
         }
     } catch (error) {
-        console.error('更新浏览次数失败:', error);
+        hldebug.error('更新浏览次数失败:', error);
     }
 }
 
@@ -709,14 +707,12 @@ async function incrementViewCount(artworkId) {
 // 3D模型控制函数
 function rotateModel() {
     if (modelViewer) {
-        console.log('开始旋转模型');
         modelViewer.rotateModel(2000); // 2秒旋转
     }
 }
 
 function resetView() {
     if (modelViewer) {
-        console.log('重置视角');
         modelViewer.resetView();
         
         const modelInfo = document.getElementById('modelInfo');
@@ -732,7 +728,6 @@ function resetView() {
 function toggleWireframe() {
     if (modelViewer) {
         const isWireframe = modelViewer.toggleWireframe();
-        console.log('切换线框模式:', isWireframe);
         
         // 更新按钮状态 - 使用事件目标
         const button = event.target;
@@ -760,7 +755,6 @@ function toggleWireframe() {
 function togglePointCloud() {
     if (modelViewer) {
         const hasPointCloud = modelViewer.togglePointCloud();
-        console.log('切换点云模式:', hasPointCloud);
         
         // 更新按钮状态
         const button = event.target;
@@ -788,7 +782,6 @@ function togglePointCloud() {
 function switchMaterial(materialType) {
     if (modelViewer) {
         modelViewer.switchMaterial(materialType);
-        console.log('切换材质类型:', materialType);
         
         // 更新按钮状态
         const allMaterialBtns = document.querySelectorAll('.controls-section:nth-child(2) .model-btn');
@@ -818,7 +811,6 @@ function switchMaterial(materialType) {
 function toggleBackground() {
     if (modelViewer) {
         const hasBackground = modelViewer.toggleBackground();
-        console.log('切换背景显示:', hasBackground);
         
         // 更新按钮状态
         const button = event.target;
@@ -915,7 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleGalleryFullscreen() {
     const modelOverlay = document.getElementById('modelOverlay');
     if (!modelOverlay) {
-        console.error('模型容器未找到');
+        hldebug.error('模型容器未找到');
         return;
     }
     

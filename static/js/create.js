@@ -1,5 +1,4 @@
 // 创作页面相关功能
-console.log('✅ create.js 脚本已加载');
 
 let currentStage = 1;
 let generatedImageUrl = '';
@@ -94,13 +93,11 @@ function quickAdjust(adjustType) {
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM已加载，开始初始化...');
     
     // 测试generateVideo函数是否存在
     if (typeof generateVideo === 'function') {
-        console.log('✅ generateVideo 函数已定义');
     } else {
-        console.error('❌ generateVideo 函数未定义！');
+        hldebug.error('❌ generateVideo 函数未定义！');
     }
     
     initializeCreatePage();
@@ -244,7 +241,7 @@ function showStage(stageNumber) {
                         // 图片加载成功
                     };
                     finalImageEl.onerror = (error) => {
-                        console.error('图片加载失败:', error);
+                        hldebug.error('图片加载失败:', error);
                     };
                 }
             }
@@ -376,7 +373,7 @@ async function generateVideoFromReference() {
     } catch (error) {
         hideLoadingOverlay();
         showMessage(`上传失败：${error.message}`, 'error');
-        console.error('上传参考图失败:', error);
+        hldebug.error('上传参考图失败:', error);
     }
 }
 
@@ -485,7 +482,7 @@ async function generate3DFromReference() {
         stopProgressSimulation();
         hideLoadingOverlay();
         toast.error(`3D模型生成失败：${error.message}`);
-        console.error('生成3D模型失败:', error);
+        hldebug.error('生成3D模型失败:', error);
     }
 }
 
@@ -494,7 +491,6 @@ let generatedImagesArray = [];
 
 // 生成图片
 async function generateImage() {
-    console.log('🚀 generateImage 函数被调用');
     const prompt = document.getElementById('creation-prompt').value.trim();
     const style = document.getElementById('image-style').value;
     const colorPreference = document.getElementById('color-preference').value;
@@ -502,11 +498,9 @@ async function generateImage() {
     const aspectRatio = document.getElementById('aspect-ratio').value;
     const mode3D = document.getElementById('3d-mode')?.value; // 获取3D模式
     
-    console.log(`📝 参数: prompt="${prompt}", style="${style}", file=${uploadedImageFile ? 'yes' : 'no'}, originalPath=${originalImagePath}`);
 
     // 允许三种情况：1)有prompt 2)有uploadedImageFile 3)有originalImagePath（生成更多）
     if (!prompt && !uploadedImageFile && !originalImagePath) {
-        console.log('❌ 验证失败：缺少必要输入');
         showMessage('请输入创意描述或上传参考图片', 'error');
         return;
     }
@@ -519,7 +513,6 @@ async function generateImage() {
     }
 
     // 单图模式（包括普通风格和3D单图模式）
-    console.log('📤 准备发送请求到 /api/generate-image');
     showLoadingOverlay('AI正在创作中...');
 
     try {
@@ -550,22 +543,18 @@ async function generateImage() {
             formData.append('original_image_path', originalImagePath);
         }
 
-        console.log('🌐 发送 fetch 请求...');
         const response = await fetch('/api/generate-image', {
             method: 'POST',
             body: formData
         });
         
-        console.log(`📥 收到响应: status=${response.status}`);
         const result = await response.json();
-        console.log('📦 响应数据:', result);
 
         if (result.success) {
             // 主创作页面只使用单张图片
             generatedImagesArray = [result.image_url];
             generatedImageUrl = result.image_url;
             
-            console.log(`✅ 图片生成成功`);
             
             // 记录原始图片路径（如果有的话）
             if (result.original_image_url) {
@@ -584,9 +573,9 @@ async function generateImage() {
             if (generatedImageEl) {
                 generatedImageEl.src = result.image_url;
                 generatedImageEl.style.display = 'block';
-                generatedImageEl.onerror = () => console.error('generated-image 加载失败');
+                generatedImageEl.onerror = () => hldebug.error('generated-image 加载失败');
             } else {
-                console.error('未找到generated-image元素');
+                hldebug.error('未找到generated-image元素');
             }
             if (currentImageEl) {
                 currentImageEl.src = result.image_url;
@@ -620,7 +609,7 @@ async function generateImage() {
     } catch (error) {
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
-        console.error('Error:', error);
+        hldebug.error('Error:', error);
     }
 }
 
@@ -662,7 +651,7 @@ async function generateMultiViewImages(prompt, colorPreference, aspectRatio) {
     } catch (error) {
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
-        console.error('Error:', error);
+        hldebug.error('Error:', error);
     }
 }
 
@@ -678,7 +667,6 @@ function displayMultiViewResults(images) {
         left: images.left,
         right: images.right
     };
-    console.log('✅ 多视角图片已存储:', multiViewImages);
     
     // 创建多视角网格显示 - 添加可点击功能
     const multiViewHTML = `
@@ -834,7 +822,6 @@ function selectViewForEdit(viewName) {
     }
     
     selectedViewForEdit = viewName;
-    console.log(`✅ 选中视角: ${viewName}`);
     
     // 更新视觉反馈 - 高亮选中的视角
     const viewItems = document.querySelectorAll('.view-item');
@@ -881,7 +868,7 @@ async function applyAdjustment() {
     // 单图模式
     if (!generatedImageUrl) {
         showMessage('没有找到要调整的图片', 'error');
-        console.error('❌ generatedImageUrl 为空');
+        hldebug.error('❌ generatedImageUrl 为空');
         return;
     }
 
@@ -946,7 +933,7 @@ async function applyAdjustment() {
     } catch (error) {
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
-        console.error('Error:', error);
+        hldebug.error('Error:', error);
     }
 }
 
@@ -1025,7 +1012,7 @@ async function adjustSingleView(viewName, adjustmentPrompt) {
     } catch (error) {
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
-        console.error('Error:', error);
+        hldebug.error('Error:', error);
     }
 }
 
@@ -1082,7 +1069,6 @@ async function generate3DModel() {
         
         // 检查是否有多视角图片
         if (multiViewImages) {
-            console.log('🎨 使用多视角模式生成3D模型');
             // 传递所有4个视角的图片
             formData.append('multi_view', 'true');
             formData.append('front_image', multiViewImages.front);
@@ -1090,7 +1076,6 @@ async function generate3DModel() {
             formData.append('left_image', multiViewImages.left);
             formData.append('right_image', multiViewImages.right);
         } else {
-            console.log('🎨 使用单图模式生成3D模型');
             // 单图模式
             formData.append('image_path', generatedImageUrl);
         }
@@ -1110,7 +1095,6 @@ async function generate3DModel() {
         const apiVersionSelect = document.getElementById('api-version-select');
         const apiVersion = apiVersionSelect ? apiVersionSelect.value : 'rapid';
         formData.append('api_version', apiVersion);
-        console.log(`🔧 选择API版本: ${apiVersion === 'rapid' ? '极速版' : '专业版'}`);
         
         // 添加可选的prompt
         const modelPrompt = document.getElementById('model-prompt');
@@ -1183,7 +1167,7 @@ async function generate3DModel() {
         stopProgressSimulation();
         hideLoadingOverlay();
         showMessage('网络错误，请重试', 'error');
-        console.error('Error:', error);
+        hldebug.error('Error:', error);
     }
 }
 
@@ -1194,7 +1178,7 @@ function load3DModel(modelUrl) {
     
     // 确保ModelViewer3D模块已加载
     if (typeof ModelViewer3D === 'undefined') {
-        console.error('ModelViewer3D 模块未加载');
+        hldebug.error('ModelViewer3D 模块未加载');
         showMessage('3D查看器模块加载失败', 'error');
         return;
     }
@@ -1231,14 +1215,13 @@ function load3DModel(modelUrl) {
             window.currentModel = loadedModel;
         },
         onLoadError: (error) => {
-            console.error('3D模型加载失败:', error);
+            hldebug.error('3D模型加载失败:', error);
             showMessage('3D模型加载失败', 'error');
         },
         onLoadProgress: (progress) => {
             // 可以在这里显示加载进度
             if (progress.loaded && progress.total) {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
-                console.log(`模型加载进度: ${percent}%`);
             }
         }
     });
@@ -1478,7 +1461,6 @@ function download3DModel() {
                 cleanPath = cleanPath.replace('/models/', '');
                 
                 const stlUrl = `/download-stl/${cleanPath}`;
-                console.log(`📥 下载STL: ${stlUrl}`);
                 
                 const link = document.createElement('a');
                 link.href = stlUrl;
@@ -2050,12 +2032,11 @@ async function showSaveArtworkDialog() {
             descriptionTextarea.placeholder = '介绍一下你的创作想法和故事...';
             descriptionTextarea.readOnly = false;
             
-            console.log('✅ AI生成作品信息成功:', result);
         } else {
             throw new Error(result.error || '生成失败');
         }
     } catch (error) {
-        console.error('❌ AI生成作品信息失败:', error);
+        hldebug.error('❌ AI生成作品信息失败:', error);
         // 失败时允许用户手动输入
         titleInput.placeholder = '请输入作品标题';
         titleInput.readOnly = false;
@@ -2152,7 +2133,7 @@ async function saveArtworkToGallery() {
         }
         
     } catch (error) {
-        console.error('保存作品错误:', error);
+        hldebug.error('保存作品错误:', error);
         showMessage(`保存失败: ${error.message}`, 'error');
     } finally {
         // 恢复按钮状态
@@ -2279,7 +2260,6 @@ async function captureImage() {
     
     // 方案1: 移动设备 - 使用input capture（最简单）
     if (isMobileDevice()) {
-        console.log('📱 移动设备: 使用input capture');
         const cameraInput = document.getElementById('camera-capture');
         if (cameraInput) {
             cameraInput.click();
@@ -2289,11 +2269,10 @@ async function captureImage() {
     
     // 方案2: 桌面设备支持摄像头API - 使用getUserMedia
     if (isCameraSupported()) {
-        console.log('💻 桌面设备: 使用getUserMedia API');
         try {
             await openCameraDialog();
         } catch (error) {
-            console.error('摄像头调用失败，回退到文件选择:', error);
+            hldebug.error('摄像头调用失败，回退到文件选择:', error);
             // 如果失败，回退到文件选择
             const cameraInput = document.getElementById('camera-capture');
             if (cameraInput) {
@@ -2305,7 +2284,6 @@ async function captureImage() {
     }
     
     // 方案3: 不支持摄像头 - 使用普通文件选择
-    console.log('📁 不支持摄像头: 使用文件选择');
     const cameraInput = document.getElementById('camera-capture');
     if (cameraInput) {
         cameraInput.removeAttribute('capture');
@@ -2326,14 +2304,12 @@ async function openCameraDialog() {
             
             // Mac电脑：优先查找FaceTime HD摄像头
             if (isMacComputer()) {
-                console.log('🍎 检测到Mac电脑，正在查找FaceTime HD摄像头...');
                 
                 try {
                     // 获取所有视频输入设备
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const videoDevices = devices.filter(device => device.kind === 'videoinput');
                     
-                    console.log('📹 可用摄像头列表：', videoDevices.map(d => d.label || d.deviceId));
                     
                     // 查找FaceTime HD摄像头
                     const facetimeCamera = videoDevices.find(device => 
@@ -2342,13 +2318,10 @@ async function openCameraDialog() {
                     );
                     
                     if (facetimeCamera) {
-                        console.log('✅ 找到FaceTime HD摄像头:', facetimeCamera.label);
                         videoConstraints.deviceId = { exact: facetimeCamera.deviceId };
                     } else {
-                        console.log('⚠️ 未找到FaceTime摄像头，使用默认摄像头');
                     }
                 } catch (enumError) {
-                    console.log('⚠️ 枚举设备失败，使用默认摄像头:', enumError);
                 }
             } else {
                 // 非Mac设备：使用后置摄像头
@@ -2356,12 +2329,10 @@ async function openCameraDialog() {
             }
             
             // 请求摄像头权限
-            console.log('🎥 请求摄像头权限，配置：', videoConstraints);
             stream = await navigator.mediaDevices.getUserMedia({ 
                 video: videoConstraints
             });
             
-            console.log('✅ 摄像头访问成功');
             
             // 创建摄像头对话框
             const dialog = document.createElement('div');
@@ -2401,7 +2372,7 @@ async function openCameraDialog() {
             resolve();
             
         } catch (error) {
-            console.error('摄像头访问失败:', error);
+            hldebug.error('摄像头访问失败:', error);
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
             }
@@ -2456,7 +2427,7 @@ async function takeCameraPhoto() {
             closeCameraDialog();
             
         } catch (error) {
-            console.error('处理照片失败:', error);
+            hldebug.error('处理照片失败:', error);
             showMessage('图片处理失败，请重试', 'error');
         }
     }, 'image/jpeg', 0.95);
@@ -2505,7 +2476,7 @@ async function handleCameraCapture(event) {
         reader.readAsDataURL(compressedFile);
 
     } catch (error) {
-        console.error('处理拍摄图片失败:', error);
+        hldebug.error('处理拍摄图片失败:', error);
         showMessage('图片处理失败，请重试', 'error');
     }
 }
@@ -2640,7 +2611,7 @@ async function loadImageFromUrl() {
         }
         
     } catch (error) {
-        console.error('加载图片失败:', error);
+        hldebug.error('加载图片失败:', error);
         showMessage('图片加载失败，请检查链接是否正确', 'error');
     }
 }
@@ -2655,12 +2626,11 @@ function closeImageMenu() {
 
 // 显示生成的多张图片缩略图
 function displayGeneratedThumbnails(imageUrls) {
-    console.log('📸 显示生成的缩略图:', imageUrls);
     
     // 找到缩略图网格容器
     const thumbnailsGrid = document.querySelector('.thumbnails-grid');
     if (!thumbnailsGrid) {
-        console.error('未找到缩略图网格容器');
+        hldebug.error('未找到缩略图网格容器');
         return;
     }
     
@@ -2694,7 +2664,6 @@ function displayGeneratedThumbnails(imageUrls) {
         
         // 点击缩略图切换到该图片
         img.onclick = () => {
-            console.log(`🖱️ 选择图片 ${index + 1}`);
             selectGeneratedImage(url);
         };
         

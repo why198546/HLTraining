@@ -1,5 +1,4 @@
 // 手绘画布功能
-console.log('=== Canvas Sketch.js 已加载 ===');
 
 let canvas, ctx;
 let isDrawing = false;
@@ -46,7 +45,6 @@ class CanvasSession {
             this.currentStep++;
         }
         
-        console.log(`[Session] 已保存状态 ${this.currentStep + 1}/${this.history.length}`);
         return true;
     }
     
@@ -54,7 +52,6 @@ class CanvasSession {
     undo() {
         if (this.canUndo()) {
             this.currentStep--;
-            console.log(`[Session] 撤销到步骤 ${this.currentStep + 1}/${this.history.length}`);
             return this.getCurrentState();
         }
         return null;
@@ -64,7 +61,6 @@ class CanvasSession {
     redo() {
         if (this.canRedo()) {
             this.currentStep++;
-            console.log(`[Session] 重做到步骤 ${this.currentStep + 1}/${this.history.length}`);
             return this.getCurrentState();
         }
         return null;
@@ -104,7 +100,6 @@ class CanvasSession {
     clear() {
         this.history = [];
         this.currentStep = -1;
-        console.log('[Session] 历史记录已清空');
     }
 }
 
@@ -131,24 +126,21 @@ const MAX_ZOOM = 3; // 最大缩放300%
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[Canvas] DOM加载完成，开始初始化...');
     
     canvas = document.getElementById('sketchCanvas');
     ctx = canvas.getContext('2d', { willReadFrequently: true });
     
     if (!canvas || !ctx) {
-        console.error('[Canvas] 错误: 无法获取画布元素或上下文');
+        hldebug.error('[Canvas] 错误: 无法获取画布元素或上下文');
         return;
     }
     
-    console.log('[Canvas] 画布元素获取成功');
     
     // 初始化画布大小
     applyResolution();
     
     // 绑定事件
     bindEvents();
-    console.log('[Canvas] 事件绑定完成');
     
     // 初始化工具栏
     initializeTools();
@@ -175,8 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
     updateHistoryButtons();
     
     // 显示session信息
-    console.log('[Session] 已创建新会话:', canvasSession.getInfo());
-    console.log('[Canvas] 初始化完成！可以开始绘画');
 });
 
 // 检测设备和压感支持
@@ -185,24 +175,12 @@ function detectDeviceAndPressure() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isAndroid = /Android/.test(navigator.userAgent);
     
-    console.log('=== 设备检测 ===');
-    console.log('触摸设备:', isTouch);
-    console.log('iOS设备:', isIOS);
-    console.log('Android设备:', isAndroid);
-    console.log('User Agent:', navigator.userAgent);
     
     // 测试压感支持
     if (isTouch) {
-        console.log('✅ 支持触摸事件');
         canvas.addEventListener('touchstart', function testPressure(e) {
             if (e.touches && e.touches[0]) {
                 const touch = e.touches[0];
-                console.log('=== 压感测试 ===');
-                console.log('force:', touch.force);
-                console.log('webkitForce:', touch.webkitForce);
-                console.log('radiusX:', touch.radiusX);
-                console.log('radiusY:', touch.radiusY);
-                console.log('压感支持:', typeof touch.force !== 'undefined' || typeof touch.webkitForce !== 'undefined' ? '✅ 是' : '❌ 否');
             }
             canvas.removeEventListener('touchstart', testPressure);
         }, { once: true });
@@ -214,7 +192,6 @@ function applyResolution() {
     const select = document.getElementById('resolutionSelect');
     const [width, height] = select.value.split('x').map(Number);
     
-    console.log(`[Canvas] 应用分辨率: ${width}x${height}`);
     
     // 保存旧的画布内容（如果有）
     let hasContent = false;
@@ -259,8 +236,6 @@ function applyResolution() {
     const hint = document.querySelector('.canvas-hint');
     if (hint) hint.style.display = 'none';
     
-    console.log(`[Canvas] 画布实际尺寸: ${canvas.width}x${canvas.height}`);
-    console.log(`[Canvas] 画布可以绘制: ${canvas.getContext ? '✓' : '✗'}`);
 }
 
 // 绑定事件
@@ -449,7 +424,6 @@ function smoothPressure(rawPressure) {
     if (pressureHistory.length > 0) {
         const lastValue = pressureHistory[pressureHistory.length - 1];
         if (Math.abs(rawPressure - lastValue) > 0.3) {
-            console.log(`压感异常跳变: ${lastValue.toFixed(2)} -> ${rawPressure.toFixed(2)}, 已过滤`);
             rawPressure = lastValue;
         }
     }
@@ -696,7 +670,6 @@ function importAsBackground(img) {
     switchViewMode('overlay');
     
     // 提示用户
-    console.log('图片已作为底图导入，现在可以在上面绘制了！');
     
     // iPad自动关闭工具栏
     if (window.innerWidth <= 1366) {
@@ -728,7 +701,6 @@ function importToCanvas(img) {
     // 保存状态
     saveState();
     
-    console.log('图片已导入到画布！');
     
     // iPad自动关闭工具栏
     if (window.innerWidth <= 1366) {
@@ -803,7 +775,6 @@ function updateHistoryButtons() {
     
     // 在控制台显示session信息（调试用）
     if (info.totalSteps > 0) {
-        console.log(`[History] 步骤: ${info.currentStep}/${info.totalSteps} | 撤销: ${info.canUndo} | 重做: ${info.canRedo}`);
     }
 }
 
@@ -1050,7 +1021,6 @@ async function generateImage() {
         formData.append('style', 'realistic');
         formData.append('color_preference', 'colorful');
         
-        console.log(`生成图片分辨率: ${width}x${height}`);
         
         // 调用API生成图片
         const response = await fetch('/api/generate-image', {
@@ -1081,7 +1051,7 @@ async function generateImage() {
         displayResults(displayCanvas.toDataURL(), data.image_url);
         
     } catch (error) {
-        console.error('生成失败:', error);
+        hldebug.error('生成失败:', error);
         alert(`生成失败：${error.message}`);
     } finally {
         document.getElementById('loadingOverlay').style.display = 'none';
@@ -1094,7 +1064,6 @@ function displayResults(sketchUrl, generatedUrl) {
     generatedImageUrl = generatedUrl;
     window.generatedImageUrl = generatedUrl;
     
-    console.log('生成图片URL已保存:', generatedUrl);
     
     // 显示结果区域
     document.getElementById('resultSection').style.display = 'block';
@@ -1115,8 +1084,6 @@ function displayResults(sketchUrl, generatedUrl) {
         whiteBackground.style.height = canvas.height + 'px';
         backgroundImg.style.display = 'block';
         
-        console.log(`分层设置完成: ${canvas.width}x${canvas.height}`);
-        console.log('z-index: 白色背景(1) < 生成图(2) < 手绘线条(3)');
     };
     backgroundImg.src = generatedUrl;
     
@@ -1287,7 +1254,7 @@ async function saveToGallery() {
             throw new Error(data.error || '保存失败');
         }
     } catch (error) {
-        console.error('保存失败:', error);
+        hldebug.error('保存失败:', error);
         alert(`保存失败：${error.message}`);
     }
 }
@@ -1480,7 +1447,7 @@ function initializeFullscreen() {
                     fullscreenBtn.querySelector('i').classList.remove('fa-expand');
                     fullscreenBtn.querySelector('i').classList.add('fa-compress');
                 }).catch(err => {
-                    console.error('全屏失败:', err);
+                    hldebug.error('全屏失败:', err);
                 });
             } else {
                 // 退出全屏
@@ -1510,7 +1477,6 @@ function initializeZoom() {
     
     // 检查必需元素
     if (!zoomLevelDisplay || !canvasBox || !canvasWrapper) {
-        console.warn('[Zoom] 缩放功能元素未找到，跳过初始化');
         return;
     }
 
@@ -1626,9 +1592,6 @@ function initializeZoom() {
 
 // 导出MP4视频动画功能
 async function exportAnimatedVideo() {
-    console.log('=== 开始导出MP4视频 ===');
-    console.log('generatedImageUrl:', generatedImageUrl);
-    console.log('window.generatedImageUrl:', window.generatedImageUrl);
     
     // 检查两个变量，优先使用window.generatedImageUrl（项目恢复时设置的）
     const imageUrl = window.generatedImageUrl || generatedImageUrl;
@@ -1671,7 +1634,6 @@ async function exportAnimatedVideo() {
             });
         }
 
-        console.log('图片已就绪，尺寸:', generatedImage.naturalWidth, 'x', generatedImage.naturalHeight);
 
         // 动画参数 - 4个阶段，每个阶段1秒，30fps流畅动画
         const fps = 30;  // 30帧每秒，更流畅
@@ -1680,7 +1642,6 @@ async function exportAnimatedVideo() {
         const totalStages = 4;
         const totalFrames = framesPerStage * totalStages;  // 总共120帧
 
-        console.log(`准备录制视频: ${totalFrames}帧, ${fps}fps, 总时长${totalStages}秒`);
 
         // 使用MediaRecorder录制canvas
         const stream = tempCanvas.captureStream(fps);
@@ -1694,7 +1655,6 @@ async function exportAnimatedVideo() {
             }
         }
         
-        console.log('使用编码格式:', mimeType);
         
         const mediaRecorder = new MediaRecorder(stream, {
             mimeType: mimeType,
@@ -1709,9 +1669,7 @@ async function exportAnimatedVideo() {
         };
 
         mediaRecorder.onstop = async () => {
-            console.log('录制完成，生成视频文件...');
             const blob = new Blob(chunks, { type: mimeType });
-            console.log('视频大小:', (blob.size / 1024).toFixed(2), 'KB');
             
             // 确定文件扩展名
             const ext = mimeType.includes('h264') ? 'mp4' : 'webm';
@@ -1823,8 +1781,8 @@ async function exportAnimatedVideo() {
         renderFrame();
 
     } catch (error) {
-        console.error('导出视频失败:', error);
-        console.error('错误详情:', error.stack);
+        hldebug.error('导出视频失败:', error);
+        hldebug.error('错误详情:', error.stack);
         
         let errorMessage = '导出视频失败: ';
         if (error.message.includes('图片加载')) {

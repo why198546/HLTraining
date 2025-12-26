@@ -23,7 +23,6 @@ function showToast(message, type = 'info') {
     if (window.toast) {
         window.toast.show(message, type);
     } else {
-        console.warn('Toast未初始化:', message);
         alert(message);
     }
 }
@@ -88,7 +87,7 @@ async function generate3D() {
             showToast(result.message || '生成失败', 'error');
         }
     } catch (error) {
-        console.error('生成失败:', error);
+        hldebug.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
@@ -138,7 +137,7 @@ async function generate3DDirect() {
             showToast(result.message || '生成失败', 'error');
         }
     } catch (error) {
-        console.error('生成失败:', error);
+        hldebug.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
@@ -188,7 +187,7 @@ function load3DModel(modelUrl) {
         
         modelViewer = { scene, camera, renderer, controls };
     }, undefined, (error) => {
-        console.error('模型加载失败:', error);
+        hldebug.error('模型加载失败:', error);
         showToast('模型加载失败', 'error');
     });
 }

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试JavaScript函数</title>
+</head>
+<body>
+    <h1>JavaScript函数测试</h1>
+    <button onclick="testFunction()">点击测试</button>
+    
+    <script src="/static/js/camera-input.js"></script>
+    <script>
+        function testFunction() {
+            console.log('测试按钮被点击');
+            console.log('typeof openCameraModal:', typeof openCameraModal);
+            console.log('typeof closeCameraModal:', typeof closeCameraModal);
+            
+            if (typeof openCameraModal === 'function') {
+                alert('✅ openCameraModal 函数存在');
+            } else {
+                alert('❌ openCameraModal 函数不存在');
+            }
+        }
+        
+        // 页面加载后立即检查
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('=== JavaScript检查 ===');
+            console.log('openCameraModal:', typeof openCameraModal);
+            console.log('closeCameraModal:', typeof closeCameraModal);
+            console.log('switchCameraTab:', typeof switchCameraTab);
+            console.log('startCamera:', typeof startCamera);
+            
+            // 列出所有全局函数
+            console.log('=== 全局函数列表 ===');
+            for (let key in window) {
+                if (typeof window[key] === 'function' && key.includes('Camera')) {
+                    console.log(key + ':', typeof window[key]);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

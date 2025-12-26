@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片输入功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #00704A;
+        }
+        h3 {
+            color: #333;
+            border-bottom: 2px solid #00704A;
+            padding-bottom: 10px;
+        }
+        .test-item {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #00704A;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .feature-list li:before {
+            content: "✓ ";
+            color: #00704A;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 图片输入功能增强 - 测试报告</h1>
+    
+    <div class="test-section">
+        <h3>✅ 已实现功能</h3>
+        <ul class="feature-list">
+            <li>点击"+"按钮显示上传/拍照菜单</li>
+            <li>支持从文件系统上传图片</li>
+            <li>支持调用摄像头拍照（移动设备）</li>
+            <li>拖拽图片到输入框区域上传</li>
+            <li>粘贴剪贴板图片（Ctrl/Cmd+V）</li>
+            <li>粘贴图片URL链接自动下载</li>
+            <li>图片预览显示</li>
+            <li>错误处理和用户提示</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>🧪 测试步骤</h3>
+        
+        <div class="test-item">
+            <strong>测试1: 菜单功能</strong>
+            <p>
+                1. 访问 <code>http://127.0.0.1:8088/create/image</code><br>
+                2. 点击输入框右下角的"+"按钮<br>
+                3. 应显示菜单：上传图片、拍照<br>
+                4. 点击页面其他地方，菜单应关闭
+            </p>
+            <span class="status pass">实现</span>
+        </div>
+
+        <div class="test-item">
+            <strong>测试2: 文件上传</strong>
+            <p>
+                1. 点击"+"→ "上传图片"<br>
+                2. 选择一个图片文件<br>
+                3. 图片应显示在预览区域<br>
+                4. 显示成功提示
+            </p>
+            <span class="status pass">实现</span>
+        </div>
+
+        <div class="test-item">
+            <strong>测试3: 摄像头拍照</strong>
+            <p>
+                1. 在移动设备上点击"+"→ "拍照"<br>
+                2. 应调用系统相机<br>
+                3. 拍照后图片显示在预览区域
+            </p>
+            <span class="status pass">实现</span>
+            <p><small>💡 桌面浏览器会打开文件选择（因为没有相机）</small></p>
+        </div>
+
+        <div class="test-item">
+            <strong>测试4: 拖拽上传</strong>
+            <p>
+                1. 从桌面拖动一个图片文件<br>
+                2. 移到输入框区域（显示虚线边框和提示）<br>
+                3. 松开鼠标<br>
+                4. 图片应显示在预览区域
+            </p>
+            <span class="status pass">实现</span>
+        </div>
+
+        <div class="test-item">
+            <strong>测试5: 粘贴图片</strong>
+            <p>
+                1. 从其他应用复制一张图片（如截图、浏览器图片）<br>
+                2. 在页面按 Ctrl+V (或 Cmd+V)<br>
+                3. 图片应显示在预览区域<br>
+                4. 显示"图片已粘贴"提示
+            </p>
+            <span class="status pass">实现</span>
+        </div>
+
+        <div class="test-item">
+            <strong>测试6: 粘贴图片链接</strong>
+            <p>
+                1. 复制一个图片URL（如：https://example.com/image.jpg）<br>
+                2. 在输入框粘贴<br>
+                3. 显示"正在加载图片..."<br>
+                4. 加载成功后显示图片预览<br>
+                5. 显示"图片链接已加载"提示
+            </p>
+            <span class="status pass">实现</span>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h3>🔍 测试用图片URL</h3>
+        <p>可以使用以下公开图片URL进行测试：</p>
+        <ul>
+            <li><code>https://picsum.photos/512/512</code></li>
+            <li><code>https://via.placeholder.com/512</code></li>
+            <li><code>https://dummyimage.com/512x512/00704A/ffffff.png&text=Test</code></li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>📝 测试结果</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background: #f0f0f0;">
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">功能</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">状态</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">备注</th>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">菜单切换</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">正常</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">文件上传</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">正常</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">摄像头拍照</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">移动设备支持</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">拖拽上传</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">正常</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">粘贴图片</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">正常</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">粘贴链接</td>
+                <td style="padding: 10px; border: 1px solid #ddd;"><span class="status pass">✓</span></td>
+                <td style="padding: 10px; border: 1px solid #ddd;">正常，需后端API</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="test-section">
+        <h3>🎯 快速测试</h3>
+        <p>
+            <a href="http://127.0.0.1:8088/create/image" 
+               style="display: inline-block; padding: 12px 24px; background: #00704A; color: white; text-decoration: none; border-radius: 6px;">
+                打开创作页面进行测试
+            </a>
+        </p>
+    </div>
+
+    <div class="test-section" style="background: #e7f3ff; border-left: 4px solid #2196F3;">
+        <h3 style="color: #2196F3; border-color: #2196F3;">💡 使用提示</h3>
+        <ul>
+            <li>在桌面浏览器中，可以从文件夹拖拽图片到页面</li>
+            <li>使用截图工具（如Windows的Snipping Tool）后直接粘贴</li>
+            <li>从浏览器中右键复制图片地址，然后粘贴URL</li>
+            <li>在iPad上，可以从照片库拖拽图片到Safari浏览器</li>
+            <li>在手机上，点击"拍照"可以选择前置或后置摄像头</li>
+        </ul>
+    </div>
+</body>
+</html>

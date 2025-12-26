@@ -1,15 +1,10 @@
 // 统一导航栏JavaScript功能
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 导航栏JS加载完成');
-    console.log('📱 当前页面:', window.location.pathname);
-    console.log('📐 窗口尺寸:', window.innerWidth, 'x', window.innerHeight);
-    console.log('📱 是否竖屏:', window.innerHeight > window.innerWidth);
     
     // 支持多个 .navbar，逐个绑定以避免选择到错误实例
     const navbars = document.querySelectorAll('.navbar');
-    console.log('🔍 找到', navbars.length, '个navbar实例');
     if (!navbars || navbars.length === 0) {
-        console.error('❌ 未找到 .navbar 实例');
+        hldebug.error('❌ 未找到 .navbar 实例');
     }
 
     navbars.forEach(navbar => {
@@ -26,17 +21,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             const wasActive = navMenuLocal.classList.contains('active');
-            console.log('🎯 Toggle clicked, wasActive:', wasActive);
             navMenuLocal.classList.toggle('active');
             this.classList.toggle('active');
             
             // 只在移动端使用transform控制菜单显示/隐藏
             if (window.innerWidth <= 768) {
                 if (navMenuLocal.classList.contains('active')) {
-                    console.log('➕ 菜单打开 (移动端)');
                     navMenuLocal.style.transform = 'translateX(0)';
                 } else {
-                    console.log('➖ 菜单关闭 (移动端)');
                     navMenuLocal.style.transform = 'translateX(-100%)';
                 }
             }
@@ -44,17 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 菜单内部链接点击关闭菜单
         const navLinksLocal = navMenuLocal.querySelectorAll('.nav-link:not(.nav-dropdown > .nav-link)');
-        console.log(`🔗 找到 ${navLinksLocal.length} 个导航链接`);
         navLinksLocal.forEach(link => {
             if (!link.closest('.nav-dropdown')) {
                 link.addEventListener('click', (e) => {
-                    console.log('🖱️ nav-link 被点击:', link.href);
                     // 只在移动端关闭菜单
                     if (window.innerWidth <= 768) {
                         navMenuLocal.classList.remove('active');
                         navToggleLocal.classList.remove('active');
                         navMenuLocal.style.transform = 'translateX(-100%)';
-                        console.log('✅ 菜单已关闭 (移动端)，允许默认导航');
                     }
                 });
             }
@@ -62,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 下拉菜单本地处理 - 处理所有下拉菜单
         const dropdownsLocal = navMenuLocal.querySelectorAll('.nav-dropdown');
-        console.log(`📋 找到 ${dropdownsLocal.length} 个下拉菜单`);
         
         dropdownsLocal.forEach(dropdownLocal => {
             const dropdownToggle = dropdownLocal.querySelector('.nav-link');
@@ -82,13 +70,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // 切换当前下拉菜单
                     dropdownLocal.classList.toggle('active');
-                    console.log('🔽 下拉菜单切换:', dropdownLocal.classList.contains('active') ? '打开' : '关闭');
                 });
 
                 const dropdownLinks = dropdownMenu.querySelectorAll('a');
                 dropdownLinks.forEach(link => {
                     link.addEventListener('click', () => {
-                        console.log('🖱️ 下拉菜单项被点击:', link.textContent.trim());
                         // 只在移动端关闭菜单
                         if (window.innerWidth <= 768) {
                             navMenuLocal.classList.remove('active');
@@ -117,11 +103,9 @@ document.addEventListener('DOMContentLoaded', function() {
             navMenuLocal.classList.remove('active');
             navToggleLocal.classList.remove('active');
             navMenuLocal.style.transform = 'translateX(-100%)';
-            console.log('🔧 页面加载：强制关闭菜单 (移动端), transform设为translateX(-100%)');
         } else {
             // 桌面端：移除可能存在的transform样式
             navMenuLocal.style.transform = '';
-            console.log('🖥️ 页面加载：桌面端，清除transform样式');
         }
     });
     

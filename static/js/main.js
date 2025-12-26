@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     setupEventListeners();
     updateFlowSteps();
-    console.log('应用初始化完成');
 }
 
 // 设置首页GIF引导页
@@ -110,7 +109,6 @@ function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    console.log('上传图片:', file.name);
 
     // 验证文件类型
     if (!file.type.startsWith('image/')) {
@@ -121,7 +119,6 @@ function handleImageUpload(event) {
     // 显示上传的图片预览
     const reader = new FileReader();
     reader.onload = function(e) {
-        console.log('图片读取完成');
         showMessage('图片已上传，点击"开始创作"生成AI图片！', 'success');
     };
     reader.readAsDataURL(file);
@@ -130,7 +127,6 @@ function handleImageUpload(event) {
 // 生成图片
 async function generateImage() {
     try {
-        console.log('开始生成图片...');
         showLoading('正在生成图片...');
         currentStep = 1;
         updateFlowSteps();
@@ -141,23 +137,18 @@ async function generateImage() {
 
         if (promptText) {
             formData.append('prompt', promptText);
-            console.log('添加提示词:', promptText);
         }
 
         if (uploadedFile) {
             formData.append('sketch', uploadedFile);
-            console.log('添加图片文件:', uploadedFile.name);
         }
 
-        console.log('发送请求到 /generate-image');
         const response = await fetch('/generate-image', {
             method: 'POST',
             body: formData
         });
 
-        console.log('收到响应:', response.status);
         const result = await response.json();
-        console.log('响应数据:', result);
 
         if (result.success) {
             currentImage = result.image_path;
@@ -169,7 +160,7 @@ async function generateImage() {
         }
 
     } catch (error) {
-        console.error('生成图片错误:', error);
+        hldebug.error('生成图片错误:', error);
         showMessage('图片生成失败：' + error.message, 'error');
     } finally {
         hideLoading();
@@ -181,12 +172,10 @@ function displayGeneratedImage(imagePath) {
     const resultArea = document.getElementById('result-area');
     const generatedImage = document.getElementById('generated-image');
     
-    console.log('显示图片:', imagePath);
     
     if (generatedImage && imagePath) {
         generatedImage.src = imagePath + '?t=' + Date.now(); // 防止缓存
         resultArea.style.display = 'block';
-        console.log('图片显示完成');
     }
 }
 
@@ -195,7 +184,6 @@ function showImageActions() {
     const actionsDiv = document.getElementById('image-actions');
     if (actionsDiv) {
         actionsDiv.style.display = 'block';
-        console.log('显示操作按钮');
     }
 }
 
@@ -205,7 +193,6 @@ function showAdjustPanel() {
     if (adjustPanel) {
         adjustPanel.style.display = 'block';
         adjustPanel.scrollIntoView({ behavior: 'smooth' });
-        console.log('显示调整面板');
     }
 }
 
@@ -224,7 +211,6 @@ async function applyAdjustment() {
             return;
         }
 
-        console.log('开始调整图片:', adjustPrompt);
         showLoading('正在调整图片...');
 
         const formData = new FormData();
@@ -250,7 +236,7 @@ async function applyAdjustment() {
         }
 
     } catch (error) {
-        console.error('调整图片错误:', error);
+        hldebug.error('调整图片错误:', error);
         showMessage('图片调整失败：' + error.message, 'error');
     } finally {
         hideLoading();
@@ -265,7 +251,6 @@ async function confirmAndGenerate3D() {
             return;
         }
 
-        console.log('开始生成3D模型');
         showLoading('正在生成3D模型...');
         currentStep = 3;
         updateFlowSteps();
@@ -288,7 +273,7 @@ async function confirmAndGenerate3D() {
         }
 
     } catch (error) {
-        console.error('生成3D模型错误:', error);
+        hldebug.error('生成3D模型错误:', error);
         showMessage('3D模型生成失败：' + error.message, 'error');
     } finally {
         hideLoading();
@@ -304,7 +289,6 @@ function display3DModel(modelPath) {
         modelViewer.src = modelPath;
         modelArea.style.display = 'block';
         modelArea.scrollIntoView({ behavior: 'smooth' });
-        console.log('显示3D模型');
     }
 }
 
@@ -316,7 +300,6 @@ function backToHome() {
     // 滚动到顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    console.log('返回首页');
 }
 
 // 重新开始创作
@@ -353,7 +336,6 @@ function restartCreation() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     showMessage('已重新开始！', 'info');
-    console.log('重新开始创作');
 }
 
 // 下载当前图片
@@ -401,7 +383,6 @@ function showLoading(message = '处理中...') {
     }
     
     loadingOverlay.style.display = 'flex';
-    console.log('显示加载状态:', message);
 }
 
 // 隐藏加载状态
@@ -410,7 +391,6 @@ function hideLoading() {
     if (loadingOverlay) {
         loadingOverlay.style.display = 'none';
     }
-    console.log('隐藏加载状态');
 }
 
 // 创建加载遮罩
@@ -453,7 +433,6 @@ function showMessage(message, type = 'info') {
         }, 300);
     }, 3000);
     
-    console.log(`消息提示 [${type}]:`, message);
 }
 
 // 工具函数：验证文件类型
@@ -472,12 +451,12 @@ function formatFileSize(bytes) {
 
 // 错误处理
 window.addEventListener('error', function(e) {
-    console.error('JavaScript错误:', e.error);
+    hldebug.error('JavaScript错误:', e.error);
     showMessage('发生了一个错误，请刷新页面重试', 'error');
 });
 
 // 未处理的Promise拒绝
 window.addEventListener('unhandledrejection', function(e) {
-    console.error('未处理的Promise拒绝:', e.reason);
+    hldebug.error('未处理的Promise拒绝:', e.reason);
     showMessage('网络请求失败，请检查网络连接', 'error');
 });

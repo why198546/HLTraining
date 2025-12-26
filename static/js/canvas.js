@@ -53,7 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (result.success) {
                 currentProjectId = result.project.project_id;
-                console.log('✅ 创建新项目:', currentProjectId);
                 
                 // 更新URL但不刷新页面
                 const newUrl = `/canvas?project_id=${currentProjectId}`;
@@ -62,10 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 启动自动保存
                 startAutoSave();
             } else {
-                console.error('❌ 创建项目失败:', result.error);
+                hldebug.error('❌ 创建项目失败:', result.error);
             }
         } catch (error) {
-            console.error('❌ 创建项目错误:', error);
+            hldebug.error('❌ 创建项目错误:', error);
         }
     }
     
@@ -79,7 +78,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentProjectId = projectId;
                 const project = result.project;
                 
-                console.log('✅ 加载项目:', projectId);
                 
                 // 恢复画布数据
                 if (project.canvas_data && project.canvas_data.images) {
@@ -108,12 +106,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 启动自动保存
                 startAutoSave();
             } else {
-                console.error('❌ 加载项目失败:', result.error);
+                hldebug.error('❌ 加载项目失败:', result.error);
                 // 如果加载失败，创建新项目
                 await createNewProject();
             }
         } catch (error) {
-            console.error('❌ 加载项目错误:', error);
+            hldebug.error('❌ 加载项目错误:', error);
             await createNewProject();
         }
     }
@@ -157,12 +155,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             
             if (result.success) {
-                console.log('💾 项目已保存');
             } else {
-                console.error('❌ 保存项目失败:', result.error);
+                hldebug.error('❌ 保存项目失败:', result.error);
             }
         } catch (error) {
-            console.error('❌ 保存项目错误:', error);
+            hldebug.error('❌ 保存项目错误:', error);
         }
     }
     
@@ -183,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
         } catch (error) {
-            console.error('❌ 保存对话错误:', error);
+            hldebug.error('❌ 保存对话错误:', error);
         }
     }
     
@@ -259,7 +256,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化项目
     initializeProject();
     
-    console.log('=== Canvas.js 已加载 ===');
     
     // 状态
     let isGenerating = false;
@@ -291,12 +287,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 检测是否输入了 "/"
         if (value === '/' || value.startsWith('/ ')) {
-            console.log('检测到 / 输入，显示命令菜单');
             showCommandMenu();
         } else if (value.startsWith('/')) {
             // 如果以 / 开头但后面有内容，过滤命令
             const query = value.substring(1).toLowerCase();
-            console.log('过滤命令:', query);
             filterCommands(query);
         } else {
             // 输入普通文本时，只隐藏菜单，保持currentCommand状态
@@ -340,10 +334,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 显示命令菜单
     function showCommandMenu() {
-        console.log('showCommandMenu 被调用');
         commandMode = true;
         commandMenu.classList.add('active');
-        console.log('菜单class:', commandMenu.className);
         selectedCommandIndex = 0;
         commandItems.forEach(item => item.style.display = 'flex');
         updateCommandSelection(Array.from(commandItems));
@@ -459,23 +451,17 @@ document.addEventListener('DOMContentLoaded', function() {
         let forcedIntent = null;
         if (currentCommand === 'generate') {
             forcedIntent = 'generate';
-            console.log('🎯 强制意图: generate');
         } else if (currentCommand === 'chat') {
             forcedIntent = 'chat';
-            console.log('🎯 强制意图: chat');
         } else if (currentCommand === 'modify') {
             if (selectedImageIndex !== null) {
                 forcedIntent = 'modify';
-                console.log('🎯 强制意图: modify');
             } else {
                 addMessage('assistant', '❌ 修改模式需要先选中一张图片。');
                 return;
             }
         }
         
-        console.log('📝 用户输入:', prompt);
-        console.log('🔧 当前命令:', currentCommand);
-        console.log('💪 强制意图:', forcedIntent);
         
         // 添加用户消息
         addMessage('user', prompt);
@@ -510,9 +496,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const chatData = await chatResponse.json();
             
-            console.log('🔍 收到后端响应:', chatData);
-            console.log('📌 意图:', chatData.intent);
-            console.log('💬 响应:', chatData.response);
             
             // 移除加载消息
             loadingMsg.remove();
@@ -524,23 +507,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 根据AI判断的意图执行不同操作
             if (chatData.intent === 'generate') {
-                console.log('✅ 执行生成图片逻辑');
                 // 需要生成图片
                 await generateImage(chatData.refined_prompt || prompt);
             } else if (chatData.intent === 'modify' && selectedImageIndex !== null) {
-                console.log('✅ 执行修改图片逻辑');
                 // 需要修改已选中的图片
                 await modifyImage(selectedImageIndex, chatData.refined_prompt || prompt);
             } else if (chatData.intent === 'chat') {
-                console.log('✅ 执行对话逻辑');
                 // 纯对话
                 addMessage('assistant', chatData.response);
             } else if (chatData.intent === 'select_hint') {
-                console.log('✅ 显示提示信息');
                 // 提示用户选择图片
                 addMessage('assistant', chatData.response);
             } else {
-                console.log('⚠️ 未匹配到意图，使用默认响应');
                 // 默认返回对话响应
                 addMessage('assistant', chatData.response || '我理解了，请告诉我更多细节。');
             }
@@ -977,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 避免浏览器阻止多个下载
                 await new Promise(resolve => setTimeout(resolve, 500));
             } catch (error) {
-                console.error('下载失败:', error);
+                hldebug.error('下载失败:', error);
             }
         }
     });

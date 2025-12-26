@@ -4,6 +4,15 @@ let uploadedFile = null;
 let sessionId = document.getElementById('session-id').value || null;
 let generatedImageUrl = null;
 
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', function() {
+    initializeDragAndDrop();
+    initializePaste();
+    initializeImageViewer();
+    
+    // 页面卸载时摄像头会由camera-input.js自动关闭
+});
+
 // Loading 函数
 function showLoading(message = '加载中...') {
     const overlay = document.getElementById('loading-overlay');
@@ -19,12 +28,179 @@ function hideLoading() {
     if (overlay) overlay.style.display = 'none';
 }
 
+// 更新Loading文本（用于进度提示）
+function updateLoadingMessage(message) {
+    const text = document.getElementById('loading-text');
+    if (text) text.textContent = message;
+}
+
+// ==================== Camera-Input.js 模块集成 ====================
+// 摄像头和图片上传现在由camera-input.js模块处理
+// 通过processPhoto()回调在create_image.js的displayImagePreview()中处理
+
+/**
+ * processPhoto() - camera-input.js 的回调函数
+ * 处理从摄像头拍摄或文件上传的照片
+ * 这个函数被camera-input.js中的usePhoto()和handleFileUpload()调用
+ */
+function processPhoto(file) {
+    
+    // 保存到全局变量供generateImage()使用
+    uploadedFile = file;
+    
+    // 显示图片预览
+    displayImagePreview(file);
+    
+    // 关闭摄像头模态框
+    closeCameraModal();
+    
+    showToast('照片已添加', 'success');
+}
+
+// 拖拽上传功能 ====================
+function initializeDragAndDrop() {
+    const container = document.getElementById('prompt-container');
+    if (!container) return;
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        container.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        container.addEventListener(eventName, () => {
+            container.classList.add('drag-over');
+        }, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        container.addEventListener(eventName, () => {
+            container.classList.remove('drag-over');
+        }, false);
+    });
+    
+    container.addEventListener('drop', handleDrop, false);
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+        const file = files[0];
+        if (file.type.startsWith('image/')) {
+            uploadedFile = file;
+            displayImagePreview(file);
+            showToast('图片已添加', 'success');
+        } else {
+            showToast('请拖拽图片文件', 'error');
+        }
+    }
+}
+
+// ==================== 粘贴功能 ====================
+function initializePaste() {
+    const textarea = document.getElementById('creation-prompt');
+    if (!textarea) return;
+    
+    // 监听粘贴事件
+    textarea.addEventListener('paste', handlePaste);
+    
+    // 也在整个文档上监听，以支持在页面任何地方粘贴
+    document.addEventListener('paste', handlePaste);
+}
+
+async function handlePaste(e) {
+    const items = e.clipboardData.items;
+    
+    for (let item of items) {
+        // 处理粘贴的图片
+        if (item.type.startsWith('image/')) {
+            e.preventDefault();
+            const file = item.getAsFile();
+            if (file) {
+                uploadedFile = file;
+                displayImagePreview(file);
+                showToast('图片已粘贴', 'success');
+            }
+            return;
+        }
+        
+        // 处理粘贴的文本（可能是图片链接）
+        if (item.type === 'text/plain') {
+            item.getAsString(async (text) => {
+                // 检查是否是图片URL
+                if (isImageUrl(text)) {
+                    e.preventDefault();
+                    await loadImageFromUrl(text);
+                }
+            });
+        }
+    }
+}
+
+function isImageUrl(url) {
+    // 检查是否是图片URL
+    try {
+        const urlObj = new URL(url);
+        const pathname = urlObj.pathname.toLowerCase();
+        return /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(pathname) || 
+               /image/i.test(url);
+    } catch {
+        return false;
+    }
+}
+
+async function loadImageFromUrl(url) {
+    try {
+        showLoading('正在加载图片...');
+        
+        // 通过代理加载图片（避免跨域问题）
+        const response = await fetch('/api/load_image_from_url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 将base64转换为Blob
+            const blob = await fetch(data.image_data).then(r => r.blob());
+            const file = new File([blob], 'pasted-image.png', { type: 'image/png' });
+            uploadedFile = file;
+            displayImagePreview(file);
+            showToast('图片链接已加载', 'success');
+        } else {
+            showToast(data.message || '加载图片失败', 'error');
+        }
+    } catch (error) {
+        hldebug.error('加载图片失败:', error);
+        showToast('加载图片失败，请检查链接是否有效', 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ==================== 图片预览显示 ====================
+function displayImagePreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('uploaded-image').src = e.target.result;
+        document.getElementById('uploaded-image-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
 // Toast辅助函数
 function showToast(message, type = 'info') {
     if (window.toast) {
         window.toast.show(message, type);
     } else {
-        console.warn('Toast未初始化:', message);
         alert(message);
     }
 }
@@ -32,33 +208,6 @@ function showToast(message, type = 'info') {
 // 填充提示词示例
 function fillPrompt(text) {
     document.getElementById('creation-prompt').value = text;
-}
-
-// 触发图片上传
-function triggerImageUpload() {
-    document.getElementById('reference-image').click();
-}
-
-// 处理图片上传
-function handleImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // 验证文件类型
-    if (!file.type.startsWith('image/')) {
-        showToast('请上传图片文件', 'error');
-        return;
-    }
-
-    uploadedFile = file;
-    
-    // 显示预览
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        document.getElementById('uploaded-image').src = e.target.result;
-        document.getElementById('uploaded-image-preview').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
 }
 
 // 移除上传的图片
@@ -72,21 +221,36 @@ function removeUploadedImage() {
 async function generateImage() {
     const prompt = document.getElementById('creation-prompt').value.trim();
     
-    // 验证：必须有prompt或图片
-    if (!prompt && !uploadedFile) {
+    // 验证：必须有prompt、图片或已有session
+    if (!prompt && !uploadedFile && !sessionId) {
         showToast('请输入文字描述或上传图片', 'warning');
         return;
+    }
+    
+    // 如果只有图片没有prompt，提示用户
+    if (uploadedFile && !prompt) {
     }
 
     const style = document.getElementById('image-style').value;
     const aspectRatio = document.getElementById('aspect-ratio').value;
 
-    // 显示loading
-    showLoading('正在生成图片，请稍候...');
+    // 显示loading，告诉用户预计时间
+    showLoading('正在生成图片，通常需要10-30秒，请稍候...');
+    
+    // 启动进度提示（每5秒更新一次）
+    let progressMessages = ['正在思考构图...', '正在上色...', '正在优化细节...', '即将完成...'];
+    let msgIndex = 0;
+    let progressInterval = setInterval(() => {
+        msgIndex = (msgIndex + 1) % progressMessages.length;
+        updateLoadingMessage(progressMessages[msgIndex]);
+    }, 5000);
 
     const formData = new FormData();
     if (prompt) formData.append('prompt', prompt);
-    if (uploadedFile) formData.append('image', uploadedFile);
+    // 如果有新上传的图片，就上传它
+    if (uploadedFile) {
+        formData.append('image', uploadedFile);
+    }
     formData.append('style', style);
     formData.append('aspect_ratio', aspectRatio);
     if (sessionId) formData.append('session_id', sessionId);
@@ -100,9 +264,14 @@ async function generateImage() {
         const data = await response.json();
         
         if (data.success) {
+            clearInterval(progressInterval); // 停止进度提示
             sessionId = data.session_id;
             document.getElementById('session-id').value = sessionId;
             generatedImageUrl = data.image_url;
+            
+            // 清空uploadedFile，避免File对象重复使用
+            // 后续生成会通过sessionId从服务器恢复图片
+            uploadedFile = null;
             
             // 显示生成结果
             document.getElementById('generated-img').src = data.image_url;
@@ -113,10 +282,13 @@ async function generateImage() {
             
             showToast('图片生成成功！', 'success');
         } else {
-            showToast(data.message || '生成失败', 'error');
+            clearInterval(progressInterval); // 停止进度提示
+            hldebug.error('生成失败，服务器返回:', data);
+            showToast(data.error || data.message || '生成失败', 'error');
         }
     } catch (error) {
-        console.error('生成失败:', error);
+        clearInterval(progressInterval); // 停止进度提示
+        hldebug.error('生成失败，捕获异常:', error);
         showToast('生成失败，请重试', 'error');
     } finally {
         hideLoading();
@@ -152,7 +324,7 @@ async function quickAdjust(type) {
             showToast(data.message || '调整失败', 'error');
         }
     } catch (error) {
-        console.error('调整失败:', error);
+        hldebug.error('调整失败:', error);
         showToast('调整失败，请重试', 'error');
     } finally {
         hideLoading();
@@ -181,7 +353,7 @@ async function saveArtwork() {
             showToast(data.message || '保存失败', 'error');
         }
     } catch (error) {
-        console.error('保存失败:', error);
+        hldebug.error('保存失败:', error);
         showToast('保存失败，请重试', 'error');
     }
 }
@@ -212,4 +384,30 @@ function showLoading(text) {
 
 function hideLoading() {
     document.getElementById('loading-overlay').style.display = 'none';
+}
+
+// ==================== 图片查看器初始化 ====================
+function initializeImageViewer() {
+    // 初始化ImageViewer（来自sunguo_class.js）
+    if (typeof ImageViewer !== 'undefined') {
+        ImageViewer.init();
+    } else {
+    }
+    
+    // 给生成的图片添加点击事件
+    const generatedImg = document.getElementById('generated-img');
+    if (generatedImg) {
+        generatedImg.addEventListener('click', function() {
+            if (this.src && this.src !== '') {
+                // 设置图片数组（只有一张图片）
+                if (typeof ImageViewer !== 'undefined') {
+                    ImageViewer.images = [this.src];
+                    ImageViewer.currentIndex = 0;
+                    ImageViewer.open(0);
+                } else {
+                    hldebug.error('❌ ImageViewer未定义');
+                }
+            }
+        });
+    }
 }

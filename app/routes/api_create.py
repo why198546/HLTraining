@@ -62,14 +62,20 @@ def generate_image():
     import sys
     sys.stdout.flush()
     
+    print("="*50, flush=True)
+    print("🎨 /api/generate_image 被调用", flush=True)
+    print(f"👤 用户: {current_user.nickname} (ID: {current_user.id})", flush=True)
     current_app.logger.info("="*50)
     current_app.logger.info("🎨 /api/generate_image 被调用")
     current_app.logger.info(f"👤 用户: {current_user.nickname} (ID: {current_user.id})")
     
     try:
         # 导入API（延迟导入以避免循环依赖）
+        print("🔄 开始导入NanoBananaAPI...", flush=True)
         from api.nano_banana import NanoBananaAPI
+        print("✅ NanoBananaAPI导入成功", flush=True)
         
+        print(f"🎫 Token剩余: {current_user.image_token_remaining}", flush=True)
         current_app.logger.info(f"🎫 Token剩余: {current_user.image_token_remaining}")
 
         # 检查token剩余
@@ -112,6 +118,20 @@ def generate_image():
                     uploaded_image_path = os.path.join(current_app.root_path, '..', 'uploads', uploaded_filename)
                     print(f"✅ 文件已保存: {uploaded_filename}")
         
+        # 如果没有上传新图片，但有session_id，尝试从之前的记录中获取
+        if not uploaded_image_path and session_id:
+            artwork = Artwork.query.filter_by(session_id=session_id).first()
+            if artwork and artwork.original_sketch:
+                uploaded_image_path = os.path.join(current_app.root_path, '..', 'uploads', artwork.original_sketch)
+                uploaded_filename = artwork.original_sketch
+                # 验证文件是否真实存在
+                if os.path.exists(uploaded_image_path):
+                    print(f"♻️ 使用已保存的图片: {uploaded_filename}")
+                else:
+                    print(f"⚠️ 数据库中的图片文件不存在: {uploaded_image_path}")
+                    uploaded_image_path = None
+                    uploaded_filename = None
+        
         # 验证：必须有prompt或上传图片
         if not prompt and not uploaded_image_path:
             print("❌ 缺少prompt和图片")
@@ -119,6 +139,20 @@ def generate_image():
                 'success': False,
                 'error': '请输入文字描述或上传图片'
             }), 400
+        
+        # 如果有图片但没有prompt，根据风格生成默认prompt
+        if uploaded_image_path and not prompt:
+            print("📝 图片存在但无prompt，生成默认prompt")
+            style_prompts = {
+                'cute': '可爱的卡通风格，色彩丰富，柔和的线条',
+                'realistic': '写实风格，细腻的细节，自然的光影',
+                'anime': '日系动漫风格，明亮的色彩，精致的线条',
+                'fantasy': '奇幻风格，梦幻的色彩，充满想象力',
+                'model_3d': '3D建模风格，清晰的轮廓，适合建模的设计',
+                'none': '保持原始风格'
+            }
+            prompt = style_prompts.get(style, '色彩鲜艳，细节丰富')
+            print(f"   生成的默认prompt: {prompt}")
         
         # 如果只有prompt没有图片，创建一个临时白色画布作为基础
         if prompt and not uploaded_image_path:
@@ -147,19 +181,49 @@ def generate_image():
             print(f"   sketch_path: {uploaded_image_path}")
             print(f"   prompt: {prompt[:50] if prompt else '(无)'}...")
             
+            # 获取temperature参数（用于控制生成的创意程度）
+            temperature = request.form.get('temperature', '1')
+            try:
+                temperature = float(temperature)
+                temperature = max(0.0, min(2.0, temperature))  # nano banana允许到2.0
+            except (ValueError, TypeError):
+                temperature = 1
+            
+            # 获取top_p参数（核采样 - 控制多样性）
+            top_p = request.form.get('top_p', '0.95')
+            try:
+                top_p = float(top_p)
+                top_p = max(0.0, min(1.0, top_p))  # 限制在0.0-1.0之间
+            except (ValueError, TypeError):
+                top_p = 0.95
+            
+            # 获取seed参数（用于控制随机性）
+            seed = request.form.get('seed')
+            if seed:
+                try:
+                    seed = int(seed)
+                except (ValueError, TypeError):
+                    seed = None
+            
+            print(f"   temperature: {temperature}, top_p: {top_p}, seed: {seed}")
+            
             result = nano_api.generate_image_from_reference(
                 sketch_path=uploaded_image_path,
                 description=prompt,
                 style=style,
-                aspect_ratio=aspect_ratio
+                aspect_ratio=aspect_ratio,
+                temperature=temperature,
+                top_p=top_p,
+                seed=seed
             )
             current_app.logger.info(f"✅ API调用完成")
             
             if not result:
-                current_app.logger.error(f"❌ API返回空结果")
+                current_app.logger.error(f"❌ API返回空结果（可能触发了内容过滤）")
+                print(f"⚠️ 提示：AI内容过滤可能拒绝了生成请求，建议更换风格或重试", flush=True)
                 return jsonify({
                     'success': False,
-                    'error': '图片生成失败，请稍后重试'
+                    'error': 'AI未能生成图片，请尝试更换风格或重新生成'
                 }), 400
         finally:
             # 清理临时文件
@@ -187,10 +251,28 @@ def generate_image():
         uploads_dir = os.path.join(current_app.root_path, '..', 'uploads')
         colored_dest = os.path.join(uploads_dir, colored_filename)
         
+        print(f"📦 移动文件")
+        print(f"   源文件: {colored_image_path}")
+        print(f"   目标文件: {colored_filename}")
+        print(f"   完整路径: {colored_dest}")
+        
         current_app.logger.info(f"📦 移动文件: {colored_filename}")
         import shutil
         shutil.copy2(colored_image_path, colored_dest)
-        current_app.logger.info(f"✅ 文件已保存到uploads")
+        
+        # 验证目标文件是否正确保存
+        if not os.path.exists(colored_dest):
+            print(f"❌ 文件移动失败: {colored_dest}")
+            current_app.logger.error(f"❌ 文件移动失败: {colored_dest}")
+            return jsonify({
+                'success': False,
+                'error': '文件保存失败'
+            }), 500
+        
+        # 验证文件大小
+        file_size = os.path.getsize(colored_dest)
+        print(f"✅ 文件已保存到uploads (大小: {file_size} bytes)")
+        current_app.logger.info(f"✅ 文件已保存到uploads (大小: {file_size} bytes)")
         
         # 创建或更新Artwork记录
         current_app.logger.info(f"💾 更新数据库: session_id={session_id}")
@@ -237,6 +319,12 @@ def generate_image():
         error_msg = f"生成图片失败: {str(e)}"
         error_type = type(e).__name__
         
+        print("="*50, flush=True)
+        print(f"❌❌❌ 严重错误!", flush=True)
+        print(f"错误类型: {error_type}", flush=True)
+        print(f"错误信息: {str(e)}", flush=True)
+        print("="*50, flush=True)
+        
         current_app.logger.error("="*50)
         current_app.logger.error(f"❌❌❌ 严重错误!")
         current_app.logger.error(f"错误类型: {error_type}")
@@ -244,6 +332,7 @@ def generate_image():
         current_app.logger.error("="*50)
         
         import traceback
+        print(traceback.format_exc(), flush=True)
         current_app.logger.error(traceback.format_exc())
         
         return jsonify({
@@ -251,6 +340,76 @@ def generate_image():
             'error': error_msg,
             'error_type': error_type,
             'traceback': traceback.format_exc() if current_app.debug else None
+        }), 500
+
+
+@api_create_bp.route('/api/load_image_from_url', methods=['POST'])
+@login_required
+def load_image_from_url():
+    """从URL加载图片（用于粘贴图片链接）"""
+    try:
+        import requests
+        import base64
+        from io import BytesIO
+        from PIL import Image
+        
+        data = request.get_json()
+        url = data.get('url', '').strip()
+        
+        if not url:
+            return jsonify({
+                'success': False,
+                'message': '请提供图片URL'
+            }), 400
+        
+        current_app.logger.info(f"🔗 加载图片链接: {url}")
+        
+        # 下载图片
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # 验证是否为图片
+        content_type = response.headers.get('Content-Type', '')
+        if not content_type.startswith('image/'):
+            return jsonify({
+                'success': False,
+                'message': '链接不是有效的图片'
+            }), 400
+        
+        # 转换为base64
+        img = Image.open(BytesIO(response.content))
+        
+        # 限制图片大小
+        max_size = 2048
+        if img.width > max_size or img.height > max_size:
+            img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+        
+        # 转换为PNG格式的base64
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        img_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        current_app.logger.info(f"✅ 图片加载成功，尺寸: {img.width}x{img.height}")
+        
+        return jsonify({
+            'success': True,
+            'image_data': f'data:image/png;base64,{img_base64}'
+        })
+        
+    except requests.exceptions.RequestException as e:
+        current_app.logger.error(f"❌ 下载图片失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '无法下载图片，请检查链接是否有效'
+        }), 400
+    except Exception as e:
+        current_app.logger.error(f"❌ 加载图片失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '加载图片失败'
         }), 500
 
 
@@ -890,4 +1049,98 @@ def download_video(session_id):
         return jsonify({
             'success': False,
             'error': f'下载失败: {str(e)}'
+        }), 500
+
+
+@api_create_bp.route('/api/analyze-image-features', methods=['POST'])
+@login_required
+def analyze_image_features():
+    """分析上传图片中的人物特征"""
+    try:
+        # 获取上传的图片
+        if 'image' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': '未找到图片文件'
+            }), 400
+        
+        file = request.files['image']
+        if not file or file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': '图片文件为空'
+            }), 400
+        
+        # 保存临时文件
+        session_id = str(uuid.uuid4())
+        filename = save_uploaded_file(file, session_id, 'analyze')
+        if not filename:
+            return jsonify({
+                'success': False,
+                'error': '图片格式不支持'
+            }), 400
+        
+        image_path = os.path.join(current_app.root_path, '..', 'uploads', filename)
+        
+        try:
+            # 使用Gemini Vision API分析图片特征
+            import google.generativeai as genai
+            from PIL import Image
+            
+            # 读取图片
+            img = Image.open(image_path)
+            
+            # 配置Gemini API
+            api_key = os.environ.get('GEMINI_API_KEY')
+            if not api_key:
+                raise Exception('GEMINI_API_KEY未配置')
+            
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            
+            # 提示词：提取人物特征
+            prompt = """请仔细观察这张图片中的人物，用简洁的中文描述以下特征（如果图片中没有人物，请说明）：
+
+1. 性别和年龄段（如：男孩、女孩、青年、中年等）
+2. 发型（如：长发、短发、卷发、直发、马尾、光头等）
+3. 头发颜色（如果能看出）
+4. 脸型（如：圆脸、长脸、方脸等）
+5. 眼睛特征（如：大眼睛、小眼睛、单眼皮、双眼皮等）
+6. 鼻子特征（如：高鼻梁、塌鼻梁、小鼻子等）
+7. 嘴巴特征（如：大嘴、小嘴、厚嘴唇、薄嘴唇等）
+8. 是否戴眼镜
+9. 特殊配饰（如：帽子、耳环、项链等）
+10. 衣着风格（简要描述）
+
+请用逗号分隔的短语形式输出，例如：
+"10岁男孩，短发，圆脸，大眼睛，高鼻梁，小嘴，不戴眼镜，穿蓝色T恤"
+
+只输出特征描述，不要其他解释。"""
+            
+            # 调用API
+            response = model.generate_content([prompt, img])
+            features = response.text.strip()
+            
+            print(f"✅ 提取的人物特征: {features}")
+            
+            return jsonify({
+                'success': True,
+                'features': features
+            })
+            
+        finally:
+            # 清理临时文件
+            try:
+                if os.path.exists(image_path):
+                    os.unlink(image_path)
+            except Exception as e:
+                print(f"清理临时文件失败: {e}")
+        
+    except Exception as e:
+        current_app.logger.error(f"分析图片特征失败: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'分析失败: {str(e)}'
         }), 500

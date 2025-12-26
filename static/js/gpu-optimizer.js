@@ -250,7 +250,7 @@
             };
 
         } catch (error) {
-            console.error('[GPU Optimizer] Initialization failed:', error);
+            hldebug.error('[GPU Optimizer] Initialization failed:', error);
         }
     }
 

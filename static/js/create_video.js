@@ -23,7 +23,6 @@ function showToast(message, type = 'info') {
     if (window.toast) {
         window.toast.show(message, type);
     } else {
-        console.warn('Toast未初始化:', message);
         alert(message);
     }
 }
@@ -104,7 +103,7 @@ async function generateVideo() {
             showToast(result.message || '视频生成失败', 'error');
         }
     } catch (error) {
-        console.error('生成失败:', error);
+        hldebug.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
@@ -165,7 +164,7 @@ async function generateVideoDirect() {
             showToast(result.message || '视频生成失败', 'error');
         }
     } catch (error) {
-        console.error('生成失败:', error);
+        hldebug.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
@@ -206,7 +205,7 @@ async function saveAndFinish() {
             showToast(result.message || '保存失败', 'error');
         }
     } catch (error) {
-        console.error('保存失败:', error);
+        hldebug.error('保存失败:', error);
         showToast('保存失败，请重试', 'error');
     }
 }

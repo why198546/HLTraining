@@ -19,10 +19,9 @@ async function incrementViewCount(artworkId) {
         const result = await response.json();
         
         if (result.success) {
-            console.log(`作品 ${artworkId} 浏览次数已更新: ${result.view_count}`);
         }
     } catch (error) {
-        console.error('更新浏览次数失败:', error);
+        hldebug.error('更新浏览次数失败:', error);
     }
 }
 
@@ -34,11 +33,10 @@ function showArtworkModal(element) {
     }
     
     if (!element) {
-        console.error('Element is null or undefined');
+        hldebug.error('Element is null or undefined');
         return;
     }
     
-    console.log('showArtworkModal called, checking showImageModal function:', typeof showImageModal);
     
     const artworkData = {
         id: element.dataset.artworkId,
@@ -62,7 +60,6 @@ function showArtworkModal(element) {
         incrementViewCount(artworkData.id);
     }
     
-    console.log('Artwork versions:', {
         colored: artworkData.coloredVersions,
         adjusted: artworkData.adjustedVersions,
         sessionId: artworkData.sessionId
@@ -98,14 +95,13 @@ function showArtworkModal(element) {
     // 构建作品展示区域
     const showcase = document.getElementById('modalArtworkShowcase');
     if (!showcase) {
-        console.error('Modal showcase element not found');
+        hldebug.error('Modal showcase element not found');
         return;
     }
     showcase.innerHTML = '';
     
     // 原始简笔画
     if (artworkData.originalImage && artworkData.originalImage.trim() !== '' && artworkData.originalImage !== 'null') {
-        console.log('Adding original image with click handler:', artworkData.originalImage);
         const originalStep = document.createElement('div');
         originalStep.className = 'artwork-detail-step';
         originalStep.innerHTML = `
@@ -123,12 +119,10 @@ function showArtworkModal(element) {
         if (img) {
             img.addEventListener('click', function(e) {
                 e.stopPropagation();
-                console.log('Original image clicked, calling showImageModal');
                 showImageModal(this.src, '原始简笔画');
             });
         }
     } else {
-        console.log('No original image data available, value:', artworkData.originalImage);
         // 显示文字提示创作的说明
         const originalStep = document.createElement('div');
         originalStep.className = 'artwork-detail-step';
@@ -145,7 +139,6 @@ function showArtworkModal(element) {
     
     // AI生成图片
     if (artworkData.generatedImage) {
-        console.log('Adding generated image with click handler:', artworkData.generatedImage);
         const generatedStep = document.createElement('div');
         generatedStep.className = 'artwork-detail-step';
         
@@ -185,7 +178,6 @@ function showArtworkModal(element) {
         if (img) {
             img.addEventListener('click', function(e) {
                 e.stopPropagation();
-                console.log('Generated image clicked, calling showImageModal');
                 showImageModal(this.src, 'AI生成效果');
             });
         }
@@ -202,7 +194,6 @@ function showArtworkModal(element) {
             });
         }
     } else {
-        console.log('No generated image data available');
     }
     
     // 显示所有版本历史
@@ -268,7 +259,7 @@ function showArtworkModal(element) {
     // 设置作品信息
     const info = document.getElementById('modalArtworkInfo');
     if (!info) {
-        console.error('Modal info element not found');
+        hldebug.error('Modal info element not found');
         return;
     }
     info.innerHTML = `
@@ -303,7 +294,7 @@ function showArtworkModal(element) {
     // 显示模态框
     const artworkModal = document.getElementById('artworkModal');
     if (!artworkModal) {
-        console.error('Artwork modal element not found');
+        hldebug.error('Artwork modal element not found');
         return;
     }
     
@@ -368,7 +359,6 @@ function closeArtworkModal() {
 
 // 在当前模态框上方叠加图片
 function showImageModal(imageSrc, title) {
-    console.log('showImageModal called with:', imageSrc, title);
     
     // 阻止事件冒泡
     if (window.event) {
@@ -379,7 +369,6 @@ function showImageModal(imageSrc, title) {
     // 检查是否已经有图片叠加层，如果有就先移除
     const existingOverlay = document.getElementById('imageOverlay');
     if (existingOverlay) {
-        console.log('Removing existing image overlay');
         existingOverlay.remove();
     }
     
@@ -388,7 +377,6 @@ function showImageModal(imageSrc, title) {
     imageOverlay.id = 'imageOverlay';
     imageOverlay.className = 'image-overlay';
     
-    console.log('Creating image overlay element');
     
     imageOverlay.innerHTML = `
         <div class="image-overlay-backdrop"></div>
@@ -401,11 +389,10 @@ function showImageModal(imageSrc, title) {
     // 添加到当前模态窗口内
     const artworkModal = document.getElementById('artworkModal');
     if (!artworkModal) {
-        console.error('Artwork modal not found!');
+        hldebug.error('Artwork modal not found!');
         return;
     }
     
-    console.log('Adding image overlay to artwork modal');
     artworkModal.appendChild(imageOverlay);
     
     // 显示叠加层 - 需要添加visible类来触发CSS动画
@@ -414,7 +401,6 @@ function showImageModal(imageSrc, title) {
     setTimeout(() => {
         imageOverlay.classList.add('visible');
     }, 10);
-    console.log('Image overlay should now be visible');
     
     // 为图片添加事件监听
     const overlayImg = imageOverlay.querySelector('.overlay-image');
@@ -443,12 +429,10 @@ function showImageModal(imageSrc, title) {
     
     // 也可以点击图片区域关闭
     imageOverlay.addEventListener('click', function(e) {
-        console.log('Image overlay clicked:', e.target.className);
         // 如果点击的不是图片本身，就关闭叠加层
         if (e.target === imageOverlay || 
             e.target.classList.contains('image-overlay-backdrop') ||
             e.target.classList.contains('image-overlay-content')) {
-            console.log('Closing image overlay');
             closeImageOverlay();
         }
     });
@@ -470,7 +454,6 @@ function handleImageClick(img) {
 function closeImageOverlay() {
     const imageOverlay = document.getElementById('imageOverlay');
     if (imageOverlay) {
-        console.log('Closing image overlay with animation');
         // 移除visible类触发消失动画
         imageOverlay.classList.remove('visible');
         // 等待动画完成后移除元素
@@ -500,7 +483,6 @@ function showModelModal(modelSrc, title) {
         event.stopPropagation();
     }
     
-    console.log('showModelModal called with:', modelSrc, title);
     
     // 保存当前模型URL到全局变量
     currentModelUrl = modelSrc;
@@ -519,7 +501,7 @@ function showModelModal(modelSrc, title) {
         const modelTitle = document.getElementById('modelTitle');
         
         if (!modelOverlay) {
-            console.error('Model overlay element not found');
+            hldebug.error('Model overlay element not found');
             alert('3D模型查看器初始化失败：找不到模型容器');
             return;
         }
@@ -527,9 +509,7 @@ function showModelModal(modelSrc, title) {
         // 设置标题（如果元素存在）
         if (modelTitle) {
             modelTitle.textContent = title;
-            console.log('Model title set successfully');
         } else {
-            console.warn('Model title element not found, continuing without title');
         }
         
         // 显示模型叠加层
@@ -538,12 +518,11 @@ function showModelModal(modelSrc, title) {
         setTimeout(() => {
             modelOverlay.classList.add('visible');
         }, 10);
-        console.log('Model overlay displayed');
         
         // 获取模型容器
         const modelContainer = document.getElementById('modelContainer');
         if (!modelContainer) {
-            console.error('Model container not found');
+            hldebug.error('Model container not found');
             return;
         }
         
@@ -552,7 +531,6 @@ function showModelModal(modelSrc, title) {
         
         // 如果有ModelViewer3D类，使用它来初始化3D查看器
         if (typeof ModelViewer3D !== 'undefined') {
-            console.log('Using ModelViewer3D class');
             try {
                 // 创建ModelViewer3D实例
                 const viewer = new ModelViewer3D(modelContainer, {
@@ -560,10 +538,9 @@ function showModelModal(modelSrc, title) {
                     enableControls: true,
                     enableAutoRotate: false,
                     onModelLoaded: () => {
-                        console.log('3D model loaded successfully');
                     },
                     onLoadError: (error) => {
-                        console.error('3D model load error:', error);
+                        hldebug.error('3D model load error:', error);
                         modelContainer.innerHTML = `
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
                                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ff6b6b;"></i>
@@ -578,7 +555,7 @@ function showModelModal(modelSrc, title) {
                 viewer.loadModel(modelSrc);
                 
             } catch (error) {
-                console.error('Error creating ModelViewer3D:', error);
+                hldebug.error('Error creating ModelViewer3D:', error);
                 // 降级到备用显示
                 modelContainer.innerHTML = `
                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
@@ -589,7 +566,6 @@ function showModelModal(modelSrc, title) {
                 `;
             }
         } else {
-            console.log('ModelViewer3D class not found, using fallback');
             // 提供一个备用的显示方式
             modelContainer.innerHTML = `
                 <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
@@ -598,7 +574,6 @@ function showModelModal(modelSrc, title) {
                     <p style="margin-top: 10px;"><a href="${modelSrc}" target="_blank" style="color: #4CAF50;">下载模型文件</a></p>
                 </div>
             `;
-            console.log('Fallback content added to model container');
         }
     });
 }
@@ -639,7 +614,6 @@ function openInBambooStudio() {
     // 尝试使用bambustudio://协议打开
     const bambooUrl = `bambustudio://open?url=${encodeURIComponent(fullUrl)}`;
     
-    console.log('尝试在Bamboo Studio中打开:', bambooUrl);
     
     // 创建隐藏的iframe来触发协议
     const iframe = document.createElement('iframe');
@@ -687,7 +661,6 @@ function downloadModel() {
     link.click();
     document.body.removeChild(link);
     
-    console.log('开始下载模型文件:', currentModelUrl);
 }
 
 function toggleImageMode(img) {
@@ -814,7 +787,6 @@ async function saveTitleChange(artworkId, newTitle) {
         const result = await response.json();
         
         if (result.success) {
-            console.log('标题已更新');
             // 更新卡片上的标题
             const card = document.querySelector(`[data-artwork-id="${artworkId}"]`);
             if (card) {
@@ -828,7 +800,7 @@ async function saveTitleChange(artworkId, newTitle) {
             alert('保存失败：' + (result.message || '未知错误'));
         }
     } catch (error) {
-        console.error('保存标题失败:', error);
+        hldebug.error('保存标题失败:', error);
         alert('保存失败，请重试');
     }
 }
@@ -973,7 +945,7 @@ async function generateModel(artworkId, imageSrc) {
             alert('生成失败：' + (result.message || '未知错误'));
         }
     } catch (error) {
-        console.error('生成3D模型失败:', error);
+        hldebug.error('生成3D模型失败:', error);
         alert('生成失败，请重试');
     }
 }
@@ -1002,7 +974,7 @@ async function generateVideo(artworkId, imageSrc) {
             alert('生成失败：' + (result.message || '未知错误'));
         }
     } catch (error) {
-        console.error('生成视频失败:', error);
+        hldebug.error('生成视频失败:', error);
         alert('生成失败，请重试');
     }
 }

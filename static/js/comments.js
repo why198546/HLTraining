@@ -66,7 +66,7 @@ async function loadComments(artworkId) {
             showCommentsError('加载评论失败');
         }
     } catch (error) {
-        console.error('加载评论失败:', error);
+        hldebug.error('加载评论失败:', error);
         showCommentsError('加载评论失败，请刷新重试');
     }
 }
@@ -90,7 +90,6 @@ function displayComments(comments) {
     commentsList.innerHTML = comments.map(comment => {
         // 调试：打印音频文件路径
         if (comment.audio_file) {
-            console.log('评论音频文件:', comment.audio_file);
         }
         
         return `
@@ -109,8 +108,7 @@ function displayComments(comments) {
                     ${comment.audio_file ? `
                         <div class="comment-audio-inline">
                             <audio controls preload="metadata" 
-                                   onerror="console.error('音频加载失败:', '${comment.audio_file}')"
-                                   onloadedmetadata="console.log('音频加载成功:', '${comment.audio_file}')">
+                                   onerror="hldebug.error('音频加载失败:', '${comment.audio_file}')"
                                 <source src="${comment.audio_file}" type="audio/mp4">
                                 <source src="${comment.audio_file}" type="audio/webm;codecs=opus">
                                 <source src="${comment.audio_file}" type="audio/webm">
@@ -218,7 +216,7 @@ async function submitComment() {
             showToast(data.message || '评论发表失败', 'error');
         }
     } catch (error) {
-        console.error('提交评论失败:', error);
+        hldebug.error('提交评论失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         submitBtn.disabled = false;
@@ -252,14 +250,13 @@ async function uploadCommentAudio(audioBlob) {
         const data = await response.json();
         
         if (data.success) {
-            console.log('音频上传成功:', data.filename, '大小:', data.size, 'bytes');
             return data.filename;
         } else {
-            console.error('音频上传失败:', data.message);
+            hldebug.error('音频上传失败:', data.message);
             return null;
         }
     } catch (error) {
-        console.error('上传音频失败:', error);
+        hldebug.error('上传音频失败:', error);
         return null;
     }
 }
@@ -285,7 +282,7 @@ async function deleteComment(commentId) {
             showToast(data.message || '删除失败', 'error');
         }
     } catch (error) {
-        console.error('删除评论失败:', error);
+        hldebug.error('删除评论失败:', error);
         showToast('网络错误，请重试', 'error');
     }
 }
@@ -341,30 +338,26 @@ async function startCommentVoiceInput() {
             fileExt = 'ogg';
         }
         
-        console.log('使用音频格式:', mimeType, '扩展名:', fileExt);
         mediaRecorder = new MediaRecorder(stream, { mimeType: mimeType });
         
         mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
                 audioChunks.push(event.data);
-                console.log('录制数据块:', event.data.size, 'bytes');
             }
         };
         
         mediaRecorder.onstop = () => {
             // 创建音频Blob
             commentAudioBlob = new Blob(audioChunks, { type: mimeType });
-            console.log('录音完成，总大小:', commentAudioBlob.size, 'bytes');
             
             // 停止所有音频轨道
             stream.getTracks().forEach(track => track.stop());
         };
         
         mediaRecorder.start();
-        console.log('开始录音...');
         
     } catch (error) {
-        console.error('无法访问麦克风:', error);
+        hldebug.error('无法访问麦克风:', error);
         showToast('无法访问麦克风，请检查权限设置', 'error');
         return;
     }
@@ -390,7 +383,7 @@ async function startCommentVoiceInput() {
         };
         
         commentRecognition.onerror = function(event) {
-            console.error('语音识别错误:', event.error);
+            hldebug.error('语音识别错误:', event.error);
             stopCommentVoiceInput();
             showToast('语音识别出错，请重试', 'error');
         };
@@ -411,7 +404,7 @@ async function startCommentVoiceInput() {
         voiceBtn.innerHTML = '<i class="fas fa-stop-circle"></i> <span>停止录音</span>';
         
     } catch (error) {
-        console.error('启动语音识别失败:', error);
+        hldebug.error('启动语音识别失败:', error);
         showToast('无法启动语音识别', 'error');
     }
 }

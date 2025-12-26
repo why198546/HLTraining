@@ -53,7 +53,7 @@ class ModelViewer3D {
      */
     init() {
         if (!this.container) {
-            console.error(`容器 ${this.containerId} 不存在`);
+            hldebug.error(`容器 ${this.containerId} 不存在`);
             return;
         }
         
@@ -73,7 +73,7 @@ class ModelViewer3D {
             
             // 初始化完成
         } catch (error) {
-            console.error('3D查看器初始化失败:', error);
+            hldebug.error('3D查看器初始化失败:', error);
         }
     }
     
@@ -161,11 +161,9 @@ class ModelViewer3D {
                 this.controls.dampingFactor = 0.05;
                 this.controls.autoRotate = this.config.enableAutoRotate;
             } else {
-                console.warn('OrbitControls 不可用，使用简单鼠标控制');
                 this.addMouseControls();
             }
         } catch (error) {
-            console.warn('创建OrbitControls失败，使用简单鼠标控制:', error);
             this.addMouseControls();
         }
     }
@@ -259,7 +257,7 @@ class ModelViewer3D {
                 this.loadOBJModel(modelUrl);
                 break;
             default:
-                console.error('不支持的模型格式:', format);
+                hldebug.error('不支持的模型格式:', format);
                 this.createPlaceholderModel();
         }
     }
@@ -329,13 +327,13 @@ class ModelViewer3D {
                     }
                 },
                 (error) => {
-                    console.error('GLB文件解析错误:', error);
+                    hldebug.error('GLB文件解析错误:', error);
                     this.createPlaceholderModel();
                 }
             );
         })
         .catch(error => {
-            console.error('GLB文件加载或GLTFLoader初始化错误:', error);
+            hldebug.error('GLB文件加载或GLTFLoader初始化错误:', error);
             this.createPlaceholderModel();
         });
     }    /**
@@ -349,7 +347,7 @@ class ModelViewer3D {
         } else if (typeof window.OBJLoader !== 'undefined') {
             OBJLoader = window.OBJLoader;
         } else {
-            console.error('OBJLoader 未加载');
+            hldebug.error('OBJLoader 未加载');
             if (this.onLoadError) {
                 this.onLoadError(new Error('OBJLoader 未加载'));
             }
@@ -374,7 +372,7 @@ class ModelViewer3D {
                 }
             },
             (error) => {
-                console.error('OBJ模型加载失败:', error);
+                hldebug.error('OBJ模型加载失败:', error);
                 if (this.onLoadError) {
                     this.onLoadError(error);
                 }

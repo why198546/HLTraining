@@ -118,7 +118,7 @@
     line-height: 1.8;
 }
 
-.action-buttons {
+.input-wrapper .action-buttons {
     position: absolute;
     right: 15px;
     bottom: 15px;
@@ -355,7 +355,9 @@
 }
 
 /* 操作按钮 */
-.result-actions {
+.result-actions,
+.result-section .action-buttons {
+    position: static !important;
     display: flex;
     gap: 18px;
     justify-content: center;

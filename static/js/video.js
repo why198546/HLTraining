@@ -19,9 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeFromURLParams() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    console.log('🔧 从URL参数初始化视频配置:');
-    console.log('  sessionId:', sessionId);  // 使用HTML模板传递的sessionId
-    console.log('  imageUrl:', imageUrl);    // 使用HTML模板传递的imageUrl
     
     // 为视频页面设置默认的动作描述提示
     const promptTextarea = document.getElementById('video-prompt');
@@ -36,7 +33,6 @@ function initializeFromURLParams() {
         const durationSelect = document.getElementById('video-duration');
         if (durationSelect) {
             durationSelect.value = duration;
-            console.log('  时长:', duration);
         }
     }
     
@@ -45,7 +41,6 @@ function initializeFromURLParams() {
         const aspectSelect = document.getElementById('aspect-ratio');
         if (aspectSelect) {
             aspectSelect.value = aspectRatio;
-            console.log('  宽高比:', aspectRatio);
         }
     }
     
@@ -54,7 +49,6 @@ function initializeFromURLParams() {
         const qualitySelect = document.getElementById('video-quality');
         if (qualitySelect) {
             qualitySelect.value = quality;
-            console.log('  分辨率:', quality);
         }
     }
     
@@ -63,7 +57,6 @@ function initializeFromURLParams() {
         const motionSelect = document.getElementById('motion-intensity');
         if (motionSelect) {
             motionSelect.value = motionIntensity;
-            console.log('  运动强度:', motionIntensity);
         }
     }
     
@@ -72,14 +65,12 @@ function initializeFromURLParams() {
         const modelSelect = document.getElementById('video-model');
         if (modelSelect) {
             modelSelect.value = model;
-            console.log('  模型:', model);
         }
     }
     
     // 更新时间预估
     updateTimeEstimate();
     
-    console.log('✅ 视频配置初始化完成');
 }
 
 /**
@@ -87,7 +78,6 @@ function initializeFromURLParams() {
  */
 async function startVideoGeneration() {
     if (isGenerating) {
-        console.warn('⚠️ 视频生成已在进行中，忽略重复请求');
         return;
     }
 
@@ -113,7 +103,6 @@ async function startVideoGeneration() {
         model: model
     };
     
-    console.log('🚀 直接开始生成视频，配置:', config);
     await executeVideoGeneration(config);
 }
 
@@ -121,13 +110,6 @@ async function startVideoGeneration() {
  * 实际执行视频生成（确认后调用）
  */
 async function executeVideoGeneration(config) {
-    console.log('🎬 开始视频生成:');
-    console.log(`   提示词: ${config.prompt}`);
-    console.log(`   时长: ${config.duration}秒`);
-    console.log(`   宽高比: ${config.aspectRatio}`);
-    console.log(`   分辨率: ${config.quality}`);
-    console.log(`   运动强度: ${config.motionIntensity}`);
-    console.log(`   AI模型: ${config.model}`);
 
     isGenerating = true;
     showGenerationStatus();
@@ -136,7 +118,6 @@ async function executeVideoGeneration(config) {
     updateStatus('正在翻译提示词...', 1);
     
     try {
-        console.log('📤 发送视频生成请求...');
         
         // 模拟数据准备时间
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -159,7 +140,6 @@ async function executeVideoGeneration(config) {
             })
         });
 
-        console.log(`📡 服务器响应状态: ${response.status}`);
         
         if (!response.ok) {
             // 特殊处理配额错误
@@ -173,17 +153,15 @@ async function executeVideoGeneration(config) {
         }
 
         const data = await response.json();
-        console.log('📊 服务器响应数据:', data);
 
         if (data.success) {
-            console.log(`✅ 视频生成任务已启动: ${data.task_id}`);
             startCountdown(config.duration, config.quality, config.model);
             pollVideoStatus(data.task_id);
         } else {
             throw new Error(data.error || '视频生成启动失败');
         }
     } catch (error) {
-        console.error('❌ 视频生成请求失败:', error);
+        hldebug.error('❌ 视频生成请求失败:', error);
         hideGenerationStatus();
         
         let errorMessage = '视频生成失败：' + error.message;
@@ -226,7 +204,6 @@ function startCountdown(duration, quality = '720p', model = 'veo-3.1-fast-genera
     updateStatus(`小AI开始工作啦！预计需要 ${estimatedTime}`, 5);
     
     const modelName = model === 'veo-3.1-fast-generate-preview' ? '快速版' : '标准版';
-    console.log(`🕐 开始倒计时: ${duration}秒${quality}${modelName}视频预计需要${estimatedSeconds}秒(${Math.floor(estimatedSeconds/60)}分${estimatedSeconds%60}秒)`);
     
     // 动态倒计时，每秒减少
     countdownInterval = setInterval(() => {
@@ -251,19 +228,17 @@ async function pollVideoStatus(taskId) {
     let pollCount = 0;
     const maxPolls = 300; // 5分钟最大轮询时间
     
-    console.log(`🔄 开始轮询任务状态: ${taskId}`);
 
     pollInterval = setInterval(async () => {
         try {
             pollCount++;
-            console.log(`📊 轮询第${pollCount}次，任务ID: ${taskId}`);
             
             if (pollCount > maxPolls) {
                 clearInterval(pollInterval);
                 clearInterval(countdownInterval);
                 hideGenerationStatus();
                 const errorMsg = `视频生成超时（轮询${pollCount}次，约${Math.floor(pollCount*3/60)}分钟）`;
-                console.error(`❌ ${errorMsg}`);
+                hldebug.error(`❌ ${errorMsg}`);
                 alert(errorMsg + '，请重试');
                 isGenerating = false;
                 return;
@@ -272,12 +247,10 @@ async function pollVideoStatus(taskId) {
             const response = await fetch(`/api/video-status/${taskId}`);
             const statusData = await response.json();
             
-            console.log(`📊 状态响应:`, statusData);
 
             if (statusData.success && statusData.status === 'completed') {
                 clearInterval(pollInterval);
                 clearInterval(countdownInterval);
-                console.log(`✅ 视频生成完成: ${statusData.video_url}`);
                 updateStatus('视频生成完成！', 100);
                 
                 setTimeout(() => {
@@ -291,7 +264,7 @@ async function pollVideoStatus(taskId) {
                 hideGenerationStatus();
                 
                 const errorDetails = statusData.error || '未知错误';
-                console.error(`❌ 视频生成失败:`, statusData);
+                hldebug.error(`❌ 视频生成失败:`, statusData);
                 
                 // 更详细的错误信息
                 let userMessage = '视频生成失败：' + errorDetails;
@@ -310,12 +283,11 @@ async function pollVideoStatus(taskId) {
                 clearInterval(countdownInterval);
                 hideGenerationStatus();
                 
-                console.warn(`⚠️ 内容被过滤:`, statusData);
                 alert('提示词内容触发了安全过滤器，请尝试使用更温和的描述词汇');
                 isGenerating = false;
             } else if (!statusData.success) {
                 // API调用失败
-                console.error(`❌ API调用失败:`, statusData);
+                hldebug.error(`❌ API调用失败:`, statusData);
                 
                 // 如果连续失败多次，停止轮询
                 if (pollCount > 10) {
@@ -327,13 +299,12 @@ async function pollVideoStatus(taskId) {
                 }
             } else {
                 // 继续处理中
-                console.log(`⏳ 视频生成中... (${pollCount}/${maxPolls})`);
                 if (statusData.message) {
                     updateStatus(statusData.message, statusData.progress || 50);
                 }
             }
         } catch (error) {
-            console.error(`❌ 轮询状态时出错:`, error);
+            hldebug.error(`❌ 轮询状态时出错:`, error);
             
             // 如果网络错误连续发生多次，停止轮询
             if (pollCount > 20) {
@@ -618,14 +589,12 @@ function updateTimeEstimate() {
         btnEstimate.textContent = ` (预估${timeOnly}·${speedNote})`;
     }
     
-    console.log(`⏱️ 时间预估更新: ${duration}秒${quality}视频 (${model}) -> ${estimatedTime}`);
 }
 
 /**
  * 显示视频生成确认对话框
  */
 async function showVideoGenerationConfirmDialog(config) {
-    console.log('🔍 准备显示确认对话框，翻译提示词...');
     
     // 先翻译提示词
     let translatedPrompt = config.prompt;
@@ -643,10 +612,8 @@ async function showVideoGenerationConfirmDialog(config) {
         if (response.ok) {
             const result = await response.json();
             translatedPrompt = result.translated_prompt;
-            console.log('✅ 提示词翻译完成:', translatedPrompt);
         }
     } catch (error) {
-        console.warn('⚠️ 翻译提示词失败，使用原始提示词:', error);
     }
 
     // 创建模态框
@@ -761,7 +728,6 @@ function confirmVideoGenerationExecution() {
         model: document.getElementById('confirm-model').value
     };
 
-    console.log('✅ 用户确认生成，最终配置:', finalConfig);
 
     // 关闭模态框
     closeVideoGenerationConfirmModal();

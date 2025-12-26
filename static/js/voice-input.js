@@ -20,18 +20,14 @@ async function checkMicrophonePermission() {
             
             if (permissionStatus.state === 'granted') {
                 microphonePermissionGranted = true;
-                console.log('✅ 麦克风权限已授予');
                 return true;
             } else if (permissionStatus.state === 'prompt') {
-                console.log('⚠️ 需要请求麦克风权限');
                 return false;
             } else {
-                console.log('❌ 麦克风权限被拒绝');
                 return false;
             }
         }
     } catch (error) {
-        console.log('无法检查麦克风权限:', error);
     }
     return false;
 }
@@ -99,7 +95,7 @@ function initVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     if (!SpeechRecognition) {
-        console.error('浏览器不支持语音识别');
+        hldebug.error('浏览器不支持语音识别');
         return null;
     }
     
@@ -112,11 +108,9 @@ function initVoiceRecognition() {
     // 增加暂停容忍时间，适应儿童断断续续说话
     // 注意：这些属性不是标准API，但Chrome支持
     if (recognition.continuous) {
-        console.log('✅ 连续模式已启用，适合儿童断断续续说话');
     }
     
     recognition.onstart = function() {
-        console.log('语音识别已启动');
         isRecording = true;
         updateVoiceButtonState('recording');
         
@@ -150,7 +144,6 @@ function initVoiceRecognition() {
             } else if (!voiceTranscript) {
                 voiceTranscript = finalTranscript;
             }
-            console.log('📝 累积语音内容:', voiceTranscript);
         }
         
         // 实时显示识别结果（包含临时结果）
@@ -164,8 +157,8 @@ function initVoiceRecognition() {
     };
     
     recognition.onerror = function(event) {
-        console.error('语音识别错误:', event.error);
-        console.error('错误详情:', event);
+        hldebug.error('语音识别错误:', event.error);
+        hldebug.error('错误详情:', event);
         isRecording = false;
         recognitionState = 'idle';
         updateVoiceButtonState('error');
@@ -196,7 +189,6 @@ function initVoiceRecognition() {
                 break;
             case 'aborted':
                 // 用户主动停止，不显示错误
-                console.log('用户主动停止了语音识别');
                 recognitionState = 'idle';
                 return;
             default:
@@ -214,8 +206,6 @@ function initVoiceRecognition() {
     };
     
     recognition.onend = function() {
-        console.log('🏁 语音识别已结束');
-        console.log(`状态转换: recognitionState ${recognitionState} -> idle`);
         
         const wasRecording = isRecording;
         isRecording = false;
@@ -235,7 +225,6 @@ function initVoiceRecognition() {
         
         if (wasRecording) {
             // 如果是用户主动停止，进行AI整理
-            console.log('💭 准备进行 AI 整理...');
             processVoiceInput();
         }
         
@@ -249,27 +238,23 @@ function initVoiceRecognition() {
  * 开始语音输入
  */
 async function startVoiceInput() {
-    console.log(`📊 当前状态: recording=${isRecording}, recognitionState=${recognitionState}`);
     
     // 如果已经在录音，则停止
     if (isRecording) {
         try {
-            console.log('🛑 停止语音识别...');
-            console.log('📊 累积的语音内容:', voiceTranscript);
             recognitionState = 'stopping';
             if (recognition) {
                 recognition.stop();
                 showNotification('🎤 录音已停止，正在整理...', 'info');
             }
         } catch (error) {
-            console.error('停止语音识别失败:', error);
+            hldebug.error('停止语音识别失败:', error);
         }
         return;
     }
     
     // 防止重复启动
     if (recognitionState === 'starting' || recognitionState === 'recording') {
-        console.warn('⚠️ 语音识别已经在运行中');
         showNotification('语音识别已在运行中，请稍候...', 'warning');
         return;
     }
@@ -281,7 +266,6 @@ async function startVoiceInput() {
     try {
         // 确保识别对象存在
         if (!recognition) {
-            console.log('🔧 初始化新的识别对象...');
             recognition = initVoiceRecognition();
             if (!recognition) {
                 showNotification('❌ 您的浏览器不支持语音识别功能\n\n推荐使用最新版 Chrome 浏览器', 'error');
@@ -292,28 +276,25 @@ async function startVoiceInput() {
         
         // 如果识别对象可能处于不正确状态，先 abort 再等待
         if (recognitionState === 'starting') {
-            console.log('🔄 清理可能存在的旧状态...');
             try {
                 recognition.abort();
                 // 等待 abort 完成
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (e) {
-                console.log('abort 没有产生错误（这是预期的）');
             }
         }
         
         // 现在开始识别
-        console.log('📢 调用 recognition.start()...');
         recognition.start();
         isRecording = true;
         recognitionState = 'recording';
         showNotification('🎤 请开始说话...', 'info');
         
     } catch (error) {
-        console.error('❌ 启动语音识别失败:', error);
-        console.error('错误类型:', error.name);
-        console.error('错误信息:', error.message);
-        console.error('完整错误:', error);
+        hldebug.error('❌ 启动语音识别失败:', error);
+        hldebug.error('错误类型:', error.name);
+        hldebug.error('错误信息:', error.message);
+        hldebug.error('完整错误:', error);
         
         isRecording = false;
         recognitionState = 'idle';
@@ -322,10 +303,6 @@ async function startVoiceInput() {
         
         // 详细的错误处理
         if (error.name === 'InvalidStateError') {
-            console.log('💡 InvalidStateError 原因分析：');
-            console.log('  1. 可能识别对象已在使用中');
-            console.log('  2. 可能浏览器内部状态不一致');
-            console.log('  3. 尝试重新创建识别对象...');
             
             errorMessage = '⚠️ 语音识别状态异常\n\n正在尝试修复...\n\n请:\n1. 稍候几秒\n2. 重新点击麦克风\n3. 如果继续失败，请刷新页面';
             
@@ -401,7 +378,7 @@ async function processVoiceInput() {
         }
         
     } catch (error) {
-        console.error('AI整理错误:', error);
+        hldebug.error('AI整理错误:', error);
         showNotification('AI整理失败，已保留原始语音内容', 'warning');
     } finally {
         updateVoiceButtonState('idle');
@@ -472,7 +449,6 @@ function showNotification(message, type = 'info') {
     }, displayTime);
     
     // 错误时也打印到控制台便于远程调试
-    console.log(`[${type.toUpperCase()}] ${message.replace(/\n/g, ' ')}`);
 }
 
 // 页面加载时初始化
@@ -528,27 +504,23 @@ window.startVoiceInput = async function(event) {
     const sunguoTextareas = getSunguoFormTextareas(event);
     const isSunguoClass = sunguoTextareas && sunguoTextareas.rawPrompt;
     
-    console.log(`📊 当前状态: recording=${isRecording}, recognitionState=${recognitionState}, 松果课堂=${isSunguoClass}`);
     
     // 如果已经在录音，则停止
     if (isRecording) {
         try {
-            console.log('🛑 停止语音识别...');
-            console.log('📊 累积的语音内容:', voiceTranscript);
             recognitionState = 'stopping';
             if (recognition) {
                 recognition.stop();
                 showNotification('🎤 录音已停止，正在整理...', 'info');
             }
         } catch (error) {
-            console.error('停止语音识别失败:', error);
+            hldebug.error('停止语音识别失败:', error);
         }
         return;
     }
     
     // 防止重复启动
     if (recognitionState === 'starting' || recognitionState === 'recording') {
-        console.warn('⚠️ 语音识别已经在运行中');
         showNotification('语音识别已在运行中，请稍候...', 'warning');
         return;
     }
@@ -560,7 +532,6 @@ window.startVoiceInput = async function(event) {
     try {
         // 确保识别对象存在
         if (!recognition) {
-            console.log('🔧 初始化新的识别对象...');
             recognition = initVoiceRecognition();
             if (!recognition) {
                 showNotification('❌ 您的浏览器不支持语音识别功能\n\n推荐使用最新版 Chrome 浏览器', 'error');
@@ -591,7 +562,6 @@ window.startVoiceInput = async function(event) {
                     } else if (!voiceTranscript) {
                         voiceTranscript = finalTranscript;
                     }
-                    console.log('📝 累积语音内容:', voiceTranscript);
                 }
                 
                 // 实时显示到原始输入框
@@ -606,7 +576,6 @@ window.startVoiceInput = async function(event) {
             };
             
             recognition.onend = async function() {
-                console.log('🏁 语音识别结束，voiceTranscript:', voiceTranscript);
                 isRecording = false;
                 
                 // 隐藏录音指示器
@@ -632,12 +601,10 @@ window.startVoiceInput = async function(event) {
         
         // 清理可能存在的旧状态
         if (recognitionState === 'starting') {
-            console.log('🔄 清理可能存在的旧状态...');
             try {
                 recognition.abort();
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (e) {
-                console.log('abort 没有产生错误（这是预期的）');
             }
         }
         
@@ -648,7 +615,6 @@ window.startVoiceInput = async function(event) {
         }
         
         // 开始识别
-        console.log('📢 调用 recognition.start()...');
         recognition.start();
         isRecording = true;
         recognitionState = 'recording';
@@ -656,7 +622,7 @@ window.startVoiceInput = async function(event) {
         showNotification('🎤 请开始说话...', 'info');
         
     } catch (error) {
-        console.error('❌ 启动语音识别失败:', error);
+        hldebug.error('❌ 启动语音识别失败:', error);
         isRecording = false;
         recognitionState = 'idle';
         updateVoiceButtonState('idle');
@@ -678,7 +644,6 @@ window.startVoiceInput = async function(event) {
  * 处理松果课堂语音输入（自动优化已由input事件触发）
  */
 async function processSunguoVoiceInput(textareas) {
-    console.log('🤖 松果课堂语音处理完成，原始内容:', voiceTranscript);
     
     if (!voiceTranscript || voiceTranscript.trim() === '') {
         showNotification('未识别到有效内容', 'warning');

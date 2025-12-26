@@ -1,5 +1,4 @@
 // 历史记录面板管理
-console.log('=== History Panel.js 已加载 ===');
 
 class HistoryPanel {
     constructor(session, isTabMode = false) {
