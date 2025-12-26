@@ -89,6 +89,9 @@
                                 <td>{{ teacher.parent_email }}</td>
                                 <td>{{ teacher.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                 <td>
+                                    <button class="btn btn-sm btn-primary me-1" onclick="viewUserDetail({{ teacher.id }})">
+                                        <i class="fas fa-eye"></i> 详情
+                                    </button>
                                     <button class="btn btn-sm btn-info me-1" onclick="resetPassword({{ teacher.id }}, '{{ teacher.nickname }}')">
                                         <i class="fas fa-key"></i> 重置密码
                                     </button>
@@ -276,7 +279,7 @@
         }
         
         async function promoteToTeacher(userId, nickname) {
-            if (!confirm(`确定要将 "${nickname}" 提升为教师吗？\n\n提升后该用户将获得：\n- 无限Token权限\n- 视频生成权限\n- 3D模型生成权限\n- 生成二维码权限`)) {
+            if (!confirm(`确定要将 "${nickname}" 提升为教师吗？\n\n提升后该用户将获得：\n- 无限松果币权限\n- 视频生成权限\n- 3D模型生成权限\n- 生成二维码权限`)) {
                 return;
             }
             
@@ -377,6 +380,193 @@
                 alert('重置失败：' + error.message);
             }
         }
+
+        // 查看用户详情
+        async function viewUserDetail(userId) {
+            try {
+                const response = await fetch(`{{ url_for("admin.get_user_detail", user_id=0) }}`.replace('/0', `/${userId}`));
+                const data = await response.json();
+                
+                if (data.success) {
+                    const user = data.user;
+                    const roleMap = {
+                        'admin': '管理员',
+                        'teacher': '教师',
+                        'student': '学生',
+                        'visitor': '游客'
+                    };
+                    
+                    document.getElementById('detailUserId').value = user.id;
+                    document.getElementById('detailUsername').textContent = user.username;
+                    document.getElementById('detailNickname').textContent = user.nickname;
+                    document.getElementById('detailRole').textContent = roleMap[user.role] || user.role;
+                    document.getElementById('detailEmail').textContent = user.parent_email || '-';
+                    document.getElementById('detailImageTokens').textContent = user.image_token_remaining;
+                    document.getElementById('detailDailyTokens').textContent = user.daily_token_amount;
+                    document.getElementById('detailGender').textContent = user.gender === 'male' ? '男' : (user.gender === 'female' ? '女' : '-');
+                    document.getElementById('detailPhone').textContent = user.contact_phone || '-';
+                    document.getElementById('detailAddress').textContent = user.mailing_address || '-';
+                    document.getElementById('detailEnrolled').textContent = user.is_enrolled ? '是' : '否';
+                    document.getElementById('detailTrialEnd').textContent = user.trial_end_date || '-';
+                    document.getElementById('detailAge').textContent = user.age ? `${user.age}岁` : '-';
+                    document.getElementById('detailCreated').textContent = user.created_at;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('userDetailModal'));
+                    modal.show();
+                } else {
+                    alert('获取用户详情失败');
+                }
+            } catch (error) {
+                alert('获取用户详情失败：' + error.message);
+            }
+        }
+
+        // 增加松果币
+        async function addTokens() {
+            const userId = document.getElementById('detailUserId').value;
+            const amount = document.getElementById('tokenAmount').value;
+            
+            if (!amount || amount <= 0) {
+                alert('请输入有效的松果币数量');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`{{ url_for("admin.add_user_tokens", user_id=0) }}`.replace('/0', `/${userId}`), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ amount: parseInt(amount) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('detailImageTokens').textContent = data.new_amount;
+                    document.getElementById('tokenAmount').value = '';
+                    // 刷新页面以更新表格数据
+                    location.reload();
+                } else {
+                    alert('增加松果币失败：' + data.message);
+                }
+            } catch (error) {
+                alert('增加松果币失败：' + error.message);
+            }
+        }
     </script>
+    
+    <!-- 用户详情模态框 -->
+    <div class="modal fade" id="userDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header text-white" style="background-color: #00704A;">
+                    <h5 class="modal-title"><i class="fas fa-user me-2"></i>用户详情</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="background-color: #fff; color: #212529;">
+                    <input type="hidden" id="detailUserId">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3"><i class="fas fa-info-circle me-2"></i>基本信息</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="120" style="color: #495057;">用户名：</th>
+                                    <td id="detailUsername" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">昵称：</th>
+                                    <td id="detailNickname" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">角色：</th>
+                                    <td id="detailRole" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">邮箱：</th>
+                                    <td id="detailEmail" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">年龄：</th>
+                                    <td id="detailAge" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">注册时间：</th>
+                                    <td id="detailCreated" style="color: #212529;"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3"><i class="fas fa-coins me-2"></i>资源配额</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="150" style="color: #495057;">
+                                        <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_small_32x32.png') }}" 
+                                             alt="松果币" 
+                                             style="width: 20px; height: 20px; vertical-align: middle; margin-right: 4px;">
+                                        松果币：
+                                    </th>
+                                    <td id="detailImageTokens" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">每日赠送：</th>
+                                    <td id="detailDailyTokens" style="color: #212529;"></td>
+                                </tr>
+                            </table>
+                            
+                            <h6 class="text-muted mb-3 mt-4"><i class="fas fa-address-book me-2"></i>联系信息</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="150" style="color: #495057;">性别：</th>
+                                    <td id="detailGender" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">联系电话：</th>
+                                    <td id="detailPhone" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">邮寄地址：</th>
+                                    <td id="detailAddress" style="color: #212529;"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3"><i class="fas fa-calendar-check me-2"></i>账户状态</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th width="120" style="color: #495057;">是否正式学员：</th>
+                                    <td id="detailEnrolled" style="color: #212529;"></td>
+                                </tr>
+                                <tr>
+                                    <th style="color: #495057;">试用到期：</th>
+                                    <td id="detailTrialEnd" style="color: #212529;"></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-muted mb-3"><i class="fas fa-plus-circle me-2"></i>增加松果币</h6>
+                            <div class="input-group" style="max-width: 400px;">
+                                <input type="number" class="form-control" id="tokenAmount" placeholder="输入要增加的松果币数量" min="1">
+                                <button class="btn btn-success" type="button" onclick="addTokens()">
+                                    <i class="fas fa-check me-1"></i>确认增加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

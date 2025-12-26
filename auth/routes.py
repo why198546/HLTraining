@@ -389,26 +389,46 @@ def edit_profile():
 @auth_bp.route('/my-artworks')
 @login_required
 def my_artworks():
-    """我的作品页面"""
+    """我的作品页面 - 支持家长查看孩子作品"""
     from sqlalchemy import func
-
-    from auth.models import Artwork
+    from auth.models import Artwork, User
     
     page = request.args.get('page', 1, type=int)
+    user_id = request.args.get('user_id', type=int)
+    
+    # 确定要查看的用户
+    if user_id:
+        # 家长查看孩子作品 - 需要验证权限
+        target_user = User.query.get_or_404(user_id)
+        
+        # 检查权限：只有家长可以查看孩子的作品
+        if current_user.role != 'parent':
+            flash('无权访问', 'error')
+            return redirect(url_for('auth.my_artworks'))
+        
+        # 验证是否是该家长的孩子
+        if target_user.parent_id != current_user.id:
+            flash('无权访问该用户的作品', 'error')
+            return redirect(url_for('auth.parent_dashboard'))
+        
+        viewing_user = target_user
+    else:
+        # 查看自己的作品
+        viewing_user = current_user
     
     # 获取所有作品（不分页，和gallery保持一致的体验）
-    artworks = Artwork.query.filter_by(user_id=current_user.id).order_by(
+    artworks = Artwork.query.filter_by(user_id=viewing_user.id).order_by(
         Artwork.created_at.desc()
     ).all()
     
     # 计算统计信息
-    total_likes = db.session.query(func.sum(Artwork.vote_count)).filter_by(user_id=current_user.id).scalar() or 0
-    total_views = db.session.query(func.sum(Artwork.view_count)).filter_by(user_id=current_user.id).scalar() or 0
+    total_likes = db.session.query(func.sum(Artwork.vote_count)).filter_by(user_id=viewing_user.id).scalar() or 0
+    total_views = db.session.query(func.sum(Artwork.view_count)).filter_by(user_id=viewing_user.id).scalar() or 0
     
     # 按类型统计作品数量
     total_artworks = len(artworks)
-    public_artworks = Artwork.query.filter_by(user_id=current_user.id, is_public=True).count()
-    featured_artworks = Artwork.query.filter_by(user_id=current_user.id, is_featured=True).count()
+    public_artworks = Artwork.query.filter_by(user_id=viewing_user.id, is_public=True).count()
+    featured_artworks = Artwork.query.filter_by(user_id=viewing_user.id, is_featured=True).count()
     
     # 按分类统计（基于文件类型）
     ai_coloring_count = sum(1 for a in artworks if a.colored_image)
@@ -424,7 +444,9 @@ def my_artworks():
                          featured_artworks=featured_artworks,
                          ai_coloring_count=ai_coloring_count,
                          model_3d_count=model_3d_count,
-                         video_count=video_count)
+                         video_count=video_count,
+                         viewing_user=viewing_user,
+                         is_viewing_child=(user_id is not None))
 
 
 @auth_bp.route('/privacy-settings', methods=['GET', 'POST'])
@@ -855,7 +877,12 @@ def add_student_tokens(student_id):
         return jsonify({'success': False, 'message': '该用户不是学生'}), 400
     
     from auth.permissions import add_image_tokens
-    add_image_tokens(student, amount)
+    add_image_tokens(
+        student, 
+        amount,
+        operator=current_user,
+        description=f'教师 {current_user.nickname} 手动增加 {amount} 松果币'
+    )
     
     return jsonify({
         'success': True,

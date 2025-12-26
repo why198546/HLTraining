@@ -146,17 +146,30 @@ def consume_image_token(user):
     return False
 
 
-def add_image_tokens(user, amount):
+def add_image_tokens(user, amount, operator=None, description=None):
     """
     为用户添加图片生成令牌（老师操作）
     
     Args:
         user: User对象
         amount: 要添加的令牌数量
+        operator: 操作者User对象（教师或管理员）
+        description: 描述信息
     """
-    from auth.models import db
+    from auth.models import db, TokenGrantLog
     
     user.image_token_remaining += amount
+    
+    # 记录日志
+    log = TokenGrantLog(
+        user_id=user.id,
+        grant_type='teacher_manual',
+        tokens_granted=amount,
+        description=description or f'教师手动增加 {amount} 松果币',
+        operator_id=operator.id if operator else None,
+        operator_name=operator.nickname if operator else None
+    )
+    db.session.add(log)
     db.session.commit()
 
 

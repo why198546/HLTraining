@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>松果币监控 - 管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .main-header {
+            background: linear-gradient(135deg, #00704A, #005a3c);
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-header h2 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .main-header .breadcrumb {
+            background: transparent;
+            margin: 0;
+            padding: 0;
+        }
+
+        .main-header .breadcrumb-item,
+        .main-header .breadcrumb-item a {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .main-header .breadcrumb-item.active {
+            color: white;
+        }
+
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .stats-card h5 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .stats-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-box {
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-box h6 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .stat-box h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .stat-box small {
+            opacity: 0.8;
+            font-size: 0.85rem;
+        }
+
+        .filter-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .ranking-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+        }
+
+        .ranking-item:hover {
+            background: #f8f9fa;
+        }
+
+        .ranking-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 50%;
+            background: #00704A;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .token-amount {
+            color: #00704A;
+            font-size: 1.1rem;
+        }
+
+        .user-search-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .user-search-section h5 {
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <div class="main-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-line me-3"></i>松果币监控</h2>
+                    <nav aria-label="breadcrumb" class="mt-2">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">管理后台</a></li>
+                            <li class="breadcrumb-item active">松果币监控</li>
+                        </ol>
+                    </nav>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>返回
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Tab导航 -->
+        <ul class="nav nav-tabs mb-4" id="monitorTabs" role="tablist" style="background: white; border-radius: 12px 12px 0 0; padding: 10px 10px 0 10px; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="usage-tab" data-bs-toggle="tab" data-bs-target="#usage-panel" type="button" role="tab">
+                    <i class="fas fa-arrow-down me-2"></i>消耗监控
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="grant-tab" data-bs-toggle="tab" data-bs-target="#grant-panel" type="button" role="tab">
+                    <i class="fas fa-arrow-up me-2"></i>生成监控
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab内容 -->
+        <div class="tab-content" id="monitorTabsContent">
+            <!-- 消耗监控面板 -->
+            <div class="tab-pane fade show active" id="usage-panel" role="tabpanel" aria-labelledby="usage-tab">
+        <!-- 筛选器 -->
+        <div class="filter-section">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-calendar me-2"></i>时间周期</label>
+                    <select class="form-select" id="periodSelect" onchange="loadData()">
+                        <option value="day">每日统计</option>
+                        <option value="week">每周统计</option>
+                        <option value="month" selected>每月统计</option>
+                        <option value="year">每年统计</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100" onclick="loadData()">
+                        <i class="fas fa-sync-alt me-2"></i>刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总体统计卡片 -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #00704A, #005a3c);">
+                    <h6><i class="fas fa-coins me-2"></i>总消耗</h6>
+                    <h2 id="totalUsage">0</h2>
+                    <small>松果币</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <h6><i class="fas fa-image me-2"></i>图片生成</h6>
+                    <h2 id="imageUsage">0</h2>
+                    <small>松果币</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <h6><i class="fas fa-video me-2"></i>视频生成</h6>
+                    <h2 id="videoUsage">0</h2>
+                    <small>松果币</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-box" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <h6><i class="fas fa-users me-2"></i>活跃用户</h6>
+                    <h2 id="activeUsers">0</h2>
+                    <small>人</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 整体消耗趋势 -->
+            <div class="col-12">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-area me-2"></i>整体消耗趋势</h5>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图片vs视频对比 -->
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-pie me-2"></i>消耗类型分布</h5>
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="typeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日平均消耗 -->
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-bar me-2"></i>人均消耗趋势</h5>
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="avgChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户活跃度分布 -->
+            <div class="col-md-8">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-line me-2"></i>活跃用户数量变化</h5>
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="userActivityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户排行榜 -->
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <h5><i class="fas fa-trophy me-2"></i>消耗排行（Top 10）</h5>
+                    <div id="userRanking" style="max-height: 350px; overflow-y: auto;">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 具体用户查询（次要功能） -->
+        <div class="user-search-section">
+            <h5><i class="fas fa-search me-2"></i>用户详细查询（次要功能）</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="number" class="form-control" id="userIdInput" placeholder="输入用户ID查询详情">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100" onclick="loadUserDetail()">
+                        <i class="fas fa-search me-2"></i>查询
+                    </button>
+                </div>
+            </div>
+            <div id="userDetailSection" class="mt-4" style="display: none;">
+                <hr>
+                <h6 class="mb-3">用户消耗详情</h6>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="userDetailChart"></canvas>
+                </div>
+            </div>
+        </div>
+        </div>
+        <!-- 消耗监控面板结束 -->
+
+        <!-- 生成监控面板 -->
+        <div class="tab-pane fade" id="grant-panel" role="tabpanel" aria-labelledby="grant-tab">
+        
+        <!-- 筛选器 -->
+        <div class="filter-section">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label"><i class="fas fa-calendar me-2"></i>时间周期</label>
+                    <select class="form-select" id="grantPeriodSelect" onchange="loadGrantData()">
+                        <option value="day" selected>每日统计</option>
+                        <option value="week">每周统计</option>
+                        <option value="month">每月统计</option>
+                        <option value="year">每年统计</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100" onclick="loadGrantData()">
+                        <i class="fas fa-sync-alt me-2"></i>刷新数据
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 总体统计卡片 -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="stat-box" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <h6><i class="fas fa-gift me-2"></i>总生成</h6>
+                    <h2 id="totalGrant">0</h2>
+                    <small>松果币</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <h6><i class="fas fa-hands-helping me-2"></i>生成次数</h6>
+                    <h2 id="grantCount">0</h2>
+                    <small>次</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                    <h6><i class="fas fa-user-check me-2"></i>受益用户</h6>
+                    <h2 id="grantUserCount">0</h2>
+                    <small>人</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 生成趋势 -->
+            <div class="col-12">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-area me-2"></i>松果币生成趋势</h5>
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="grantTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 来源分布 -->
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-chart-pie me-2"></i>生成来源分布</h5>
+                    <div class="chart-container" style="height: 350px;">
+                        <canvas id="grantSourceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 来源详情 -->
+            <div class="col-md-6">
+                <div class="stats-card">
+                    <h5><i class="fas fa-list-alt me-2"></i>来源统计详情</h5>
+                    <div id="grantSourceDetail" style="max-height: 350px; overflow-y: auto;">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近生成记录 -->
+            <div class="col-12">
+                <div class="stats-card">
+                    <h5><i class="fas fa-history me-2"></i>最近生成记录（最新20条）</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="recentGrantTable">
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>用户</th>
+                                    <th>来源</th>
+                                    <th>松果币</th>
+                                    <th>操作者</th>
+                                    <th>描述</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <!-- 生成监控面板结束 -->
+
+        </div>
+        <!-- Tab内容结束 -->
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let trendChart = null;
+        let typeChart = null;
+        let avgChart = null;
+        let userActivityChart = null;
+        let userDetailChart = null;
+
+        function loadData() {
+            const period = document.getElementById('periodSelect').value;
+            const url = `/admin/token-usage/stats?period=${period}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    updateStatsCards(data);
+                    updateTrendChart(data.trend_data);
+                    updateTypeChart(data.type_distribution);
+                    updateAvgChart(data.trend_data);
+                    updateUserActivityChart(data.trend_data);
+                    updateRanking(data.top_users);
+                })
+                .catch(error => {
+                    console.error('加载数据失败:', error);
+                    alert('加载数据失败，请重试');
+                });
+        }
+
+        function updateStatsCards(data) {
+            // 计算总体统计
+            const imageTotal = data.type_distribution.find(d => d.usage_type === 'image')?.total_tokens || 0;
+            const videoTotal = data.type_distribution.find(d => d.usage_type === 'video')?.total_tokens || 0;
+            const totalUsage = imageTotal + videoTotal;
+            
+            // 计算活跃用户数
+            const activeUsers = data.top_users.length;
+
+            document.getElementById('totalUsage').textContent = totalUsage.toLocaleString();
+            document.getElementById('imageUsage').textContent = imageTotal.toLocaleString();
+            document.getElementById('videoUsage').textContent = videoTotal.toLocaleString();
+            document.getElementById('activeUsers').textContent = activeUsers;
+        }
+
+        function updateTrendChart(data) {
+            const labels = [...new Set(data.map(item => item.date))];
+            const imageData = labels.map(date => {
+                const item = data.find(d => d.date === date && d.usage_type === 'image');
+                return item ? item.total_tokens : 0;
+            });
+            const videoData = labels.map(date => {
+                const item = data.find(d => d.date === date && d.usage_type === 'video');
+                return item ? item.total_tokens : 0;
+            });
+            const totalData = labels.map((date, index) => imageData[index] + videoData[index]);
+
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '总消耗',
+                            data: totalData,
+                            borderColor: '#00704A',
+                            backgroundColor: 'rgba(0, 112, 74, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3
+                        },
+                        {
+                            label: '图片生成',
+                            data: imageData,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '视频生成',
+                            data: videoData,
+                            borderColor: '#f5576c',
+                            backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' 币';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTypeChart(data) {
+            const imageTotal = data.find(d => d.usage_type === 'image')?.total_tokens || 0;
+            const videoTotal = data.find(d => d.usage_type === 'video')?.total_tokens || 0;
+
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            
+            if (typeChart) {
+                typeChart.destroy();
+            }
+
+            typeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['图片生成', '视频生成'],
+                    datasets: [{
+                        data: [imageTotal, videoTotal],
+                        backgroundColor: ['#667eea', '#f5576c'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = imageTotal + videoTotal;
+                                    const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${context.parsed} 币 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAvgChart(data) {
+            const labels = [...new Set(data.map(item => item.date))];
+            const avgData = labels.map(date => {
+                const dayData = data.filter(d => d.date === date);
+                const total = dayData.reduce((sum, item) => sum + item.total_tokens, 0);
+                const userCount = [...new Set(dayData.filter(d => d.user_id).map(d => d.user_id))].length || 1;
+                return (total / userCount).toFixed(2);
+            });
+
+            const ctx = document.getElementById('avgChart').getContext('2d');
+            
+            if (avgChart) {
+                avgChart.destroy();
+            }
+
+            avgChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '人均消耗',
+                        data: avgData,
+                        backgroundColor: '#4facfe',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `人均消耗: ${context.parsed.y} 币`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' 币';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateUserActivityChart(data) {
+            const labels = [...new Set(data.map(item => item.date))];
+            const activeUsersData = labels.map(date => {
+                const dayData = data.filter(d => d.date === date);
+                return [...new Set(dayData.filter(d => d.user_id).map(d => d.user_id))].length;
+            });
+
+            const ctx = document.getElementById('userActivityChart').getContext('2d');
+            
+            if (userActivityChart) {
+                userActivityChart.destroy();
+            }
+
+            userActivityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '活跃用户数',
+                        data: activeUsersData,
+                        borderColor: '#00704A',
+                        backgroundColor: 'rgba(0, 112, 74, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `活跃用户: ${context.parsed.y} 人`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return value + ' 人';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRanking(users) {
+            const rankingDiv = document.getElementById('userRanking');
+            
+            if (users.length === 0) {
+                rankingDiv.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>暂无数据</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="ranking-list">';
+            users.forEach((user, index) => {
+                const rank = index + 1;
+                let badge = '';
+                if (rank === 1) {
+                    badge = '<span class="badge bg-warning text-dark ms-2"><i class="fas fa-trophy"></i> 冠军</span>';
+                } else if (rank === 2) {
+                    badge = '<span class="badge bg-secondary ms-2"><i class="fas fa-medal"></i> 亚军</span>';
+                } else if (rank === 3) {
+                    badge = '<span class="badge bg-danger ms-2"><i class="fas fa-award"></i> 季军</span>';
+                }
+
+                html += `
+                    <div class="ranking-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="rank-number">${rank}</strong>
+                                <span class="ms-2">${user.username}</span>
+                                ${badge}
+                            </div>
+                            <div class="text-end">
+                                <strong class="token-amount">${user.total_tokens}</strong>
+                                <small class="text-muted ms-1">币</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            rankingDiv.innerHTML = html;
+        }
+
+        function loadUserDetail() {
+            const userId = document.getElementById('userIdInput').value;
+            if (!userId) {
+                alert('请输入用户ID');
+                return;
+            }
+
+            const period = document.getElementById('periodSelect').value;
+            const url = `/admin/token-usage/stats?period=${period}&user_id=${userId}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('userDetailSection').style.display = 'block';
+                    updateUserDetailChart(data.trend_data);
+                })
+                .catch(error => {
+                    console.error('加载用户数据失败:', error);
+                    alert('加载用户数据失败，请重试');
+                });
+        }
+
+        function updateUserDetailChart(data) {
+            const labels = [...new Set(data.map(item => item.date))];
+            const imageData = labels.map(date => {
+                const item = data.find(d => d.date === date && d.usage_type === 'image');
+                return item ? item.total_tokens : 0;
+            });
+            const videoData = labels.map(date => {
+                const item = data.find(d => d.date === date && d.usage_type === 'video');
+                return item ? item.total_tokens : 0;
+            });
+
+            const ctx = document.getElementById('userDetailChart').getContext('2d');
+            
+            if (userDetailChart) {
+                userDetailChart.destroy();
+            }
+
+            userDetailChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '图片生成',
+                            data: imageData,
+                            backgroundColor: '#667eea'
+                        },
+                        {
+                            label: '视频生成',
+                            data: videoData,
+                            backgroundColor: '#f5576c'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            stacked: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' 币';
+                                }
+                            }
+                        },
+                        x: {
+                            stacked: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // 页面加载时自动加载数据
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            
+            // 监听tab切换事件
+            document.getElementById('grant-tab').addEventListener('shown.bs.tab', function (e) {
+                loadGrantData();
+            });
+        });
+
+        // ==================== 松果币生成监控相关函数 ====================
+        
+        let grantTrendChart = null;
+        let grantSourceChart = null;
+
+        function loadGrantData() {
+            const period = document.getElementById('grantPeriodSelect').value;
+            
+            fetch(`/admin/token-grant/stats?period=${period}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateGrantStats(data.total_stats);
+                        updateGrantTrendChart(data.trend_data);
+                        updateGrantSourceChart(data.source_distribution);
+                        updateGrantSourceDetail(data.source_distribution);
+                        updateRecentGrantTable(data.recent_grants);
+                    } else {
+                        alert('加载数据失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('加载数据失败');
+                });
+        }
+
+        function updateGrantStats(stats) {
+            document.getElementById('totalGrant').textContent = stats.total_granted.toLocaleString();
+            document.getElementById('grantCount').textContent = stats.total_count.toLocaleString();
+            document.getElementById('grantUserCount').textContent = stats.user_count.toLocaleString();
+        }
+
+        function updateGrantTrendChart(trendData) {
+            // 按日期和来源分组
+            const dates = [...new Set(trendData.map(d => d.date))].sort();
+            const grantTypes = [...new Set(trendData.map(d => d.grant_type))];
+            
+            const datasets = grantTypes.map(type => {
+                const typeData = trendData.filter(d => d.grant_type === type);
+                const data = dates.map(date => {
+                    const item = typeData.find(d => d.date === date);
+                    return item ? item.total_tokens : 0;
+                });
+                
+                const colors = {
+                    'daily_grant': '#00704A',
+                    'qr_scan_trial': '#667eea',
+                    'qr_scan_formal': '#f093fb',
+                    'admin_manual': '#4facfe',
+                    'teacher_manual': '#43e97b',
+                    'purchase': '#fa709a',
+                    'activity_reward': '#fddb92',
+                    'refund': '#f5576c'
+                };
+                
+                const displayName = typeData.length > 0 ? typeData[0].grant_type_display : type;
+                
+                return {
+                    label: displayName,
+                    data: data,
+                    borderColor: colors[type] || '#666',
+                    backgroundColor: colors[type] || '#666',
+                    tension: 0.3
+                };
+            });
+
+            const ctx = document.getElementById('grantTrendChart').getContext('2d');
+            
+            if (grantTrendChart) {
+                grantTrendChart.destroy();
+            }
+
+            grantTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y} 松果币`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' 币';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateGrantSourceChart(sourceData) {
+            const labels = sourceData.map(d => d.grant_type_display);
+            const data = sourceData.map(d => d.total_tokens);
+            
+            const colors = [
+                '#00704A', '#667eea', '#f093fb', '#4facfe', 
+                '#43e97b', '#fa709a', '#fddb92', '#f5576c'
+            ];
+
+            const ctx = document.getElementById('grantSourceChart').getContext('2d');
+            
+            if (grantSourceChart) {
+                grantSourceChart.destroy();
+            }
+
+            grantSourceChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ${context.parsed} 币 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateGrantSourceDetail(sourceData) {
+            const detailDiv = document.getElementById('grantSourceDetail');
+            
+            if (sourceData.length === 0) {
+                detailDiv.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p>暂无数据</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="list-group list-group-flush">';
+            sourceData.forEach(source => {
+                html += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${source.grant_type_display}</h6>
+                                <small class="text-muted">${source.grant_count} 次生成</small>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="mb-0 text-success">${source.total_tokens}</h5>
+                                <small class="text-muted">松果币</small>
+                            </div>
+                        </div>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" style="width: ${(source.total_tokens / sourceData.reduce((a, b) => a + b.total_tokens, 0) * 100).toFixed(1)}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            detailDiv.innerHTML = html;
+        }
+
+        function updateRecentGrantTable(grants) {
+            const tbody = document.querySelector('#recentGrantTable tbody');
+            
+            if (grants.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">暂无数据</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            grants.forEach(grant => {
+                const createdAt = new Date(grant.created_at).toLocaleString('zh-CN');
+                html += `
+                    <tr>
+                        <td><small>${createdAt}</small></td>
+                        <td>
+                            <strong>${grant.nickname || grant.username}</strong>
+                            <br><small class="text-muted">ID: ${grant.user_id}</small>
+                        </td>
+                        <td><span class="badge bg-info">${grant.grant_type_display}</span></td>
+                        <td><strong class="text-success">+${grant.tokens_granted}</strong></td>
+                        <td>${grant.operator_name || '-'}</td>
+                        <td><small>${grant.description || '-'}</small></td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

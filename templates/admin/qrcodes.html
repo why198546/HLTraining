@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码管理 - 管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        .main-header {
+            background: linear-gradient(135deg, #00704A, #005a3c);
+            padding: 30px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-header h2 {
+            color: white;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+        }
+
+        .qr-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .qr-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        }
+
+        .qr-image {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 5px;
+        }
+
+        .badge-valid {
+            background: #28a745;
+        }
+
+        .badge-invalid {
+            background: #dc3545;
+        }
+
+        .badge-inactive {
+            background: #6c757d;
+        }
+
+        .stat-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 3px;
+        }
+
+        .action-btn {
+            padding: 5px 12px;
+            font-size: 0.85rem;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <div class="main-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-qrcode me-3"></i>二维码管理</h2>
+                    <nav aria-label="breadcrumb" class="mt-2">
+                        <ol class="breadcrumb" style="background: transparent; margin: 0; padding: 0;">
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" style="color: rgba(255,255,255,0.8);">管理后台</a></li>
+                            <li class="breadcrumb-item active" style="color: white;">二维码管理</li>
+                        </ol>
+                    </nav>
+                </div>
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>返回
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 生成新二维码 -->
+        <div class="content-card">
+            <h5 class="mb-4"><i class="fas fa-plus-circle me-2"></i>生成新二维码</h5>
+            <form id="generateForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">课程类型</label>
+                        <select class="form-select" name="course_type" required>
+                            <option value="trial_course">体验课</option>
+                            <option value="formal_course">正式课程</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">课程名称</label>
+                        <select class="form-select" name="course_name" required>
+                            {% for lesson in lessons %}
+                            <option value="{{ lesson.key }}">{{ lesson.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">最大使用次数</label>
+                        <input type="number" class="form-control" name="max_uses" value="10" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">有效天数</label>
+                        <input type="number" class="form-control" name="expires_days" value="1" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-magic me-2"></i>生成
+                        </button>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label class="form-label">备注说明</label>
+                        <input type="text" class="form-control" name="description" placeholder="可选：为这个二维码添加备注">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 统计信息 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="content-card text-center" style="background: linear-gradient(135deg, #00704A, #005a3c); color: white;">
+                    <h6 style="opacity: 0.9;">总二维码数</h6>
+                    <h2>{{ courses|length }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center" style="background: linear-gradient(135deg, #28a745, #20c997); color: white;">
+                    <h6 style="opacity: 0.9;">有效二维码</h6>
+                    <h2>{{ courses|selectattr('is_valid')|list|length }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                    <h6 style="opacity: 0.9;">总使用次数</h6>
+                    <h2>{{ courses|sum(attribute='current_uses') }}</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="content-card text-center" style="background: linear-gradient(135deg, #f093fb, #f5576c); color: white;">
+                    <h6 style="opacity: 0.9;">总报名人数</h6>
+                    <h2>{{ courses|sum(attribute='enrollments_count') }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- 二维码列表 -->
+        <div class="content-card">
+            <h5 class="mb-4"><i class="fas fa-list me-2"></i>二维码列表</h5>
+            
+            {% if courses %}
+            <div class="row">
+                {% for course in courses %}
+                <div class="col-md-6">
+                    <div class="qr-card">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <img src="{{ course.qr_url }}" class="qr-image" alt="QR Code">
+                                <div class="mt-2">
+                                    <a href="{{ course.qr_url }}" class="btn btn-sm btn-outline-success" download>
+                                        <i class="fas fa-download"></i> 下载
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h6 class="mb-2">
+                                    {{ course.course_name }}
+                                    <span class="badge bg-{{ 'info' if course.course_type_raw == 'trial_course' else 'primary' }}">
+                                        {{ course.course_type }}
+                                    </span>
+                                </h6>
+                                
+                                <div class="mb-2">
+                                    {% if course.is_active %}
+                                        {% if course.is_valid %}
+                                            <span class="badge badge-valid">✓ 有效</span>
+                                        {% else %}
+                                            <span class="badge badge-invalid">✗ {{ course.validation_message }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge badge-inactive">已停用</span>
+                                    {% endif %}
+                                </div>
+
+                                <small class="text-muted d-block mb-1">
+                                    <i class="fas fa-user"></i> 创建者: {{ course.created_by }}
+                                </small>
+                                <small class="text-muted d-block mb-1">
+                                    <i class="fas fa-clock"></i> 创建时间: {{ course.created_at }}
+                                </small>
+                                <small class="text-muted d-block mb-1">
+                                    <i class="fas fa-calendar-times"></i> 
+                                    {% if course.expires_at %}
+                                        过期时间: {{ course.expires_at }}
+                                    {% else %}
+                                        永久有效
+                                    {% endif %}
+                                </small>
+
+                                <div class="mt-2">
+                                    <span class="stat-badge bg-light text-dark">
+                                        <i class="fas fa-users"></i> 已使用: {{ course.current_uses }}
+                                        {% if course.max_uses %}/ {{ course.max_uses }}{% endif %}
+                                    </span>
+                                    <span class="stat-badge bg-light text-dark">
+                                        <i class="fas fa-graduation-cap"></i> 报名: {{ course.enrollments_count }}
+                                    </span>
+                                </div>
+
+                                {% if course.description and course.description != '无描述' %}
+                                <small class="text-muted d-block mt-2">
+                                    <i class="fas fa-sticky-note"></i> {{ course.description }}
+                                </small>
+                                {% endif %}
+
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-info action-btn" onclick="viewEnrollments({{ course.id }}, '{{ course.course_name }}')">
+                                        <i class="fas fa-eye"></i> 查看使用记录
+                                    </button>
+                                    <button class="btn btn-sm btn-warning action-btn" onclick="extendQRCode({{ course.id }})">
+                                        <i class="fas fa-calendar-plus"></i> 延期
+                                    </button>
+                                    {% if course.is_active %}
+                                        <button class="btn btn-sm btn-secondary action-btn" onclick="deactivateQRCode({{ course.id }})">
+                                            <i class="fas fa-ban"></i> 失效
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-success action-btn" onclick="activateQRCode({{ course.id }})">
+                                            <i class="fas fa-check"></i> 激活
+                                        </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-danger action-btn" onclick="deleteQRCode({{ course.id }})">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>还没有生成任何二维码</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 使用记录模态框 -->
+    <div class="modal fade" id="enrollmentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #00704A; color: white;">
+                    <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i><span id="modalCourseName"></span> - 使用记录</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="enrollmentsList">
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p class="mt-2">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 生成二维码
+        document.getElementById('generateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/admin/qrcode/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ 二维码生成成功！');
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || '生成失败'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ 生成失败，请重试');
+            }
+        });
+
+        // 延长有效期
+        async function extendQRCode(qrId) {
+            const days = prompt('请输入要延长的天数:');
+            if (!days || days <= 0) {
+                alert('请输入有效的天数');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/qrcode/${qrId}/extend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ days: parseInt(days) })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message + '\n新过期时间: ' + data.new_expires_at);
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || '操作失败'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ 操作失败，请重试');
+            }
+        }
+
+        // 失效二维码
+        async function deactivateQRCode(qrId) {
+            if (!confirm('确定要使这个二维码失效吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/qrcode/${qrId}/deactivate`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || '操作失败'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ 操作失败，请重试');
+            }
+        }
+
+        // 激活二维码
+        async function activateQRCode(qrId) {
+            try {
+                const response = await fetch(`/admin/qrcode/${qrId}/activate`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || '操作失败'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ 操作失败，请重试');
+            }
+        }
+
+        // 删除二维码
+        async function deleteQRCode(qrId) {
+            if (!confirm('确定要删除这个二维码吗？\n\n⚠️ 此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/qrcode/${qrId}/delete`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    location.reload();
+                } else {
+                    alert('❌ ' + (data.error || '操作失败'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ 操作失败，请重试');
+            }
+        }
+
+        // 查看使用记录
+        async function viewEnrollments(qrId, courseName) {
+            document.getElementById('modalCourseName').textContent = courseName;
+            const modal = new bootstrap.Modal(document.getElementById('enrollmentsModal'));
+            modal.show();
+
+            try {
+                const response = await fetch(`/admin/qrcode/${qrId}/enrollments`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const enrollments = data.enrollments;
+                    const listDiv = document.getElementById('enrollmentsList');
+
+                    if (enrollments.length === 0) {
+                        listDiv.innerHTML = `
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>暂无使用记录</p>
+                            </div>
+                        `;
+                    } else {
+                        let html = '<div class="table-responsive"><table class="table table-hover">';
+                        html += '<thead><tr><th>用户</th><th>升级前</th><th>升级后</th><th>获得松果币</th><th>时间</th><th>IP</th></tr></thead><tbody>';
+                        
+                        enrollments.forEach(e => {
+                            html += `
+                                <tr>
+                                    <td><strong>${e.user}</strong><br><small class="text-muted">${e.username}</small></td>
+                                    <td><span class="badge bg-secondary">${e.previous_role}</span></td>
+                                    <td><span class="badge bg-success">${e.new_role}</span></td>
+                                    <td><strong class="text-success">${e.tokens_granted}</strong></td>
+                                    <td><small>${e.enrolled_at}</small></td>
+                                    <td><small>${e.ip_address}</small></td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += '</tbody></table></div>';
+                        listDiv.innerHTML = html;
+                    }
+                } else {
+                    document.getElementById('enrollmentsList').innerHTML = `
+                        <div class="alert alert-danger">加载失败</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('enrollmentsList').innerHTML = `
+                    <div class="alert alert-danger">加载失败，请重试</div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

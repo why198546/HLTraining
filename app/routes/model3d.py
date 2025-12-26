@@ -81,8 +81,7 @@ def generate_image():
         # 根据输入类型生成图片
         if sketch_path and prompt:
             generated_image_path = nano_banana.generate_image_from_sketch_and_text(
-                sketch_path, prompt, style=style, color_preference=color_preference, 
-                expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                sketch_path, prompt, style=style, aspect_ratio=aspect_ratio
             )
         elif sketch_path:
             generated_image_path = nano_banana.generate_image_from_sketch(

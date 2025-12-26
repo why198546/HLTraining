@@ -167,13 +167,20 @@ def scan(code):
     if course.course_type == 'trial_course':
         # 体验课：赠送50 token
         tokens_granted = 50
-        current_user.upgrade_to_trial_student(additional_tokens=tokens_granted)
+        current_user.upgrade_to_trial_student(
+            additional_tokens=tokens_granted,
+            course_id=course.id,
+            course_name=course.course_name
+        )
         flash('🎉 恭喜！您已成功报名体验课，获得50个token！', 'success')
         flash('💡 提示：体验课学生暂不支持3D建模和视频生成功能', 'info')
         
     elif course.course_type == 'formal_course':
         # 正式课程：升级为正式学生
-        current_user.upgrade_to_formal_student()
+        current_user.upgrade_to_formal_student(
+            course_id=course.id,
+            course_name=course.course_name
+        )
         flash('🎉 恭喜！您已升级为正式学生！', 'success')
         flash('✨ 您现在可以使用3D建模和视频生成功能，并且每天自动获得30个token！', 'success')
     

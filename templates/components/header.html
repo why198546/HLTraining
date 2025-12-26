@@ -68,12 +68,9 @@
                     {% if current_user.role == 'teacher' %}
                     <li><a href="{{ url_for('auth.teacher_dashboard') }}"><i class="fas fa-chalkboard-teacher"></i>
                             教师后台</a></li>
-                    <li><a href="{{ url_for('qr.generate_qrcode') }}"><i class="fas fa-qrcode"></i> 生成二维码</a></li>
-                    <li><a href="{{ url_for('qr.list_qrcodes') }}"><i class="fas fa-list"></i> 二维码列表</a></li>
                     {% endif %}
                     {% if current_user.role == 'admin' %}
                     <li><a href="/admin/dashboard"><i class="fas fa-cog"></i> 管理员后台</a></li>
-                    <li><a href="{{ url_for('qr.generate_qrcode') }}"><i class="fas fa-qrcode"></i> 生成二维码</a></li>
                     {% endif %}
                     <li><a href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
                 </ul>

@@ -152,23 +152,38 @@ class User(UserMixin, db.Model):
         if self.last_token_grant_date == today:
             return False
         
+        granted = False
+        tokens_amount = 0
+        
         # 游客检查试用期
         if self.role == 'visitor':
             if self.is_trial_expired():
                 return False
-            self.image_token_remaining += self.daily_token_amount
+            tokens_amount = self.daily_token_amount
+            self.image_token_remaining += tokens_amount
             self.last_token_grant_date = today
-            return True
+            granted = True
         
         # 正式学生每日赠送
         elif self.role == 'student' and self.is_enrolled and self.daily_token_amount > 0:
-            self.image_token_remaining += self.daily_token_amount
+            tokens_amount = self.daily_token_amount
+            self.image_token_remaining += tokens_amount
             self.last_token_grant_date = today
-            return True
+            granted = True
         
-        return False
+        # 记录日志
+        if granted and tokens_amount > 0:
+            log = TokenGrantLog(
+                user_id=self.id,
+                grant_type='daily_grant',
+                tokens_granted=tokens_amount,
+                description=f'每日自动赠送 {tokens_amount} 松果币'
+            )
+            db.session.add(log)
+        
+        return granted
     
-    def upgrade_to_trial_student(self, additional_tokens=50):
+    def upgrade_to_trial_student(self, additional_tokens=50, course_id=None, course_name=None):
         """升级为体验课学生（扫描体验课二维码）"""
         if self.role == 'visitor':
             self.role = 'student'
@@ -177,9 +192,20 @@ class User(UserMixin, db.Model):
         self.image_token_remaining += additional_tokens
         self.trial_end_date = None  # 清除试用期限制
         self.daily_token_amount = 0  # 体验课学生不自动赠送token
+        
+        # 记录日志
+        log = TokenGrantLog(
+            user_id=self.id,
+            grant_type='qr_scan_trial',
+            tokens_granted=additional_tokens,
+            description=f'扫描体验课二维码获得 {additional_tokens} 松果币',
+            related_id=course_id,
+            related_info=course_name
+        )
+        db.session.add(log)
         db.session.commit()
     
-    def upgrade_to_formal_student(self):
+    def upgrade_to_formal_student(self, course_id=None, course_name=None):
         """升级为正式学生（扫描正式课程二维码）"""
         self.role = 'student'
         self.is_enrolled = True
@@ -187,6 +213,17 @@ class User(UserMixin, db.Model):
         self.daily_token_amount = 30  # 每天赠送30个token
         self.trial_end_date = None  # 清除试用期限制
         self.last_token_grant_date = date.today()
+        
+        # 记录日志（正式课解锁每日30个token）
+        log = TokenGrantLog(
+            user_id=self.id,
+            grant_type='qr_scan_formal',
+            tokens_granted=0,  # 正式课不直接赠送，而是解锁每日30个
+            description=f'扫描正式课二维码，解锁每日 {self.daily_token_amount} 松果币',
+            related_id=course_id,
+            related_info=course_name
+        )
+        db.session.add(log)
         db.session.commit()
     
     def get_id(self):
@@ -788,3 +825,107 @@ class CourseEnrollment(db.Model):
             'tokens_granted': self.tokens_granted,
             'ip_address': self.ip_address
         }
+
+
+class TokenUsageLog(db.Model):
+    """松果币消耗记录"""
+    __tablename__ = 'token_usage_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    usage_type = db.Column(db.String(20), nullable=False)  # 'image' 或 'video'
+    tokens_used = db.Column(db.Integer, nullable=False)  # 消耗的松果币数量
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    description = db.Column(db.String(200))  # 描述信息
+    
+    # 关联关系
+    user = db.relationship('User', backref=db.backref('token_usage_logs', lazy=True))
+    
+    def __repr__(self):
+        return f'<TokenUsageLog {self.user_id} {self.usage_type} -{self.tokens_used}>'
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'nickname': self.user.nickname if self.user else None,
+            'usage_type': self.usage_type,
+            'tokens_used': self.tokens_used,
+            'created_at': self.created_at.isoformat(),
+            'description': self.description
+        }
+
+
+class TokenGrantLog(db.Model):
+    """松果币获得记录"""
+    __tablename__ = 'token_grant_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    grant_type = db.Column(db.String(30), nullable=False)  # 获得类型
+    # grant_type 取值：
+    # - 'daily_grant': 每日自动赠送
+    # - 'qr_scan_trial': 二维码扫描（体验课）
+    # - 'qr_scan_formal': 二维码扫描（正式课）
+    # - 'admin_manual': 管理员手动增加
+    # - 'teacher_manual': 教师手动增加
+    # - 'purchase': 购买获得（预留）
+    # - 'activity_reward': 活动奖励（预留）
+    # - 'refund': 退款补偿（预留）
+    
+    tokens_granted = db.Column(db.Integer, nullable=False)  # 获得的松果币数量
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    description = db.Column(db.String(200))  # 描述信息
+    
+    # 操作者信息（如果是管理员或教师手动添加）
+    operator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    operator_name = db.Column(db.String(50))  # 操作者姓名
+    
+    # 关联信息（如二维码ID、订单ID等）
+    related_id = db.Column(db.Integer, nullable=True)  # 关联ID（如course_id）
+    related_info = db.Column(db.String(200))  # 关联信息（如课程名称）
+    
+    # 关联关系
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('token_grant_logs', lazy=True))
+    operator = db.relationship('User', foreign_keys=[operator_id])
+    
+    def __repr__(self):
+        return f'<TokenGrantLog {self.user_id} {self.grant_type} +{self.tokens_granted}>'
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'nickname': self.user.nickname if self.user else None,
+            'grant_type': self.grant_type,
+            'grant_type_display': self.get_grant_type_display(),
+            'tokens_granted': self.tokens_granted,
+            'created_at': self.created_at.isoformat(),
+            'description': self.description,
+            'operator_id': self.operator_id,
+            'operator_name': self.operator_name,
+            'related_info': self.related_info
+        }
+    
+    def get_grant_type_display(self):
+        """获取grant_type的中文显示"""
+        return self.get_grant_type_display_static(self.grant_type)
+    
+    @staticmethod
+    def get_grant_type_display_static(grant_type):
+        """获取grant_type的中文显示（静态方法）"""
+        type_map = {
+            'daily_grant': '每日赠送',
+            'qr_scan_trial': '二维码扫描（体验课）',
+            'qr_scan_formal': '二维码扫描（正式课）',
+            'admin_manual': '管理员手动增加',
+            'teacher_manual': '教师手动增加',
+            'purchase': '购买获得',
+            'activity_reward': '活动奖励',
+            'refund': '退款补偿'
+        }
+        return type_map.get(grant_type, grant_type)

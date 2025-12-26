@@ -798,31 +798,7 @@
     color: white;
 }
 
-.auth-body .nav-link {
-    color: rgba(255, 255, 255, 0.9);
-    transition: color 0.3s ease;
-}
-
-.auth-body .nav-link:hover {
-    color: white;
-}
-
-.auth-body .nav-link.active {
-    color: #ffffff;
-    font-weight: 600;
-}
-
-.auth-body .nav-link.btn-primary {
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 25px;
-    padding: 8px 20px;
-    color: var(--primary-color);
-}
-
-.auth-body .nav-link.btn-primary:hover {
-    background: white;
-}
+/* nav-link 样式统一由 core.css 管理 */
 
 .auth-background {
     position: fixed;
@@ -1727,6 +1703,12 @@
 
 /* 注册页面响应式设计 */
 @media (max-width: 768px) {
+    .nav-toggle {
+        display: flex;
+        z-index: 10002;
+        position: relative;
+    }
+
     .register-wrapper {
         gap: 20px;
     }
@@ -1785,54 +1767,7 @@
     }
 }
 
-.nav-menu {
-    display: flex;
-    list-style: none;
-    gap: 2rem;
-}
-
-.nav-link {
-    text-decoration: none;
-    color: rgba(255, 255, 255, 0.92);
-    font-weight: 500;
-    transition: color 0.3s ease;
-    position: relative;
-}
-
-.nav-link:hover,
-.nav-link.active {
-    color: white;
-}
-
-.nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -5px;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: rgba(255, 255, 255, 0.95);
-    transition: width 0.3s ease;
-}
-
-.nav-link:hover::after,
-.nav-link.active::after {
-    width: 100%;
-}
-
-.nav-toggle {
-    display: none;
-    flex-direction: column;
-    cursor: pointer;
-}
-
-.nav-toggle span {
-    width: 25px;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.95);
-    margin: 3px 0;
-    transition: 0.3s;
-}
+/* 所有 nav-* 样式统一由 core.css 管理 */
 
 /* 主要内容区域 */
 main {

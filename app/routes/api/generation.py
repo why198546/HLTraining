@@ -207,6 +207,7 @@ def api_generate_image():
         
         # 生成多张图片
         generated_images = []
+        errors = []  # 收集错误信息
         for i in range(num_images):
             print(f"📸 生成第 {i+1}/{num_images} 张图片...")
             try:
@@ -220,31 +221,38 @@ def api_generate_image():
                 if sketch_path and varied_prompt:
                     # 图片+文字模式
                     generated_image_path = nano_banana.generate_image_from_sketch_and_text(
-                        sketch_path, varied_prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                        sketch_path, varied_prompt, style=style, aspect_ratio=aspect_ratio
                     )
                 elif sketch_path:
                     # 纯图片模式
                     generated_image_path = nano_banana.generate_image_from_sketch(
-                        sketch_path, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                        sketch_path, style=style, aspect_ratio=aspect_ratio
                     )
                 else:
                     # 纯文字模式
                     generated_image_path = nano_banana.generate_image_from_text(
-                        varied_prompt, style=style, color_preference=color_preference, expert_mode=expert_mode, aspect_ratio=aspect_ratio
+                        varied_prompt, style=style, aspect_ratio=aspect_ratio
                     )
                 
                 if generated_image_path and os.path.exists(generated_image_path):
                     generated_images.append(generated_image_path)
                     print(f"✅ 第 {i+1} 张图片生成成功: {generated_image_path}")
                 else:
-                    print(f"⚠️ 第 {i+1} 张图片生成失败")
+                    error_msg = f"第 {i+1} 张图片生成返回None或文件不存在"
+                    errors.append(error_msg)
+                    print(f"⚠️ {error_msg}")
             except Exception as e:
-                print(f"❌ 第 {i+1} 张图片生成异常: {str(e)}")
+                error_msg = f"第 {i+1} 张图片生成异常: {str(e)}"
+                errors.append(error_msg)
+                print(f"❌ {error_msg}")
+                import traceback
+                traceback.print_exc()
         
         # 检查是否至少有一张图片生成成功
         if not generated_images:
-            print(f"❌ 所有图片生成失败")
-            return jsonify({'error': '图片生成失败，请重试'}), 500
+            error_detail = " | ".join(errors) if errors else "未知错误"
+            print(f"❌ 所有图片生成失败: {error_detail}")
+            return jsonify({'error': f'图片生成失败: {error_detail}'}), 500
         
         print(f"✅ 成功生成 {len(generated_images)} 张图片")
         

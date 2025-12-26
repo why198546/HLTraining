@@ -284,7 +284,7 @@
                 
                 {% if child_artworks|length > 6 %}
                 <div class="view-all-artworks">
-                    <a href="{{ url_for('auth.parent_artworks', user_id=child.id) }}" class="btn btn-outline">
+                    <a href="{{ url_for('auth.my_artworks', user_id=child.id) }}" class="btn btn-outline">
                         <i class="fas fa-images"></i>
                         查看所有作品 ({{ child_artworks|length }})
                     </a>

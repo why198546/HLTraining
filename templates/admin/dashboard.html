@@ -118,19 +118,24 @@
             <div class="card-body">
                 <h4 class="card-title mb-4"><i class="fas fa-bolt me-2"></i>快速操作</h4>
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="{{ url_for('admin.teachers') }}" class="btn btn-primary w-100 mb-3">
                             <i class="fas fa-chalkboard-teacher me-2"></i>管理教师
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="{{ url_for('admin.students') }}" class="btn btn-info w-100 mb-3">
                             <i class="fas fa-user-graduate me-2"></i>管理学生
                         </a>
                     </div>
-                    <div class="col-md-4">
-                        <a href="{{ url_for('qr.generate_qrcode') }}" class="btn btn-success w-100 mb-3">
-                            <i class="fas fa-qrcode me-2"></i>生成二维码
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin.token_usage') }}" class="btn btn-success w-100 mb-3">
+                            <i class="fas fa-chart-line me-2"></i>松果币监控
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin.qrcodes') }}" class="btn btn-warning w-100 mb-3">
+                            <i class="fas fa-qrcode me-2"></i>二维码管理
                         </a>
                     </div>
                 </div>
@@ -149,7 +154,12 @@
                                 <th>昵称</th>
                                 <th>角色</th>
                                 <th>注册时间</th>
-                                <th>Token</th>
+                                <th>
+                                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_small_32x32.png') }}" 
+                                         alt="松果币" 
+                                         style="width: 24px; height: 24px; vertical-align: middle; margin-right: 4px;">
+                                    松果币
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -173,7 +183,12 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                                <td>{{ user.image_token_remaining }}</td>
+                                <td>
+                                    <img src="{{ url_for('static', filename='images/songuo_coin/songuo_coin_tiny_16x16.png') }}" 
+                                         alt="松果币" 
+                                         style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;">
+                                    {{ user.image_token_remaining }}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>

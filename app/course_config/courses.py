@@ -81,14 +81,14 @@ def get_formal_courses():
 def get_courses_for_qr():
     """
     获取用于二维码生成的课程列表
-    返回格式: {key: title}
+    返回格式: [{'key': key, 'title': title}, ...]
     """
     # 按order排序
     sorted_courses = sorted(
         COURSES.items(), 
         key=lambda x: x[1].get('order', 999)
     )
-    return {key: course['title'] for key, course in sorted_courses}
+    return [{'key': key, 'title': course['title']} for key, course in sorted_courses]
 
 
 def get_course_display_name(key):
