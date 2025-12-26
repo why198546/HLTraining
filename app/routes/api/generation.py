@@ -15,7 +15,7 @@ from api.prompt_translator import translate_prompt
 from api.sam3d_api import SAM3DAPI
 from app.utils import allowed_file, normalize_path_for_url, preprocess_sketch
 from managers.creation_session_manager import CreationSessionManager
-from app import db
+from auth.models import db
 
 generation_api_bp = Blueprint('generation_api', __name__)
 
@@ -84,20 +84,19 @@ def api_generate_image():
             print("❌ 缺少必要参数")
             return jsonify({'error': '请输入文字描述或上传图片'}), 400
         
-        # 检查用户松果币是否足够（教师和管理员不检查）
+        # 检查用户松果币是否足够（所有用户都需要检查和扣币，以监控API调用成本）
         if current_user and current_user.is_authenticated:
-            if current_user.role not in ['teacher', 'admin']:
-                if hasattr(current_user, 'image_token_remaining'):
-                    tokens_needed = num_images  # 生成几张图需要几个币
-                    if current_user.image_token_remaining < tokens_needed:
-                        print(f"❌ 用户 {current_user.username} 松果币不足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
-                        return jsonify({
-                            'error': f'松果币不足！需要{tokens_needed}个，当前剩余{current_user.image_token_remaining}个。请联系老师充值。',
-                            'remaining_tokens': current_user.image_token_remaining
-                        }), 403
-                    print(f"✅ 用户 {current_user.username} 松果币充足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
-                else:
-                    print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
+            if hasattr(current_user, 'image_token_remaining'):
+                tokens_needed = num_images  # 生成几张图需要几个币
+                if current_user.image_token_remaining < tokens_needed:
+                    print(f"❌ 用户 {current_user.username}({current_user.role}) 松果币不足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
+                    return jsonify({
+                        'error': f'松果币不足！需要{tokens_needed}个，当前剩余{current_user.image_token_remaining}个。请联系管理员充值。',
+                        'remaining_tokens': current_user.image_token_remaining
+                    }), 403
+                print(f"✅ 用户 {current_user.username}({current_user.role}) 松果币充足: 需要{tokens_needed}个，剩余{current_user.image_token_remaining}个")
+            else:
+                print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
         
         # 如果提示词中包含人物但未指定国籍，默认添加"中国人形象"
         if prompt:
@@ -337,23 +336,19 @@ def api_generate_image():
         if sketch_path:
             response_data['original_image_url'] = normalize_path_for_url(sketch_path)
         
-        # 扣除用户的松果币（教师和管理员不扣）
+        # 扣除用户的松果币（所有用户都需要扣币，以监控API调用成本）
         if current_user and current_user.is_authenticated:
-            if current_user.role not in ['teacher', 'admin']:
-                # 每生成一张图扣1个币，num_images张就扣num_images个币
-                if hasattr(current_user, 'image_token_remaining'):
-                    tokens_to_deduct = num_images
-                    current_user.image_token_remaining -= tokens_to_deduct
-                    db.session.commit()
-                    response_data['remaining_tokens'] = current_user.image_token_remaining
-                    print(f"💰 已为用户 {current_user.username} 扣除 {tokens_to_deduct} 个松果币，剩余: {current_user.image_token_remaining}")
-                else:
-                    print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
+            # 每生成一张图扣1个币，num_images张就扣num_images个币，所有用户都要扣
+            if hasattr(current_user, 'image_token_remaining'):
+                tokens_to_deduct = num_images
+                old_tokens = current_user.image_token_remaining
+                current_user.image_token_remaining -= tokens_to_deduct
+                db.session.commit()
+                new_tokens = current_user.image_token_remaining
+                response_data['remaining_tokens'] = new_tokens
+                print(f"💰 用户 {current_user.username}({current_user.role}) 已扣除 {tokens_to_deduct} 个松果币: {old_tokens} → {new_tokens}")
             else:
-                # 教师和管理员不扣币
-                if hasattr(current_user, 'image_token_remaining'):
-                    response_data['remaining_tokens'] = current_user.image_token_remaining
-                    print(f"✅ 用户 {current_user.username} 是 {current_user.role}，无需扣币")
+                print(f"⚠️ 用户 {current_user.username} 没有 image_token_remaining 属性")
         
         return jsonify(response_data)
             
