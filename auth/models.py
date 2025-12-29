@@ -226,6 +226,112 @@ class User(UserMixin, db.Model):
         db.session.add(log)
         db.session.commit()
     
+    def grant_monthly_tokens(self):
+        """为教师/管理员自动充值月度松果币（1000个，不过期）"""
+        # 只有教师和管理员有月度充值
+        if self.role not in ('teacher', 'admin'):
+            return False
+        
+        now = datetime.utcnow()
+        year = now.year
+        month = now.month
+        
+        # 检查本月是否已经充值过
+        existing = MonthlyTokenGrant.query.filter_by(
+            user_id=self.id,
+            grant_year=year,
+            grant_month=month
+        ).first()
+        
+        if existing:
+            return False  # 本月已充值
+        
+        # 充值1000松果币
+        tokens_amount = 1000
+        self.image_token_remaining += tokens_amount
+        
+        # 创建月度充值记录
+        monthly_grant = MonthlyTokenGrant(
+            user_id=self.id,
+            grant_year=year,
+            grant_month=month,
+            tokens_amount=tokens_amount,
+            granted_at=now
+        )
+        db.session.add(monthly_grant)
+        
+        # 记录到TokenGrantLog
+        grant_type = 'monthly_grant_teacher' if self.role == 'teacher' else 'monthly_grant_admin'
+        token_log = TokenGrantLog(
+            user_id=self.id,
+            grant_type=grant_type,
+            tokens_granted=tokens_amount,
+            description=f'月度自动充值 {tokens_amount} 松果币（{year}年{month}月）',
+            operator_name='system'
+        )
+        db.session.add(token_log)
+        db.session.commit()
+        
+        return True
+    
+    def check_token_expiry(self):
+        """检查游客赠送的一个月内未使用的松果币是否失效"""
+        now = datetime.utcnow()
+        
+        # 获取所有未标记为过期的TokenExpiry记录
+        expiring_records = TokenExpiry.query.filter(
+            TokenExpiry.user_id == self.id,
+            TokenExpiry.is_expired == False,
+            TokenExpiry.expire_date <= now
+        ).all()
+        
+        total_expired = 0
+        for record in expiring_records:
+            # 标记为已过期
+            record.is_expired = True
+            record.expired_at = now
+            
+            # 从用户账户中扣除过期的币
+            if self.image_token_remaining >= record.tokens_amount:
+                self.image_token_remaining -= record.tokens_amount
+            else:
+                # 如果不足，全部扣除
+                self.image_token_remaining = 0
+            
+            total_expired += record.tokens_amount
+        
+        if expiring_records:
+            db.session.commit()
+        
+        return total_expired
+    
+    def add_temporary_tokens(self, amount, source='unknown', expire_days=30):
+        """添加临时松果币（游客赠送的币，会过期）"""
+        # 增加代币余额
+        self.image_token_remaining += amount
+        
+        # 创建过期追踪记录
+        expire_date = datetime.utcnow() + timedelta(days=expire_days)
+        expiry = TokenExpiry(
+            user_id=self.id,
+            tokens_amount=amount,
+            grant_source=source,
+            expire_date=expire_date,
+            is_expired=False
+        )
+        db.session.add(expiry)
+        
+        # 记录到TokenGrantLog
+        token_log = TokenGrantLog(
+            user_id=self.id,
+            grant_type='sunguo_qrcode',
+            tokens_granted=amount,
+            description=f'通过扫描松果课堂二维码获得（有效期{expire_days}天）',
+            related_info=source
+        )
+        db.session.add(token_log)
+        db.session.commit()
+    
     def get_id(self):
         """Flask-Login要求的方法"""
         return str(self.id)
@@ -931,6 +1037,78 @@ class TokenGrantLog(db.Model):
             'teacher_manual': '教师手动增加',
             'purchase': '购买获得',
             'activity_reward': '活动奖励',
-            'refund': '退款补偿'
+            'refund': '退款补偿',
+            'sunguo_qrcode': '松果课堂二维码',
+            'monthly_grant_teacher': '月度自动充值（教师）',
+            'monthly_grant_admin': '月度自动充值（管理员）'
         }
         return type_map.get(grant_type, grant_type)
+
+
+class MonthlyTokenGrant(db.Model):
+    """月度松果币自动充值记录（教师/管理员）"""
+    __tablename__ = 'monthly_token_grants'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    grant_year = db.Column(db.Integer, nullable=False)  # 充值年份
+    grant_month = db.Column(db.Integer, nullable=False)  # 充值月份（1-12）
+    tokens_amount = db.Column(db.Integer, default=1000)  # 充值金额（默认1000）
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # 充值时间
+    
+    # 关联关系
+    user = db.relationship('User', backref=db.backref('monthly_grants', lazy=True))
+    
+    def __repr__(self):
+        return f'<MonthlyTokenGrant {self.user_id} {self.grant_year}-{self.grant_month:02d} +{self.tokens_amount}>'
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'nickname': self.user.nickname if self.user else None,
+            'grant_year': self.grant_year,
+            'grant_month': self.grant_month,
+            'tokens_amount': self.tokens_amount,
+            'granted_at': self.granted_at.isoformat(),
+            'user_role': self.user.role if self.user else None
+        }
+
+
+class TokenExpiry(db.Model):
+    """松果币过期记录（游客赠送的币在一个月内未使用就失效）"""
+    __tablename__ = 'token_expiries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    grant_log_id = db.Column(db.Integer, db.ForeignKey('token_grant_logs.id'), nullable=True)  # 关联的赠送记录
+    tokens_amount = db.Column(db.Integer, nullable=False)  # 过期的松果币数量
+    grant_source = db.Column(db.String(30), nullable=False)  # 来源（sunguo_qrcode等）
+    expire_date = db.Column(db.DateTime, nullable=False, index=True)  # 过期日期
+    is_expired = db.Column(db.Boolean, default=False, index=True)  # 是否已失效
+    expired_at = db.Column(db.DateTime, nullable=True)  # 失效时间
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)  # 记录创建时间
+    
+    # 关联关系
+    user = db.relationship('User', backref=db.backref('token_expiries', lazy=True))
+    grant_log = db.relationship('TokenGrantLog', backref=db.backref('expiry_records', lazy=True))
+    
+    def __repr__(self):
+        return f'<TokenExpiry {self.user_id} -{self.tokens_amount} expires:{self.expire_date.strftime("%Y-%m-%d")}>'
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'nickname': self.user.nickname if self.user else None,
+            'tokens_amount': self.tokens_amount,
+            'grant_source': self.grant_source,
+            'expire_date': self.expire_date.isoformat(),
+            'is_expired': self.is_expired,
+            'expired_at': self.expired_at.isoformat() if self.expired_at else None,
+            'created_at': self.created_at.isoformat()
+        }

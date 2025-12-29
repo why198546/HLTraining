@@ -1,3 +1,13 @@
+.privacy-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -6,6 +16,385 @@
     color: rgba(120, 120, 120, 0.7);
     opacity: 0.6;
 }
+
+/* Gallery page hero & layout */
+.gallery-hero {
+    background: var(--page-gradient);
+    padding: 4rem 0 2rem;
+    text-align: center;
+    color: white;
+}
+
+.gallery-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.gallery-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.gallery-content {
+    padding: 2rem 0 3rem;
+    min-height: 60vh;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9eef5 100%);
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+    padding: 1rem;
+}
+
+.artwork-item {
+    position: relative;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.artwork-item:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+}
+
+/* Artwork card layout */
+.artwork-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.artwork-image {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.artwork-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+.placeholder-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: #666;
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.placeholder-image i {
+    font-size: 1.4rem;
+}
+
+.artwork-info {
+    padding: 0.25rem 0;
+}
+
+/* Card text and meta */
+.artwork-title {
+    margin: 0.25rem 0 0.4rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.artwork-author {
+    font-size: 0.9rem;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.artwork-description {
+    margin: 0.35rem 0 0.5rem;
+    font-size: 0.92rem;
+    color: #374151;
+    line-height: 1.5;
+}
+
+.artwork-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+.artwork-meta .meta-item { display: inline-flex; align-items: center; gap: 6px; }
+.artwork-meta .meta-item i { color: #9ca3af; }
+.artwork-meta .likes-count, .artwork-meta .views-count { color: #374151; font-weight: 600; }
+
+/* Featured badge */
+.featured-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    background: linear-gradient(45deg, #ff6b6b, #ffa500);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 18px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Content type indicators */
+.content-type-indicators {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    gap: 8px;
+    z-index: 2;
+}
+
+.type-indicator {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.type-indicator i {
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.type-indicator.active {
+    color: white;
+    transform: scale(1);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.type-indicator.inactive {
+    background: rgba(200, 200, 200, 0.3);
+    color: rgba(120, 120, 120, 0.6);
+    opacity: 0.6;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.type-indicator.active:nth-child(1) { /* 图片 */
+    background: var(--page-gradient);
+}
+.type-indicator.active:nth-child(2) { /* 3D模型 */
+    background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+}
+.type-indicator.active:nth-child(3) { /* 视频 */
+    background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+}
+
+@media (max-width: 768px) {
+    .gallery-title { font-size: 1.8rem; }
+    .gallery-subtitle { font-size: 0.95rem; }
+    .gallery-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .artwork-image { height: 180px; }
+    .type-indicator { width: 32px; height: 32px; border-radius: 8px; }
+    .type-indicator i { font-size: 0.9rem; }
+}
+
+/* Stats section for my artworks */
+.stats-section { padding: 1rem 0 2rem; }
+.artworks-stats { margin-top: -1rem; }
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 1rem;
+}
+.stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1rem;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-color);
+    color: #fff;
+    flex-shrink: 0;
+}
+.stat-info h3 { margin: 0; font-size: 1.4rem; color: #333; }
+.stat-info p { margin: 0; font-size: 0.85rem; color: #666; }
+
+@media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+}
+
+/* -------- Artwork Modal (shared for gallery & my-artworks) -------- */
+.artwork-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.artwork-modal.show { opacity: 1; }
+
+.artwork-modal-content {
+    background: #fff;
+    border-radius: 25px;
+    max-width: 960px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.artwork-modal.show .artwork-modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.artwork-modal-header {
+    padding: 2rem 2rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.artwork-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #6b7280;
+    cursor: pointer;
+}
+.artwork-modal-close:hover { color: #ef4444; }
+
+.artwork-modal-body {
+    padding: 1rem 2rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Modal content steps */
+.artwork-detail-step { display: flex; flex-direction: column; gap: 0.5rem; }
+.artwork-detail-step h4 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #111827; }
+.artwork-detail-step img {
+    width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    border-radius: 14px;
+    background: #f3f4f6;
+    display: block;
+}
+.artwork-detail-step img.clickable-image:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.16); }
+.artwork-detail-step .text-creation-info { display: flex; gap: 12px; align-items: flex-start; padding: 0.75rem 1rem; background: #f9fafb; border-radius: 10px; color: #374151; }
+
+.artwork-modal-content-wrapper { display: flex; gap: 2rem; }
+.artwork-detail-showcase { flex: 2; min-width: 0; display: flex; flex-direction: column; gap: 1.5rem; }
+.artwork-detail-info { flex: 1; min-width: 300px; padding-left: 1rem; }
+
+.artwork-comments-section { background: #fff; border-radius: 16px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.comments-header { display: flex; align-items: center; gap: 0.5rem; }
+.comments-count { margin-left: auto; background: var(--primary-color); color: #fff; border-radius: 999px; padding: 0 8px; font-size: 0.85rem; }
+.comment-input-container { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem; }
+.comment-input-wrapper { position: relative; }
+.comment-textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; resize: vertical; }
+.comment-char-count { position: absolute; right: 10px; bottom: 10px; color: #6b7280; font-size: 0.85rem; }
+.comment-actions { display: flex; gap: 0.5rem; }
+.voice-comment-btn, .submit-comment-btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 8px 12px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; }
+.submit-comment-btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+    .artwork-modal-content { max-width: 95vw; }
+    .artwork-modal-content-wrapper { flex-direction: column; }
+    .artwork-detail-info { min-width: 0; padding-left: 0; }
+}
+
+/* Image Modal */
+.image-modal { position: fixed; inset: 0; z-index: 1001; display: none; }
+.image-modal .image-modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.image-modal-content { position: relative; max-width: 90vw; max-height: 90vh; margin: 5vh auto; background: #000; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; align-items: center; }
+.image-modal-close { position: absolute; top: 8px; right: 12px; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
+.image-modal #fullImage { max-width: 100%; max-height: 80vh; object-fit: contain; }
+.image-modal-title { color: #fff; margin-top: 0.5rem; }
+
+/* Inline Image Overlay used by artwork-modal.js */
+.image-overlay { position: fixed; inset: 0; z-index: 1001; display: none; align-items: center; justify-content: center; }
+.image-overlay.visible { display: flex; }
+.image-overlay-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.image-overlay-content { position: relative; z-index: 1; max-width: 92vw; max-height: 92vh; display: flex; align-items: center; justify-content: center; padding: 0.5rem; }
+.overlay-image { display: block; border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,0.35); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.overlay-image.thumbnail-mode { max-width: 42vw; max-height: 42vh; object-fit: contain; }
+.overlay-image.fullsize-mode { max-width: 92vw; max-height: 92vh; object-fit: contain; }
+
+/* 3D Model Overlay */
+.model-overlay { position: fixed; inset: 0; z-index: 1002; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.model-overlay.visible { opacity: 1; pointer-events: auto; }
+.model-overlay-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.4); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.model-viewer-container { position: relative; width: 85vw; height: 85vh; margin: 0 auto; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.4); display: flex; flex-direction: column; overflow: hidden; }
+.model-header { padding: 1rem 1.5rem; background: rgba(0,0,0,0.3); color: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.model-header-actions { display: flex; gap: 0.5rem; }
+.model-action-btn { background: #fff; color: #333; border: none; border-radius: 999px; padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.model-close-btn { background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; padding: 0.5rem; border-radius: 50%; }
+.model-container { flex: 1; position: relative; }
+#modelCanvas { width: 100%; height: 100%; display: block; }
 
 .privacy-toggle-btn i {
     font-size: 1rem;
@@ -46,8 +435,6 @@
     border-radius: 10px;
     font-size: 1rem;
     -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    -webkit--webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border: 2px solid rgba(255, 255, 255, 0.3);

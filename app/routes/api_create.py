@@ -219,12 +219,13 @@ def generate_image():
             current_app.logger.info(f"✅ API调用完成")
             
             if not result:
-                current_app.logger.error(f"❌ API返回空结果（可能触发了内容过滤）")
-                print(f"⚠️ 提示：AI内容过滤可能拒绝了生成请求，建议更换风格或重试", flush=True)
+                current_app.logger.error(f"❌ API返回空结果（可能触发了内容过滤或网络问题）")
+                print(f"⚠️ 提示：AI服务可能暂时不可用，请检查网络连接或稍后重试", flush=True)
                 return jsonify({
                     'success': False,
-                    'error': 'AI未能生成图片，请尝试更换风格或重新生成'
-                }), 400
+                    'error': 'AI服务暂时不可用，请检查网络连接或更换风格后重试',
+                    'tip': '如果问题持续，请联系技术支持'
+                }), 503  # 改为503 Service Unavailable
         finally:
             # 清理临时文件
             if temp_file_to_delete and os.path.exists(temp_file_to_delete):
@@ -335,12 +336,29 @@ def generate_image():
         print(traceback.format_exc(), flush=True)
         current_app.logger.error(traceback.format_exc())
         
+        # 区分错误类型
+        status_code = 500
+        user_error_msg = error_msg
+        
+        # 网络错误
+        if 'Connection refused' in str(e) or 'refused' in str(e).lower():
+            status_code = 503
+            user_error_msg = 'AI服务暂时不可用，请检查网络连接或稍后重试'
+        # API密钥错误
+        elif 'api' in str(e).lower() or 'key' in str(e).lower():
+            status_code = 503
+            user_error_msg = 'AI服务配置错误，请联系管理员'
+        # 超时
+        elif 'timeout' in str(e).lower():
+            status_code = 504
+            user_error_msg = 'AI服务响应超时，请重试'
+        
         return jsonify({
             'success': False,
-            'error': error_msg,
+            'error': user_error_msg,
             'error_type': error_type,
             'traceback': traceback.format_exc() if current_app.debug else None
-        }), 500
+        }), status_code
 
 
 @api_create_bp.route('/api/load_image_from_url', methods=['POST'])

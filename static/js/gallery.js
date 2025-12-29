@@ -681,10 +681,13 @@ async function likeArtwork(artworkId) {
     }
 }
 
+// Fallback debug logger to avoid ReferenceError when window.hldebug is absent
+const hldebug = window.hldebug ?? console;
+
 // 增加浏览次数
 async function incrementViewCount(artworkId) {
     try {
-        const response = await fetch(`/increment-view/${artworkId}`, {
+        const response = await fetch(`/api/increment-view/${artworkId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

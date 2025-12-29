@@ -1,0 +1,821 @@
+{% extends "base.html" %}
+
+{% block title %}松果币充值统计 - 管理员{% endblock %}
+
+{% block content %}
+<div class="admin-container token-recharge-stats">
+    <div class="page-header">
+        <h1><i class="fas fa-coins"></i> 松果币充值统计</h1>
+        <p class="subtitle">教师和管理员月度充值、游客赠送币过期情况统计</p>
+    </div>
+
+    <!-- 时间选择器 -->
+    <div class="control-panel">
+        <div class="period-selector">
+            <label>统计周期：</label>
+            <select id="periodSelect">
+                <option value="month">按月份</option>
+                <option value="year">按年份</option>
+            </select>
+        </div>
+        
+        <div class="date-selector">
+            <label>年份：</label>
+            <select id="yearSelect">
+                {% for y in range(2024, 2030) %}
+                <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+            
+            <label id="monthLabel">月份：</label>
+            <select id="monthSelect">
+                {% for m in range(1, 13) %}
+                <option value="{{ m }}" {% if m == current_month %}selected{% endif %}>{{ "%02d"|format(m) }}月</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="action-buttons">
+            <button id="queryBtn" class="btn btn-primary">
+                <i class="fas fa-search"></i> 查询
+            </button>
+            <button id="exportBtn" class="btn btn-secondary">
+                <i class="fas fa-download"></i> 导出CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- 统计概览 -->
+    <div class="stats-overview">
+        <div class="stat-card monthly-grants">
+            <div class="stat-icon">
+                <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>月度充值</h3>
+                <div class="stat-number" id="monthlyGrantTotal">0</div>
+                <p class="stat-detail">共 <span id="monthlyGrantCount">0</span> 条</p>
+            </div>
+        </div>
+
+        <div class="stat-card expired-coins">
+            <div class="stat-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+                <h3>过期松果币</h3>
+                <div class="stat-number" id="expiredTotal">0</div>
+                <p class="stat-detail">共 <span id="expiredCount">0</span> 条</p>
+            </div>
+        </div>
+
+        <div class="stat-card pending-coins">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>7天内即将过期</h3>
+                <div class="stat-number" id="pendingCount">0</div>
+                <p class="stat-detail">需关注</p>
+            </div>
+        </div>
+
+        <div class="stat-card qr-gifts">
+            <div class="stat-icon">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <div class="stat-info">
+                <h3>二维码赠送币</h3>
+                <div class="stat-number" id="qrGrantTotal">0</div>
+                <p class="stat-detail">共 <span id="qrGrantCount">0</span> 条</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 充值趋势图 -->
+    <div class="chart-container">
+        <h2>充值趋势</h2>
+        <canvas id="trendChart"></canvas>
+    </div>
+
+    <!-- 角色分布 -->
+    <div class="role-distribution">
+        <div class="role-pie">
+            <h2>充值用户角色分布</h2>
+            <canvas id="roleChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 选项卡 -->
+    <div class="tabs-container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="monthly-grants">
+                <i class="fas fa-calendar-check"></i> 月度充值记录
+            </button>
+            <button class="tab-button" data-tab="expired">
+                <i class="fas fa-clock"></i> 过期币记录
+            </button>
+            <button class="tab-button" data-tab="pending">
+                <i class="fas fa-exclamation-circle"></i> 待过期币
+            </button>
+            <button class="tab-button" data-tab="qr-gifts">
+                <i class="fas fa-qrcode"></i> 二维码赠送
+            </button>
+        </div>
+
+        <!-- 月度充值记录 -->
+        <div class="tab-content active" id="tab-monthly-grants">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>昵称</th>
+                        <th>角色</th>
+                        <th>充值金额</th>
+                        <th>充值时间</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyGrantsBody">
+                    <tr class="empty-row">
+                        <td colspan="5">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 过期币记录 -->
+        <div class="tab-content" id="tab-expired">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>昵称</th>
+                        <th>过期数量</th>
+                        <th>来源</th>
+                        <th>过期日期</th>
+                        <th>失效时间</th>
+                    </tr>
+                </thead>
+                <tbody id="expiredBody">
+                    <tr class="empty-row">
+                        <td colspan="6">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 待过期币 -->
+        <div class="tab-content" id="tab-pending">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>昵称</th>
+                        <th>待过期数量</th>
+                        <th>过期日期</th>
+                        <th>剩余天数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingBody">
+                    <tr class="empty-row">
+                        <td colspan="6">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 二维码赠送 -->
+        <div class="tab-content" id="tab-qr-gifts">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>用户名</th>
+                        <th>昵称</th>
+                        <th>赠送数量</th>
+                        <th>赠送来源</th>
+                        <th>赠送时间</th>
+                    </tr>
+                </thead>
+                <tbody id="qrGrantsBody">
+                    <tr class="empty-row">
+                        <td colspan="5">暂无数据</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.token-recharge-stats {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid #e6b422;
+    padding-bottom: 20px;
+}
+
+.page-header h1 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 28px;
+}
+
+.page-header .subtitle {
+    color: #666;
+    margin: 0;
+    font-size: 14px;
+}
+
+.control-panel {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.control-panel label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.control-panel select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.period-selector,
+.date-selector {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.date-selector {
+    flex: 1;
+    min-width: 300px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #545b62;
+}
+
+.stats-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid #007bff;
+}
+
+.stat-card.monthly-grants {
+    border-left-color: #28a745;
+}
+
+.stat-card.expired-coins {
+    border-left-color: #dc3545;
+}
+
+.stat-card.pending-coins {
+    border-left-color: #ffc107;
+}
+
+.stat-card.qr-gifts {
+    border-left-color: #17a2b8;
+}
+
+.stat-icon {
+    font-size: 32px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #666;
+}
+
+.stat-card.monthly-grants .stat-icon {
+    color: #28a745;
+}
+
+.stat-card.expired-coins .stat-icon {
+    color: #dc3545;
+}
+
+.stat-card.pending-coins .stat-icon {
+    color: #ffc107;
+}
+
+.stat-card.qr-gifts .stat-icon {
+    color: #17a2b8;
+}
+
+.stat-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-detail {
+    margin: 5px 0 0 0;
+    font-size: 12px;
+    color: #999;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 18px;
+}
+
+.chart-container canvas {
+    max-height: 300px;
+}
+
+.role-distribution {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.role-pie {
+    width: 100%;
+}
+
+.role-pie h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 18px;
+}
+
+.role-pie canvas {
+    max-height: 300px;
+}
+
+.tabs-container {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    background: #f8f9fa;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tab-button:hover {
+    color: #333;
+    background: white;
+}
+
+.tab-button.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    background: white;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    background: #f8f9fa;
+}
+
+.data-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+}
+
+.data-table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    color: #666;
+}
+
+.data-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.data-table .empty-row {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+}
+
+.data-table .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-teacher {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-admin {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+let trendChart = null;
+let roleChart = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化日期选择器
+    const today = new Date();
+    document.getElementById('yearSelect').value = today.getFullYear();
+    document.getElementById('monthSelect').value = today.getMonth() + 1;
+    
+    // 绑定事件
+    document.getElementById('queryBtn').addEventListener('click', loadStats);
+    document.getElementById('exportBtn').addEventListener('click', exportData);
+    document.getElementById('periodSelect').addEventListener('change', updateDatePickers);
+    
+    // 绑定选项卡切换
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.addEventListener('click', switchTab);
+    });
+    
+    // 初始加载
+    loadStats();
+});
+
+function updateDatePickers() {
+    const period = document.getElementById('periodSelect').value;
+    const monthLabel = document.getElementById('monthLabel');
+    const monthSelect = document.getElementById('monthSelect');
+    
+    if (period === 'year') {
+        monthLabel.style.display = 'none';
+        monthSelect.style.display = 'none';
+    } else {
+        monthLabel.style.display = 'block';
+        monthSelect.style.display = 'block';
+    }
+}
+
+function loadStats() {
+    const period = document.getElementById('periodSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    const month = document.getElementById('monthSelect').value;
+    
+    const params = new URLSearchParams({
+        period: period,
+        year: year,
+        month: month
+    });
+    
+    fetch(`{{ url_for('admin.get_token_recharge_stats') }}?${params}`)
+        .then(async r => {
+            if (!r.ok) {
+                let msg = `加载失败 (HTTP ${r.status})`;
+                try {
+                    const err = await r.json();
+                    msg = err?.message || err?.error || msg;
+                } catch (_) {}
+                throw new Error(msg);
+            }
+            return r.json();
+        })
+        .then(data => {
+            updateStats(data);
+            updateTables(data);
+            updateCharts(data);
+        })
+        .catch(err => {
+            console.error('Error loading stats:', err);
+            alert(typeof err?.message === 'string' ? err.message : '加载数据失败，请确认已登录且有管理员权限');
+        });
+}
+
+function updateStats(data) {
+    // 更新概览卡片
+    document.getElementById('monthlyGrantTotal').textContent = data.monthly_grants.total.toLocaleString();
+    document.getElementById('monthlyGrantCount').textContent = data.monthly_grants.count;
+    
+    document.getElementById('expiredTotal').textContent = data.expired_records.total.toLocaleString();
+    document.getElementById('expiredCount').textContent = data.expired_records.count;
+    
+    document.getElementById('pendingCount').textContent = data.pending_expiry.count;
+    
+    document.getElementById('qrGrantTotal').textContent = data.qr_grants.total.toLocaleString();
+    document.getElementById('qrGrantCount').textContent = data.qr_grants.count;
+}
+
+function updateTables(data) {
+    // 月度充值表
+    const monthlyBody = document.getElementById('monthlyGrantsBody');
+    if (data.monthly_grants.data.length > 0) {
+        monthlyBody.innerHTML = data.monthly_grants.data.map(g => `
+            <tr>
+                <td>${g.username}</td>
+                <td>${g.nickname}</td>
+                <td><span class="badge badge-${g.role}">${g.role === 'teacher' ? '教师' : '管理员'}</span></td>
+                <td><strong>${g.tokens_amount}</strong></td>
+                <td>${new Date(g.granted_at).toLocaleString('zh-CN')}</td>
+            </tr>
+        `).join('');
+    } else {
+        monthlyBody.innerHTML = '<tr class="empty-row"><td colspan="5">暂无数据</td></tr>';
+    }
+    
+    // 过期币表
+    const expiredBody = document.getElementById('expiredBody');
+    if (data.expired_records.data.length > 0) {
+        expiredBody.innerHTML = data.expired_records.data.map(e => `
+            <tr>
+                <td>${e.username}</td>
+                <td>${e.nickname}</td>
+                <td>${e.tokens_amount}</td>
+                <td>${e.grant_source}</td>
+                <td>${new Date(e.expire_date).toLocaleDateString('zh-CN')}</td>
+                <td>${e.expired_at ? new Date(e.expired_at).toLocaleString('zh-CN') : '-'}</td>
+            </tr>
+        `).join('');
+    } else {
+        expiredBody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无数据</td></tr>';
+    }
+    
+    // 待过期币表
+    const pendingBody = document.getElementById('pendingBody');
+    if (data.pending_expiry.data.length > 0) {
+        pendingBody.innerHTML = data.pending_expiry.data.map(p => `
+            <tr>
+                <td>${p.username}</td>
+                <td>${p.nickname}</td>
+                <td><strong>${p.tokens_amount}</strong></td>
+                <td>${new Date(p.expire_date).toLocaleDateString('zh-CN')}</td>
+                <td><span class="badge badge-warning">${p.days_left}天</span></td>
+                <td><a href="javascript:void(0)" class="remind-user" data-user="${p.user_id}">提醒</a></td>
+            </tr>
+        `).join('');
+    } else {
+        pendingBody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无数据</td></tr>';
+    }
+    
+    // 二维码赠送表
+    const qrBody = document.getElementById('qrGrantsBody');
+    if (data.qr_grants.data.length > 0) {
+        qrBody.innerHTML = data.qr_grants.data.map(q => `
+            <tr>
+                <td>${q.username}</td>
+                <td>${q.nickname}</td>
+                <td>${q.tokens}</td>
+                <td>${q.source}</td>
+                <td>${new Date(q.created_at).toLocaleString('zh-CN')}</td>
+            </tr>
+        `).join('');
+    } else {
+        qrBody.innerHTML = '<tr class="empty-row"><td colspan="5">暂无数据</td></tr>';
+    }
+}
+
+function updateCharts(data) {
+    // 更新趋势图
+    if (trendChart) {
+        trendChart.destroy();
+    }
+    
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    const trendLabels = data.trend.map(t => t.date);
+    const trendValues = data.trend.map(t => t.total);
+    
+    trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [{
+                label: '充值金额',
+                data: trendValues,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.3,
+                fill: true,
+                pointBackgroundColor: '#28a745',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { font: { size: 12 } }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // 更新角色分布图
+    if (roleChart) {
+        roleChart.destroy();
+    }
+    
+    const roleCtx = document.getElementById('roleChart').getContext('2d');
+    const roleLabels = Object.keys(data.role_stats).map(role => role === 'teacher' ? '教师' : '管理员');
+    const roleValues = Object.values(data.role_stats).map(stat => stat.total);
+    const roleColors = ['#007bff', '#28a745'];
+    
+    roleChart = new Chart(roleCtx, {
+        type: 'doughnut',
+        data: {
+            labels: roleLabels,
+            datasets: [{
+                data: roleValues,
+                backgroundColor: roleColors
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { font: { size: 12 } }
+                }
+            }
+        }
+    });
+}
+
+function switchTab(e) {
+    const tabName = e.target.getAttribute('data-tab') || e.target.closest('.tab-button').getAttribute('data-tab');
+    
+    // 更新按钮状态
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    e.target.closest('.tab-button').classList.add('active');
+    
+    // 更新内容显示
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+function exportData() {
+    const period = document.getElementById('periodSelect').value;
+    const year = document.getElementById('yearSelect').value;
+    const month = document.getElementById('monthSelect').value;
+    
+    const params = new URLSearchParams({
+        period: period,
+        year: year,
+        month: month
+    });
+    
+    window.location.href = `{{ url_for('admin.export_token_recharge_stats') }}?${params}`;
+}
+</script>
+{% endblock %}

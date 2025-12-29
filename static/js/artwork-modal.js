@@ -59,11 +59,7 @@ function showArtworkModal(element) {
     if (artworkData.id) {
         incrementViewCount(artworkData.id);
     }
-    
-        colored: artworkData.coloredVersions,
-        adjusted: artworkData.adjustedVersions,
-        sessionId: artworkData.sessionId
-    });
+    // 版本数据在下方渲染逻辑中使用 artworkData.coloredVersions / adjustedVersions
     
     // 保存sessionId到modal元素
     const modal = document.getElementById('artworkModal');
@@ -105,7 +101,7 @@ function showArtworkModal(element) {
         const originalStep = document.createElement('div');
         originalStep.className = 'artwork-detail-step';
         originalStep.innerHTML = `
-            <h4>原始简笔画</h4>
+            <h4>原始图片</h4>
             <img src="${artworkData.originalImage}" alt="原始简笔画" 
                  style="cursor: pointer;" 
                  title="点击查看大图"

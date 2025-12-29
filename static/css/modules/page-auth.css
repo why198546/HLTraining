@@ -230,8 +230,8 @@
 
 .form-container {
     padding: 35px 30px 40px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
 }
 
 .form-header {
@@ -417,7 +417,8 @@
     display: block;
 }
 
-.login-btn {
+.login-btn,
+.register-btn {
     background: var(--page-gradient);
     color: white;
     border: none;
@@ -432,15 +433,60 @@
     justify-content: center;
     gap: 10px;
     margin-top: 10px;
+    width: 100%;
 }
 
-.login-btn:hover {
+.login-btn:hover,
+.register-btn:hover {
     transform: translateY(-2px);
-    box-shadow: var(--primary-shadow);
+    box-shadow: 0 8px 20px var(--primary-shadow);
 }
 
-.login-btn:active {
+.login-btn:active,
+.register-btn:active {
     transform: translateY(0);
+}
+
+/* 填写更多信息按钮 */
+.optional-fields-toggle {
+    margin: 20px 0;
+}
+
+.toggle-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #333;
+    border: 2px solid #dee2e6;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.toggle-btn:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-btn:active {
+    transform: translateY(0);
+}
+
+.toggle-btn i {
+    transition: transform 0.3s ease;
+}
+
+.toggle-btn:hover i {
+    transform: scale(1.2);
 }
 
 .form-footer {
@@ -980,6 +1026,396 @@
 
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ================================
+   Verification Pending Page Styles
+   ================================ */
+
+.verification-page {
+    background: var(--page-gradient);
+    min-height: 100vh;
+    padding-top: 80px;
+}
+
+.verification-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+/* 左侧安全承诺 */
+.safety-promise {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.promise-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.promise-header i {
+    font-size: 3.5rem;
+    color: #FFD700;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.promise-header h2 {
+    font-size: 2rem;
+    color: #333;
+    margin: 0;
+}
+
+.promise-grid {
+    display: grid;
+    gap: 25px;
+}
+
+.promise-item {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 15px;
+    display: flex;
+    gap: 20px;
+    align-items: start;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.promise-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+}
+
+.promise-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--page-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.promise-icon i {
+    font-size: 1.8rem;
+    color: white;
+}
+
+.promise-item h3 {
+    font-size: 1.2rem;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.promise-item p {
+    font-size: 0.95rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* 右侧验证表单 */
+.verification-form-section {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.verification-header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.header-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--page-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.header-icon i {
+    font-size: 2.5rem;
+    color: white;
+}
+
+.verification-header h1 {
+    font-size: 2rem;
+    color: #333;
+    margin: 0 0 10px 0;
+}
+
+.header-subtitle {
+    font-size: 1rem;
+    color: #666;
+    margin: 0;
+}
+
+.verification-form-card {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.form-status {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.status-badge.success {
+    background: #d4edda;
+    color: #155724;
+    border: 2px solid #c3e6cb;
+}
+
+.status-badge i {
+    font-size: 1.3rem;
+}
+
+.verification-info-box {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 25px;
+}
+
+.verification-info-box h3 {
+    font-size: 1.3rem;
+    color: #333;
+    margin: 0 0 20px 0;
+}
+
+.info-item {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.info-item > i {
+    width: 40px;
+    height: 40px;
+    background: var(--page-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.info-item strong {
+    display: block;
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.info-item p {
+    font-size: 0.95rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.email-highlight {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.verification-actions {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-resend,
+.btn-login {
+    flex: 1;
+    min-width: 200px;
+    padding: 15px 25px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+}
+
+.btn-resend {
+    background: var(--page-gradient);
+    color: white;
+    border: none;
+}
+
+.btn-resend:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 98, 65, 0.3);
+}
+
+.btn-login {
+    background: white;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-login:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.verification-footer {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 25px;
+}
+
+.verification-footer h4 {
+    font-size: 1.2rem;
+    color: #333;
+    margin: 0 0 15px 0;
+}
+
+.feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.feature-item i {
+    width: 35px;
+    height: 35px;
+    background: var(--page-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+/* Footer */
+.footer-simple {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px 20px;
+    margin-top: 40px;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.contact-info h4 {
+    font-size: 1.3rem;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.contact-info h4 i {
+    color: var(--primary-color);
+    margin-right: 10px;
+}
+
+.contact-info p {
+    font-size: 1rem;
+    color: #666;
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.contact-info p i {
+    color: var(--primary-color);
+    margin-right: 8px;
+    width: 20px;
+}
+
+/* 响应式设计 */
+@media (max-width: 968px) {
+    .verification-wrapper {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    .verification-page {
+        padding-top: 60px;
+    }
+}
+
+@media (max-width: 640px) {
+    .verification-wrapper {
+        padding: 20px 15px;
+    }
+    
+    .safety-promise,
+    .verification-form-section {
+        padding: 25px;
+    }
+    
+    .promise-header i {
+        font-size: 2.5rem;
+    }
+    
+    .promise-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .verification-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .verification-actions {
+        flex-direction: column;
+    }
+    
+    .btn-resend,
+    .btn-login {
+        min-width: 100%;
     }
 }
 

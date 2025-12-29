@@ -14,7 +14,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from auth import auth_bp
 from auth.forms import (KidLoginForm, KidRegistrationForm,
                         ParentVerificationForm)
-from auth.models import CreationSession, ParentVerification, User, db
+from auth.models import CreationSession, ParentVerification, User, db, TokenGrantLog
 from utils.email_service import send_verification_email
 
 
@@ -977,4 +977,124 @@ def unconfirm_lesson():
     return jsonify({
         'success': True,
         'message': f'已取消确认 {student.nickname} 的第 {lesson_number} 节课'
+    })
+
+
+@auth_bp.route('/recharge-tokens', methods=['POST'])
+@login_required
+def recharge_tokens():
+    """教师/管理员自助充值松果币"""
+    from auth.models import TokenGrantLog
+    
+    # 只有教师和管理员可以充值
+    if current_user.role not in ('teacher', 'admin'):
+        return jsonify({'success': False, 'message': '只有教师和管理员可以充值松果币'}), 403
+    
+    data = request.get_json()
+    amount = data.get('amount', 0)
+    description = data.get('description', '')
+    
+    # 验证金额
+    try:
+        amount = int(amount)
+        if amount <= 0:
+            return jsonify({'success': False, 'message': '充值金额必须大于0'}), 400
+        if amount > 10000:  # 单次最多充值10000
+            return jsonify({'success': False, 'message': '单次充值金额不能超过10000'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'message': '充值金额格式错误'}), 400
+    
+    # 增加用户松果币
+    old_balance = current_user.image_token_remaining
+    current_user.image_token_remaining += amount
+    
+    # 记录充值日志
+    token_log = TokenGrantLog(
+        user_id=current_user.id,
+        grant_type='manual_recharge',
+        tokens_granted=amount,
+        description=description or f'自助充值 {amount} 松果币',
+        operator_name=current_user.nickname
+    )
+    db.session.add(token_log)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'充值成功，已增加 {amount} 松果币',
+        'new_balance': current_user.image_token_remaining,
+        'old_balance': old_balance,
+        'amount': amount
+    })
+
+
+@auth_bp.route('/grant-monthly-tokens', methods=['POST'])
+@login_required
+def grant_monthly_tokens_api():
+    """手动触发月度松果币充值（管理员用）"""
+    from auth.models import MonthlyTokenGrant
+    
+    # 只有管理员可以手动触发
+    if current_user.role != 'admin':
+        return jsonify({'success': False, 'message': '只有管理员可以手动触发月度充值'}), 403
+    
+    data = request.get_json()
+    user_id = data.get('user_id')
+    
+    if not user_id:
+        return jsonify({'success': False, 'message': '缺少user_id参数'}), 400
+    
+    user = User.query.get_or_404(user_id)
+    
+    # 只能为教师或管理员充值
+    if user.role not in ('teacher', 'admin'):
+        return jsonify({'success': False, 'message': '只能为教师和管理员充值'}), 403
+    
+    # 执行月度充值
+    success = user.grant_monthly_tokens()
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'message': f'已为 {user.nickname} 充值 1000 松果币',
+            'user_balance': user.image_token_remaining
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'message': f'{user.nickname} 本月已充值过，无需重复充值'
+        }), 400
+
+
+@auth_bp.route('/token-balance', methods=['GET'])
+@login_required
+def get_token_balance():
+    """获取当前用户的松果币余额和过期币信息"""
+    from auth.models import TokenExpiry
+    
+    # 检查过期币
+    expired_amount = current_user.check_token_expiry()
+    
+    # 获取待过期币信息
+    pending_expiry = TokenExpiry.query.filter(
+        TokenExpiry.user_id == current_user.id,
+        TokenExpiry.is_expired == False
+    ).all()
+    
+    pending_list = []
+    for expiry in pending_expiry:
+        days_left = (expiry.expire_date - datetime.utcnow()).days
+        pending_list.append({
+            'id': expiry.id,
+            'amount': expiry.tokens_amount,
+            'expire_date': expiry.expire_date.isoformat(),
+            'days_left': max(0, days_left),
+            'source': expiry.grant_source
+        })
+    
+    return jsonify({
+        'balance': current_user.image_token_remaining,
+        'role': current_user.role,
+        'expired_today': expired_amount,
+        'pending_expiry': pending_list
     })

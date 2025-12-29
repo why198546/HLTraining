@@ -62,6 +62,10 @@ def create_app():
     from auth.middleware import init_middleware
     init_middleware(app)
     
+    # 初始化定时任务调度器
+    from utils.scheduler import init_scheduler
+    init_scheduler(app)
+    
     # 注册应用路由蓝图
     from .routes import (canvas_bp, create_bp, gallery_bp, main_bp, model3d_bp,
                          static_files_bp, video_bp)

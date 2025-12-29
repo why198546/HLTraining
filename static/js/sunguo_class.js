@@ -709,7 +709,7 @@ document.querySelectorAll('.prompt-form').forEach(form => {
         // 在第一张请求时保存后端返回的检测特征
         if (i === 0 && data.detected_features) {
           detectedFeatures = data.detected_features;
-          hldebug.error(`📍 从后端获取检测特征: ${JSON.stringify(detectedFeatures)}`);
+          // hldebug.error(`📍 从后端获取检测特征: ${JSON.stringify(detectedFeatures)}`);
         }
 
         if (!resp.ok) {

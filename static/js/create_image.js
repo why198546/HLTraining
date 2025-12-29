@@ -261,6 +261,30 @@ async function generateImage() {
             body: formData
         });
 
+        // 优先处理非200状态，给出更友好的提示
+        if (!response.ok) {
+            let serverMsg = null;
+            try {
+                const errData = await response.json();
+                serverMsg = errData?.error || errData?.message;
+            } catch (_) {}
+            clearInterval(progressInterval);
+            
+            // 根据状态码给出不同提示
+            let userMessage = serverMsg || '生成失败，请稍后重试';
+            if (response.status === 503) {
+                userMessage = serverMsg || 'AI服务暂时不可用，请检查网络连接';
+            } else if (response.status === 504) {
+                userMessage = serverMsg || 'AI服务响应超时，请重试';
+            } else if (response.status === 400) {
+                userMessage = serverMsg || '请输入文字描述或上传图片';
+            }
+            
+            hldebug.warn(`生成失败，HTTP ${response.status}:`, serverMsg || response.statusText);
+            showToast(userMessage, 'error');
+            return;
+        }
+
         const data = await response.json();
         
         if (data.success) {
@@ -283,13 +307,13 @@ async function generateImage() {
             showToast('图片生成成功！', 'success');
         } else {
             clearInterval(progressInterval); // 停止进度提示
-            hldebug.error('生成失败，服务器返回:', data);
+            hldebug.info('生成失败，服务器返回:', data);
             showToast(data.error || data.message || '生成失败', 'error');
         }
     } catch (error) {
         clearInterval(progressInterval); // 停止进度提示
         hldebug.error('生成失败，捕获异常:', error);
-        showToast('生成失败，请重试', 'error');
+        showToast('生成失败，请检查网络连接后重试', 'error');
     } finally {
         hideLoading();
     }

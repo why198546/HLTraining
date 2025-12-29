@@ -433,21 +433,13 @@ def scan_sunguo_lesson(code):
             reward_info['message'] = '仅正式报名学生可领取本课程奖励。请先报名课程'
             reward_info['tokens_added'] = 0
         elif valid:
-            # 赠送松果币
+            # 赠送松果币（使用新的带过期时间的方法）
             if course.tokens_reward > 0:
-                current_user.image_token_remaining += course.tokens_reward
-                
-                # 记录到 TokenGrantLog
-                from auth.models import TokenGrantLog
-                token_log = TokenGrantLog(
-                    user_id=current_user.id,
-                    grant_type='sunguo_qrcode',
-                    tokens_granted=course.tokens_reward,
-                    description=f'通过扫描松果课堂二维码《{course.course_name}》获得',
-                    operator='system',
-                    related_info=course.id
+                current_user.add_temporary_tokens(
+                    amount=course.tokens_reward,
+                    source=f'sunguo_qrcode_{course.id}',
+                    expire_days=30
                 )
-                db.session.add(token_log)
             
             # 创建课程选修记录
             enrollment = CourseEnrollment(

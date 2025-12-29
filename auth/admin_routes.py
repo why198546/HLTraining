@@ -11,7 +11,7 @@ from flask import (Blueprint, flash, jsonify, redirect, render_template,
 from flask_login import current_user, login_required
 from sqlalchemy import func
 
-from auth.models import Artwork, User, db, TokenUsageLog, Course, CourseEnrollment
+from auth.models import Artwork, User, db, TokenUsageLog, Course, CourseEnrollment, MonthlyTokenGrant, TokenExpiry, TokenGrantLog
 from auth.permissions import admin_required
 from app.course_config.courses import get_course, get_courses_for_qr
 import uuid
@@ -904,3 +904,243 @@ def qrcode_enrollments(qr_id):
         'course_name': course.course_name,
         'enrollments': enrollments
     })
+
+
+@admin_bp.route('/token-recharge-stats')
+@login_required
+@admin_required
+def token_recharge_stats():
+    """松果币充值统计页面"""
+    return render_template('admin/token_recharge_stats.html')
+
+
+@admin_bp.route('/token-recharge-stats/data')
+@login_required
+@admin_required
+def get_token_recharge_stats():
+    """获取松果币充值统计数据"""
+    period = request.args.get('period', 'month')  # month, year
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+    
+    now = datetime.utcnow()
+    
+    # 确定统计时间范围
+    if period == 'month':
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1)
+        else:
+            end_date = datetime(year, month + 1, 1)
+    else:  # year
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+    
+    # 1. 获取本期月度充值统计（仅教师和管理员）
+    if period == 'month':
+        monthly_grants = MonthlyTokenGrant.query.filter(
+            MonthlyTokenGrant.grant_year == year,
+            MonthlyTokenGrant.grant_month == month
+        ).all()
+    else:
+        monthly_grants = MonthlyTokenGrant.query.filter(
+            MonthlyTokenGrant.grant_year == year
+        ).all()
+    
+    monthly_grant_data = []
+    total_monthly = 0
+    for grant in monthly_grants:
+        user = grant.user
+        monthly_grant_data.append({
+            'id': grant.id,
+            'user_id': user.id,
+            'username': user.username,
+            'nickname': user.nickname,
+            'role': user.role,
+            'tokens_amount': grant.tokens_amount,
+            'granted_at': grant.granted_at.isoformat(),
+            'year_month': f'{grant.grant_year}-{grant.grant_month:02d}'
+        })
+        total_monthly += grant.tokens_amount
+    
+    # 2. 获取过期币统计
+    expired_records = TokenExpiry.query.filter(
+        TokenExpiry.created_at >= start_date,
+        TokenExpiry.created_at < end_date,
+        TokenExpiry.is_expired == True
+    ).all()
+    
+    expired_data = []
+    total_expired = 0
+    for expiry in expired_records:
+        user = expiry.user
+        expired_data.append({
+            'id': expiry.id,
+            'user_id': user.id,
+            'username': user.username,
+            'nickname': user.nickname,
+            'tokens_amount': expiry.tokens_amount,
+            'grant_source': expiry.grant_source,
+            'expire_date': expiry.expire_date.isoformat(),
+            'expired_at': expiry.expired_at.isoformat() if expiry.expired_at else None,
+            'created_at': expiry.created_at.isoformat()
+        })
+        total_expired += expiry.tokens_amount
+    
+    # 3. 获取待过期币（未失效）
+    pending_expiry = TokenExpiry.query.filter(
+        TokenExpiry.is_expired == False,
+        TokenExpiry.expire_date <= now + timedelta(days=7)
+    ).all()
+    
+    pending_data = []
+    for expiry in pending_expiry:
+        user = expiry.user
+        days_left = (expiry.expire_date - now).days
+        pending_data.append({
+            'id': expiry.id,
+            'user_id': user.id,
+            'username': user.username,
+            'nickname': user.nickname,
+            'tokens_amount': expiry.tokens_amount,
+            'expire_date': expiry.expire_date.isoformat(),
+            'days_left': max(0, days_left),
+            'created_at': expiry.created_at.isoformat()
+        })
+    
+    # 4. 统计各角色的充值情况
+    role_stats = {}
+    for grant in monthly_grants:
+        role = grant.user.role
+        if role not in role_stats:
+            role_stats[role] = {'count': 0, 'total': 0}
+        role_stats[role]['count'] += 1
+        role_stats[role]['total'] += grant.tokens_amount
+    
+    # 5. 获取充值趋势（按日期）
+    if period == 'month':
+        trend_data = db.session.query(
+            func.date(MonthlyTokenGrant.granted_at).label('date'),
+            func.count(MonthlyTokenGrant.id).label('count'),
+            func.sum(MonthlyTokenGrant.tokens_amount).label('total')
+        ).filter(
+            MonthlyTokenGrant.granted_at >= start_date,
+            MonthlyTokenGrant.granted_at < end_date
+        ).group_by(func.date(MonthlyTokenGrant.granted_at)).all()
+    else:
+        trend_data = db.session.query(
+            func.strftime('%Y-%m', MonthlyTokenGrant.granted_at).label('date'),
+            func.count(MonthlyTokenGrant.id).label('count'),
+            func.sum(MonthlyTokenGrant.tokens_amount).label('total')
+        ).filter(
+            MonthlyTokenGrant.granted_at >= start_date,
+            MonthlyTokenGrant.granted_at < end_date
+        ).group_by(func.strftime('%Y-%m', MonthlyTokenGrant.granted_at)).all()
+    
+    trend_list = []
+    for td in trend_data:
+        trend_list.append({
+            'date': td.date.isoformat() if hasattr(td.date, 'isoformat') else str(td.date),
+            'count': td.count,
+            'total': td.total
+        })
+    
+    # 6. 获取二维码赠送币统计
+    qr_grants = TokenGrantLog.query.filter(
+        TokenGrantLog.grant_type == 'sunguo_qrcode',
+        TokenGrantLog.created_at >= start_date,
+        TokenGrantLog.created_at < end_date
+    ).all()
+    
+    qr_grant_data = []
+    total_qr = 0
+    for grant in qr_grants:
+        user = grant.user
+        qr_grant_data.append({
+            'id': grant.id,
+            'user_id': user.id,
+            'username': user.username,
+            'nickname': user.nickname,
+            'tokens': grant.tokens_granted,
+            'source': grant.related_info,
+            'created_at': grant.created_at.isoformat()
+        })
+        total_qr += grant.tokens_granted
+    
+    return jsonify({
+        'period': period,
+        'year': year,
+        'month': month if period == 'month' else None,
+        'monthly_grants': {
+            'data': monthly_grant_data,
+            'count': len(monthly_grants),
+            'total': total_monthly
+        },
+        'expired_records': {
+            'data': expired_data,
+            'count': len(expired_records),
+            'total': total_expired
+        },
+        'pending_expiry': {
+            'data': pending_data,
+            'count': len(pending_data)
+        },
+        'role_stats': role_stats,
+        'trend': trend_list,
+        'qr_grants': {
+            'data': qr_grant_data[:50],  # 最近50条
+            'count': len(qr_grants),
+            'total': total_qr
+        }
+    })
+
+
+@admin_bp.route('/token-recharge-stats/export')
+@login_required
+@admin_required
+def export_token_recharge_stats():
+    """导出充值统计数据（CSV格式）"""
+    import csv
+    from io import StringIO
+    from flask import send_file
+    
+    period = request.args.get('period', 'month')
+    year = request.args.get('year', datetime.now().year, type=int)
+    month = request.args.get('month', datetime.now().month, type=int)
+    
+    # 确定统计时间范围
+    if period == 'month':
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1)
+        else:
+            end_date = datetime(year, month + 1, 1)
+    else:
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year + 1, 1, 1)
+    
+    # 获取月度充值数据
+    monthly_grants = MonthlyTokenGrant.query.filter(
+        MonthlyTokenGrant.granted_at >= start_date,
+        MonthlyTokenGrant.granted_at < end_date
+    ).all()
+    
+    # 创建CSV
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['用户名', '昵称', '角色', '充值金额', '充值时间'])
+    
+    for grant in monthly_grants:
+        writer.writerow([
+            grant.user.username,
+            grant.user.nickname,
+            grant.user.role,
+            grant.tokens_amount,
+            grant.granted_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+    
+    output.seek(0)
+    return output.getvalue(), 200, {
+        'Content-Disposition': f'attachment;filename=token_recharge_{year}_{month:02d}.csv',
+        'Content-Type': 'text/csv'
+    }
