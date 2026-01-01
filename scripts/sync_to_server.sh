@@ -63,6 +63,7 @@ rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" --delete \
     --exclude='.git/' \
     --exclude='.venv/' \
     --exclude='venv/' \
+    --exclude='.direnv/' \
     --exclude='__pycache__/' \
     --exclude='*.pyc' \
     --exclude='*.pyo' \
@@ -98,6 +99,9 @@ echo -e "${YELLOW}🔧 步骤3/4: 服务器端更新...${NC}"
 $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" << 'ENDSSH'
     set -e
     cd /var/www/hltraining
+    
+    # 删除 direnv 目录（如果存在）
+    rm -rf .direnv
     
     # 升级 pip
     python3 -m pip install --upgrade pip setuptools wheel
