@@ -231,14 +231,23 @@ def generate_image():
                 prompt = enhanced_prompt
                 print(f"   增强提示词(素描风格): {prompt[:200]}...")
             else:
-                # 如果没有姿态描述，使用原有的空间引导语
-                spatial_guidance = (
-                    "CRITICAL: The character's pose must EXACTLY match the provided color-coded OpenPose skeleton reference image. "
-                    "Blue lines indicate LEFT limbs, orange/red lines indicate RIGHT limbs. "
-                    "Character description: "
-                )
-                prompt = spatial_guidance + prompt
-                print(f"   使用默认引导语: {prompt[:200]}...")
+                # 如果没有姿态描述，为action lesson追加系统prompt
+                if lesson_type == 'action':
+                    action_system_prompt = (
+                        "Modern Chinese character, pencil sketch style, grayscale, white background, meticulous and beautiful. "
+                        "IMPORTANT: Draw only the person, NO skeleton lines, NO bones, NO reference markers visible."
+                    )
+                    prompt = f"{prompt}. {action_system_prompt}"
+                    print(f"   追加action系统prompt: {prompt[:200]}...")
+                else:
+                    # 如果没有姿态描述且不是action lesson，使用原有的空间引导语
+                    spatial_guidance = (
+                        "CRITICAL: The character's pose must EXACTLY match the provided color-coded OpenPose skeleton reference image. "
+                        "Blue lines indicate LEFT limbs, orange/red lines indicate RIGHT limbs. "
+                        "Character description: "
+                    )
+                    prompt = spatial_guidance + prompt
+                    print(f"   使用默认引导语: {prompt[:200]}...")
 
             # 如果是中文提示词，翻译成英文以获得更好的AI效果
             original_prompt = prompt

@@ -773,9 +773,10 @@
               <textarea class="prompt-input" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
 例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
 例如：年轻女孩，长发，穿粉色连衣裙
-（系统会自动生成素描风格的现代中国人形象）"></textarea>
+（系统会自动生成素描风格的现代中国人形象，不显示骨骼图）"></textarea>
               <div class="tip-text">
-                <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由骨架图控制，风格自动为素描
+                <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由骨架图控制，风格自动为素描<br>
+                <strong>⚠️ 重要：</strong>生成的图片<strong>只显示人物形象</strong>，不会有任何骨骼图、辅助线或节点标记
               </div>
             </div>
           </div>
@@ -1302,12 +1303,12 @@
 
     // 预设动作对应的提示词
     const presetPrompts = {
-      'running': '10岁小男孩，短发，穿蓝色上衣，黑色运动裤，白色球鞋',
-      'jumping': '10岁小女孩，扎马尾辫，穿粉色运动服，白色运动鞋',
-      'waving': '12岁男孩，短发，穿橙色T恤，蓝色牛仔裤',
-      'dancing': '11岁女孩，长发，穿紫色舞蹈裙，粉色舞鞋',
-      'sitting': '10岁小男孩，短发，穿白色衬衫，灰色长裤',
-      'thinking': '12岁女孩，短发，穿黄色毛衣，蓝色裙子'
+      'running': '一个10岁的男孩，短发，穿蓝色运动服和白色运动鞋，在操场上奔跑，身体前倾，双臂有力摆动，左右腿交替抬起，充满动感',
+      'jumping': '一个12岁的女孩，马尾辫，穿粉色T恤和牛仔短裤，跳跃在空中，双手高举，身体舒展，双脚离地，表情兴奋喜悦',
+      'waving': '一个11岁的男孩，齐刘海，穿白色衬衫和黑色长裤，右手高高举起挥手打招呼，脸上洋溢着灿烂笑容，姿态友好',
+      'dancing': '一个11岁的女孩，长发飘逸，穿紫色舞蹈裙和粉色舞鞋，在舞台上翩翩起舞，身体优雅摆动，双臂舞动如蝴蝶，充满艺术感',
+      'sitting': '一个9岁的男孩，圆寸头，穿橙色卫衣和深蓝色牛仔裤，坐在木椅上，姿态放松自然，双手轻放膝盖，表情平静安详',
+      'thinking': '一个12岁的女孩，齐肩短发，穿浅绿色毛衣和灰色长裤，右手托着下巴，眼神专注深邃，眉头微蹙，陷入深深的思考'
     };
 
     // 手势选择函数
@@ -1677,7 +1678,7 @@ Draw a modern Chinese child in this exact pose. Natural human form, no visible s
             console.warn('生成姿态描述失败:', err);
           }
           
-          // 直接使用用户输入的提示词（后端会添加空间引导语前缀）
+          // 直接使用用户输入的提示词（后端会翻译并追加系统prompt）
           const userPrompt = document.getElementById('promptText').value;
           formData.append('prompt', userPrompt);
           formData.append('style', 'none');
@@ -1722,10 +1723,10 @@ Draw a modern Chinese child in this exact pose. Natural human form, no visible s
         // 设置生成图片的源
         generatedImgOverlay.src = data.image_url;
         
-        // 默认并排显示
-        imageLayer.style.display = 'none';
+        // 默认叠加显示
+        imageLayer.style.display = 'block';
         canvasWrapper.classList.remove('side-by-side-mode');
-        resultSection.style.display = 'block';
+        resultSection.style.display = 'none';
         resultImg.src = data.image_url;
         
         // 存储图片URL供下载使用
@@ -1838,66 +1839,118 @@ Draw a modern Chinese child in this exact pose. Natural human form, no visible s
     function generateNaturalPoseDescription() {
       const parts = [];
       
-      // 左臂分析（蓝色）
-      const leftWristY = joints.leftWrist.y;
-      const leftShoulderY = joints.leftShoulder.y;
-      const leftWristX = joints.leftWrist.x;
+      // 左臂分析（蓝色） - 分别描述上臂和下臂
       const leftShoulderX = joints.leftShoulder.x;
+      const leftShoulderY = joints.leftShoulder.y;
+      const leftElbowX = joints.leftElbow.x;
+      const leftElbowY = joints.leftElbow.y;
+      const leftWristX = joints.leftWrist.x;
+      const leftWristY = joints.leftWrist.y;
       
-      if (leftWristY < leftShoulderY - 80) {
-        parts.push('left arm (BLUE) raised high above head');
-      } else if (leftWristY < leftShoulderY - 20) {
-        parts.push('left arm (BLUE) raised upward');
-      } else if (leftWristY > leftShoulderY + 80) {
-        parts.push('left arm (BLUE) hanging down naturally');
+      // 左上臂（肩到肘）
+      const leftUpperArmYDiff = leftShoulderY - leftElbowY;
+      const leftUpperArmXDiff = Math.abs(leftElbowX - leftShoulderX);
+      let leftUpperArmDesc = '';
+      
+      if (leftUpperArmYDiff > 60) {
+        const angle = Math.round(Math.atan2(leftUpperArmYDiff, leftUpperArmXDiff) * 180 / Math.PI);
+        leftUpperArmDesc = `upper arm raised ${angle}°`;
+      } else if (leftUpperArmYDiff < -60) {
+        leftUpperArmDesc = 'upper arm down';
+      } else if (leftUpperArmXDiff > 80) {
+        leftUpperArmDesc = 'upper arm horizontal (90°)';
       } else {
-        // 水平判断
-        if (Math.abs(leftWristX - leftShoulderX) > 100) {
-          parts.push('left arm (BLUE) extended horizontally to the side');
-        } else {
-          parts.push('left arm (BLUE) at side');
-        }
+        leftUpperArmDesc = 'upper arm at side';
       }
       
-      // 右臂分析（橙红色）
-      const rightWristY = joints.rightWrist.y;
-      const rightShoulderY = joints.rightShoulder.y;
-      const rightWristX = joints.rightWrist.x;
+      // 左下臂（肘到腕）
+      const leftForearmYDiff = leftElbowY - leftWristY;
+      const leftForearmXDiff = Math.abs(leftWristX - leftElbowX);
+      let leftForearmDesc = '';
+      
+      if (leftForearmYDiff > 60) {
+        const angle = Math.round(Math.atan2(leftForearmYDiff, leftForearmXDiff) * 180 / Math.PI);
+        leftForearmDesc = `forearm raised ${angle}°`;
+      } else if (leftForearmYDiff < -60) {
+        leftForearmDesc = 'forearm down';
+      } else if (leftForearmXDiff > 60) {
+        leftForearmDesc = 'forearm extended';
+      } else {
+        leftForearmDesc = 'forearm bent';
+      }
+      
+      parts.push(`left arm (BLUE): ${leftUpperArmDesc}, ${leftForearmDesc}`);
+      
+      // 右臂分析（橙红色） - 分别描述上臂和下臂
       const rightShoulderX = joints.rightShoulder.x;
+      const rightShoulderY = joints.rightShoulder.y;
+      const rightElbowX = joints.rightElbow.x;
+      const rightElbowY = joints.rightElbow.y;
+      const rightWristX = joints.rightWrist.x;
+      const rightWristY = joints.rightWrist.y;
       
-      if (rightWristY < rightShoulderY - 80) {
-        parts.push('right arm (ORANGE) raised high above head');
-      } else if (rightWristY < rightShoulderY - 20) {
-        parts.push('right arm (ORANGE) raised upward');
-      } else if (rightWristY > rightShoulderY + 80) {
-        parts.push('right arm (ORANGE) hanging down naturally');
+      // 右上臂（肩到肘）
+      const rightUpperArmYDiff = rightShoulderY - rightElbowY;
+      const rightUpperArmXDiff = Math.abs(rightElbowX - rightShoulderX);
+      let rightUpperArmDesc = '';
+      
+      if (rightUpperArmYDiff > 60) {
+        const angle = Math.round(Math.atan2(rightUpperArmYDiff, rightUpperArmXDiff) * 180 / Math.PI);
+        rightUpperArmDesc = `upper arm raised ${angle}°`;
+      } else if (rightUpperArmYDiff < -60) {
+        rightUpperArmDesc = 'upper arm down';
+      } else if (rightUpperArmXDiff > 80) {
+        rightUpperArmDesc = 'upper arm horizontal (90°)';
       } else {
-        // 水平判断
-        if (Math.abs(rightWristX - rightShoulderX) > 100) {
-          parts.push('right arm (ORANGE) extended horizontally to the side');
-        } else {
-          parts.push('right arm (ORANGE) at side');
-        }
+        rightUpperArmDesc = 'upper arm at side';
       }
       
-      // 腿部分析
+      // 右下臂（肘到腕）
+      const rightForearmYDiff = rightElbowY - rightWristY;
+      const rightForearmXDiff = Math.abs(rightWristX - rightElbowX);
+      let rightForearmDesc = '';
+      
+      if (rightForearmYDiff > 60) {
+        const angle = Math.round(Math.atan2(rightForearmYDiff, rightForearmXDiff) * 180 / Math.PI);
+        rightForearmDesc = `forearm raised ${angle}°`;
+      } else if (rightForearmYDiff < -60) {
+        rightForearmDesc = 'forearm down';
+      } else if (rightForearmXDiff > 60) {
+        rightForearmDesc = 'forearm extended';
+      } else {
+        rightForearmDesc = 'forearm bent';
+      }
+      
+      parts.push(`right arm (ORANGE): ${rightUpperArmDesc}, ${rightForearmDesc}`);
+      
+      // 腿部分析 - 分别描述左右腿
       const leftKneeY = joints.leftKnee.y;
       const leftAnkleY = joints.leftAnkle.y;
+      const leftHipY = joints.leftHip.y;
       const rightKneeY = joints.rightKnee.y;
       const rightAnkleY = joints.rightAnkle.y;
+      const rightHipY = joints.rightHip.y;
       
-      // 判断腿是否弯曲或抬起
-      const leftKneeBend = leftKneeY < leftAnkleY - 50;
-      const rightKneeBend = rightKneeY < rightAnkleY - 50;
+      // 计算膝盖弯曲程度
+      const leftKneeBend = leftAnkleY - leftKneeY;
+      const rightKneeBend = rightAnkleY - rightKneeY;
       
-      if (leftKneeBend && rightKneeBend) {
-        parts.push('both legs bent');
-      } else if (leftKneeBend) {
-        parts.push('left leg bent or raised');
-      } else if (rightKneeBend) {
-        parts.push('right leg bent or raised');
+      // 左腿描述（紫色）
+      if (leftKneeBend < 50) {
+        parts.push('left leg (PURPLE) raised or bent sharply');
+      } else if (leftKneeBend < 100) {
+        parts.push('left leg (PURPLE) slightly bent at knee');
       } else {
-        parts.push('legs standing straight');
+        parts.push('left leg (PURPLE) standing straight');
+      }
+      
+      // 右腿描述（红色）
+      if (rightKneeBend < 50) {
+        parts.push('right leg (RED) raised or bent sharply');
+      } else if (rightKneeBend < 100) {
+        parts.push('right leg (RED) slightly bent at knee');
+      } else {
+        parts.push('right leg (RED) standing straight');
       }
       
       return parts.join(', ');

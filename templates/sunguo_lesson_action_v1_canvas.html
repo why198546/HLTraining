@@ -6,22 +6,37 @@
   <title>第 2 节课：动作（绘图板方案） - 松果课堂</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/image-viewer.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     .action-v1-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
       margin-bottom: 3rem;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
+    /* 提示词部分 - 置顶 */
+    .prompt-section-v1 {
+      order: -1;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 绘图区域全宽 */
     .canvas-section {
       background: white;
       border-radius: 12px;
       padding: 1.5rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      width: 100%;
     }
 
     .canvas-header {
@@ -34,21 +49,62 @@
       gap: 0.5rem;
     }
 
+    /* 画布容器 - 支持叠加显示 */
+    .canvas-wrapper {
+      position: relative;
+      width: 512px;
+      height: 768px;
+      margin: 0 auto;
+      background: #f0f0f0;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
     .drawing-canvas {
       border: 2px dashed #00704A;
       border-radius: 8px;
-      background: linear-gradient(135deg, #f0f9f6 0%, #e8f5f1 100%);
+      background: transparent;
       cursor: crosshair;
       display: block;
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
+      width: 512px;
+      height: 768px;
       transition: all 0.3s ease;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 5;
+      box-sizing: border-box;
     }
 
     .drawing-canvas:hover {
       border-color: #008C54;
       box-shadow: 0 4px 12px rgba(0, 112, 74, 0.15);
+    }
+
+    /* 生成图片层 - 叠加在骨骼图上方作为参考 */
+    .canvas-generated-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 1;
+      transition: all 0.3s ease;
+      z-index: 10;
+      pointer-events: none;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .canvas-generated-layer img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 512px;
+      height: 768px;
+      object-fit: fill;
+      display: block;
+      opacity: 0.9;
     }
 
     .canvas-tools {
@@ -130,37 +186,66 @@
     .stick-figure-panel {
       background: #f9f9f9;
       border-radius: 8px;
-      padding: 1rem;
-      margin-top: 1rem;
+      padding: 0.8rem;
+      margin-top: 0.8rem;
     }
 
     .stick-figure-preset {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #666;
-      margin-bottom: 0.8rem;
+      margin-bottom: 0.4rem;
       font-weight: 500;
     }
 
-    .preset-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .preset-gestures {
+      display: flex;
       gap: 0.5rem;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      margin-top: 0.5rem;
+      overflow-x: auto;
     }
 
-    .preset-btn {
-      padding: 0.6rem 0.8rem;
+    .gesture-btn {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      border: 1px solid #00704A;
       background: white;
-      border: 1px solid #ddd;
+      color: #00704A;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.85rem;
-      text-align: center;
       transition: all 0.2s ease;
+      font-weight: 500;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
     }
 
-    .preset-btn:hover {
-      border-color: #00704A;
-      background: #f0f9f6;
+    .gesture-btn:hover {
+      background: #00704A;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .gesture-btn:active {
+      transform: translateY(0);
+    }
+
+    .gesture-btn.selected {
+      background: #00704A;
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 112, 74, 0.3);
+    }
+
+    .gesture-icon {
+      font-size: 1rem;
+    }
+
+    .gesture-name {
+      font-size: 0.85rem;
     }
 
     .prompt-generation-section {
@@ -288,6 +373,49 @@
       color: #00704A;
     }
 
+    /* 结果显示区域 */
+    .result-display-section {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .result-display-section .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #00704A;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #00704A;
+    }
+
+    .result-image-container {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .result-image-container img {
+      width: 512px;
+      height: 768px;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .result-image-container img:hover {
+      transform: scale(1.02);
+    }
+
     @media (max-width: 1200px) {
       .action-v1-container {
         grid-template-columns: 1fr;
@@ -313,22 +441,17 @@
       100% { transform: rotate(360deg); }
     }
 
-    .preset-gestures {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-      margin-top: 0.8rem;
-    }
-
     .gesture-btn {
-      padding: 0.8rem;
+      padding: 0.4rem 0.8rem;
       background: white;
-      border: 1px solid #ddd;
-      border-radius: 6px;
+      border: 1px solid #00704A;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       text-align: center;
       transition: all 0.2s ease;
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
 
     .gesture-btn:hover {
@@ -360,7 +483,30 @@
       <p class="classroom-subtitle">画一个火柴人动作，让AI把它变成精美的角色</p>
 
       <div class="action-v1-container">
-        <!-- 左侧：绘图区域 -->
+        <!-- 提示词部分 - 最上面 -->
+        <div class="prompt-section-v1">
+          <div class="generation-step">
+            <div class="generation-step-title">
+              <span class="step-number">1</span>
+              完善提示词
+            </div>
+            <textarea class="prompt-textarea" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
+例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
+例如：年轻女孩，长发，穿粉色连衣裙
+（系统会自动生成素描风格的现代中国人形象，仅显示人物，无骨骼图）"></textarea>
+            
+            <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #666;">
+              <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由画板控制，风格自动为素描<br>
+              <strong>⚠️ 重要：</strong>生成的图片<strong>仅显示人物形象</strong>，不会有任何骨骼图、辅助线或节点标记
+            </div>
+          </div>
+
+          <button class="generate-btn" id="generateBtn">
+            <i class="fas fa-wand-magic-sparkles"></i> 生成图片
+          </button>
+        </div>
+
+        <!-- 绘图区域 -->
         <div class="canvas-section">
           <div class="canvas-header">
             <i class="fas fa-paint-brush"></i>
@@ -371,7 +517,13 @@
             <strong>💡 怎么画：</strong>用鼠标在画布上画出一个简单的火柴人，显示要表达的动作。可以重新开始或用预设动作。
           </div>
 
-          <canvas id="drawingCanvas" class="drawing-canvas" width="400" height="500"></canvas>
+          <div class="canvas-wrapper">
+            <!-- 生成图片层容器 - 必须在canvas之前以确保z-index生效 -->
+            <div class="canvas-generated-layer" id="canvasGeneratedLayer" style="display: none;">
+              <img id="canvasGeneratedImg" src="" alt="生成的图片">
+            </div>
+            <canvas id="drawingCanvas" class="drawing-canvas" width="512" height="768"></canvas>
+          </div>
 
           <div class="canvas-tools">
             <div>
@@ -395,80 +547,30 @@
             </div>
 
             <div class="stick-figure-panel">
-              <div class="stick-figure-preset">🔧 快速预设（选一个开始）：</div>
+              <div class="stick-figure-preset">🔧 快速预设：</div>
               <div class="preset-gestures">
-                <button class="gesture-btn" data-action="running">
-                  <div class="gesture-icon">🏃</div>
-                  <div class="gesture-name">跑步</div>
-                </button>
-                <button class="gesture-btn" data-action="jumping">
-                  <div class="gesture-icon">🤸</div>
-                  <div class="gesture-name">跳跃</div>
-                </button>
-                <button class="gesture-btn" data-action="waving">
-                  <div class="gesture-icon">👋</div>
-                  <div class="gesture-name">挥手</div>
-                </button>
-                <button class="gesture-btn" data-action="dancing">
-                  <div class="gesture-icon">💃</div>
-                  <div class="gesture-name">跳舞</div>
-                </button>
-                <button class="gesture-btn" data-action="sitting">
-                  <div class="gesture-icon">🪑</div>
-                  <div class="gesture-name">坐着</div>
-                </button>
-                <button class="gesture-btn" data-action="thinking">
-                  <div class="gesture-icon">🤔</div>
-                  <div class="gesture-name">思考</div>
-                </button>
+                <button class="gesture-btn" data-action="running">🏃 跑步</button>
+                <button class="gesture-btn" data-action="jumping">🤸 跳跃</button>
+                <button class="gesture-btn" data-action="waving">👋 挥手</button>
+                <button class="gesture-btn" data-action="dancing">💃 跳舞</button>
+                <button class="gesture-btn" data-action="sitting">🪑 坐着</button>
+                <button class="gesture-btn" data-action="thinking">🤔 思考</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 右侧：提示词生成区域 -->
-        <div class="prompt-generation-section">
-          <div class="generation-step">
-            <div class="generation-step-title">
-              <span class="step-number">1</span>
-              选择动作关键词
-            </div>
-            <div class="action-keywords" id="actionKeywords">
-              <button class="keyword-btn" data-keyword="跑步">跑步</button>
-              <button class="keyword-btn" data-keyword="跳跃">跳跃</button>
-              <button class="keyword-btn" data-keyword="挥手">挥手</button>
-              <button class="keyword-btn" data-keyword="跳舞">跳舞</button>
-              <button class="keyword-btn" data-keyword="坐着">坐着</button>
-              <button class="keyword-btn" data-keyword="躺着">躺着</button>
-              <button class="keyword-btn" data-keyword="走路">走路</button>
-              <button class="keyword-btn" data-keyword="转身">转身</button>
-              <button class="keyword-btn" data-keyword="拉伸">拉伸</button>
-              <button class="keyword-btn" data-keyword="抬头">抬头</button>
-              <button class="keyword-btn" data-keyword="低头">低头</button>
-              <button class="keyword-btn" data-keyword="竖起大拇指">竖起大拇指</button>
-            </div>
+        <!-- 独立的结果显示区域 -->
+        <div class="result-display-section" id="resultDisplaySection" style="display: none;">
+          <div class="section-header">
+            <i class="fas fa-image"></i>
+            生成结果
           </div>
-
-          <div class="generation-step">
-            <div class="generation-step-title">
-              <span class="step-number">2</span>
-              完善提示词
-            </div>
-            <textarea class="prompt-textarea" id="promptText" placeholder="系统将基于你的绘图和选择的动作生成提示词。你也可以手动编辑，添加更多细节..."></textarea>
-            
-            <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #666;">
-              <strong>✨ 提示：</strong>可以在提示词中添加：表情（开心/专注）、身体部位细节（手臂/腿部）、背景（操场/教室）等
-            </div>
+          <div class="result-image-container">
+            <img id="resultImg" src="" alt="生成的图片" class="result-img-clickable" style="width: 512px; height: 768px; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease;">>
           </div>
-
-          <button class="generate-btn" id="generateBtn">
-            <i class="fas fa-wand-magic-sparkles"></i> 生成图片
-          </button>
         </div>
       </div>
-
-      <!-- 生成结果 -->
-      <div class="classroom-result" id="classroomResult"></div>
 
       <!-- 参考示例 -->
       <div class="lesson-examples" aria-label="参考示例">
@@ -491,6 +593,18 @@
     </div>
   </main>
 
+  <!-- 全屏图片查看器 -->
+  <div id="image-viewer" class="image-viewer">
+    <div class="image-viewer-overlay"></div>
+    <button class="image-viewer-close">×</button>
+    <button class="image-viewer-print" title="打印图片">🖨️</button>
+    <button class="image-viewer-prev">‹</button>
+    <button class="image-viewer-next">›</button>
+    <div class="image-viewer-counter"></div>
+    <img class="image-viewer-img" src="" alt="" />
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
   <script>
     // Canvas 绘图功能
     const canvas = document.getElementById('drawingCanvas');
@@ -504,8 +618,8 @@
 
     // 初始化canvas
     function initCanvas() {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // 清除canvas，使用透明背景而不是白色
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
@@ -578,275 +692,229 @@
       });
     });
 
-    // 绘制预设火柴人
+    // 绘制预设骨骼（改用OpenPose而不是火柴人）
     function drawPresetStickFigure(action) {
-      initCanvas();
-      ctx.strokeStyle = '#000000';
-      ctx.fillStyle = '#000000';
+      drawOpenPoseSkeleton(action);
+    }
 
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+    // OpenPose 17个关键点的定义和连接关系
+    const OPENPOSE_SKELETON = [
+      { name: '鼻子', color: '#FF0000' },         // 0
+      { name: '左眼', color: '#00FF00' },         // 1
+      { name: '右眼', color: '#00FF00' },         // 2
+      { name: '左耳', color: '#FF00FF' },         // 3
+      { name: '右耳', color: '#FF00FF' },         // 4
+      { name: '左肩', color: '#FF6600' },         // 5
+      { name: '右肩', color: '#FF6600' },         // 6
+      { name: '左肘', color: '#FFFF00' },         // 7
+      { name: '右肘', color: '#FFFF00' },         // 8
+      { name: '左腕', color: '#00FFFF' },         // 9
+      { name: '右腕', color: '#00FFFF' },         // 10
+      { name: '左髋', color: '#0099FF' },         // 11
+      { name: '右髋', color: '#0099FF' },         // 12
+      { name: '左膝', color: '#FF00FF' },         // 13
+      { name: '右膝', color: '#FF00FF' },         // 14
+      { name: '左踝', color: '#FF9900' },         // 15
+      { name: '右踝', color: '#FF9900' }          // 16
+    ];
 
-      // 根据不同动作绘制不同的火柴人
-      switch(action) {
-        case 'running':
-          drawRunningStickFigure(centerX, centerY);
-          updatePromptForAction('跑步');
-          break;
-        case 'jumping':
-          drawJumpingStickFigure(centerX, centerY);
-          updatePromptForAction('跳跃');
-          break;
-        case 'waving':
-          drawWavingStickFigure(centerX, centerY);
-          updatePromptForAction('挥手');
-          break;
-        case 'dancing':
-          drawDancingStickFigure(centerX, centerY);
-          updatePromptForAction('跳舞');
-          break;
-        case 'sitting':
-          drawSittingStickFigure(centerX, centerY);
-          updatePromptForAction('坐着');
-          break;
-        case 'thinking':
-          drawThinkingStickFigure(centerX, centerY);
-          updatePromptForAction('思考');
-          break;
+    // OpenPose骨骼连接（bone pairs）
+    const BONE_PAIRS = [
+      [0, 1], [0, 2], [1, 3], [2, 4],           // 头部
+      [5, 6], [5, 7], [6, 8], [7, 9], [8, 10], // 手臂
+      [5, 11], [6, 12],                          // 躯干到髋
+      [11, 12], [11, 13], [12, 14],             // 躯干
+      [13, 15], [14, 16]                        // 腿部
+    ];
+
+    // 为不同动作定义OpenPose骨骼关键点坐标
+    const openPosePoses = {
+      'running': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx, cy - 150],           // 鼻子
+          [cx - 12, cy - 165],      // 左眼
+          [cx + 12, cy - 165],      // 右眼
+          [cx - 28, cy - 165],      // 左耳
+          [cx + 28, cy - 165],      // 右耳
+          [cx - 50, cy - 80],       // 左肩
+          [cx + 50, cy - 80],       // 右肩
+          [cx - 90, cy - 40],       // 左肘
+          [cx + 70, cy - 60],       // 右肘
+          [cx - 130, cy - 20],      // 左腕
+          [cx + 90, cy - 40],       // 右腕
+          [cx - 40, cy + 20],       // 左髋
+          [cx + 40, cy + 20],       // 右髋
+          [cx - 50, cy + 80],       // 左膝
+          [cx + 70, cy + 50],       // 右膝
+          [cx - 60, cy + 150],      // 左踝
+          [cx + 80, cy + 130]       // 右踝
+        ];
+      },
+      'jumping': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx, cy - 180],           // 鼻子
+          [cx - 12, cy - 195],      // 左眼
+          [cx + 12, cy - 195],      // 右眼
+          [cx - 28, cy - 195],      // 左耳
+          [cx + 28, cy - 195],      // 右耳
+          [cx - 50, cy - 100],      // 左肩
+          [cx + 50, cy - 100],      // 右肩
+          [cx - 85, cy - 130],      // 左肘
+          [cx + 85, cy - 130],      // 右肘
+          [cx - 120, cy - 160],     // 左腕
+          [cx + 120, cy - 160],     // 右腕
+          [cx - 35, cy - 20],       // 左髋
+          [cx + 35, cy - 20],       // 右髋
+          [cx - 40, cy + 50],       // 左膝
+          [cx + 40, cy + 50],       // 右膝
+          [cx - 45, cy + 120],      // 左踝
+          [cx + 45, cy + 120]       // 右踝
+        ];
+      },
+      'waving': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx, cy - 150],           // 鼻子
+          [cx - 12, cy - 165],      // 左眼
+          [cx + 12, cy - 165],      // 右眼
+          [cx - 28, cy - 165],      // 左耳
+          [cx + 28, cy - 165],      // 右耳
+          [cx - 50, cy - 80],       // 左肩
+          [cx + 50, cy - 80],       // 右肩
+          [cx - 80, cy - 50],       // 左肘
+          [cx + 95, cy - 120],      // 右肘
+          [cx - 110, cy - 60],      // 左腕
+          [cx + 135, cy - 150],     // 右腕
+          [cx - 40, cy + 20],       // 左髋
+          [cx + 40, cy + 20],       // 右髋
+          [cx - 45, cy + 80],       // 左膝
+          [cx + 45, cy + 80],       // 右膝
+          [cx - 50, cy + 150],      // 左踝
+          [cx + 50, cy + 150]       // 右踝
+        ];
+      },
+      'dancing': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx + 15, cy - 150],      // 鼻子
+          [cx + 3, cy - 165],       // 左眼
+          [cx + 27, cy - 165],      // 右眼
+          [cx - 13, cy - 165],      // 左耳
+          [cx + 43, cy - 165],      // 右耳
+          [cx - 35, cy - 80],       // 左肩
+          [cx + 65, cy - 80],       // 右肩
+          [cx - 75, cy - 20],       // 左肘
+          [cx + 105, cy - 30],      // 右肘
+          [cx - 110, cy + 10],      // 左腕
+          [cx + 140, cy - 10],      // 右腕
+          [cx - 25, cy + 30],       // 左髋
+          [cx + 55, cy + 20],       // 右髋
+          [cx - 35, cy + 100],      // 左膝
+          [cx + 70, cy + 80],       // 右膝
+          [cx - 40, cy + 160],      // 左踝
+          [cx + 80, cy + 140]       // 右踝
+        ];
+      },
+      'sitting': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx, cy - 130],           // 鼻子
+          [cx - 12, cy - 145],      // 左眼
+          [cx + 12, cy - 145],      // 右眼
+          [cx - 28, cy - 145],      // 左耳
+          [cx + 28, cy - 145],      // 右耳
+          [cx - 50, cy - 60],       // 左肩
+          [cx + 50, cy - 60],       // 右肩
+          [cx - 85, cy - 20],       // 左肘
+          [cx + 85, cy - 20],       // 右肘
+          [cx - 110, cy + 10],      // 左腕
+          [cx + 110, cy + 10],      // 右腕
+          [cx - 45, cy + 40],       // 左髋
+          [cx + 45, cy + 40],       // 右髋
+          [cx - 70, cy + 100],      // 左膝
+          [cx + 70, cy + 100],      // 右膝
+          [cx - 80, cy + 140],      // 左踝
+          [cx + 80, cy + 140]       // 右踝
+        ];
+      },
+      'thinking': function() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        return [
+          [cx, cy - 150],           // 鼻子
+          [cx - 12, cy - 165],      // 左眼
+          [cx + 12, cy - 165],      // 右眼
+          [cx - 28, cy - 165],      // 左耳
+          [cx + 28, cy - 165],      // 右耳
+          [cx - 50, cy - 80],       // 左肩
+          [cx + 50, cy - 80],       // 右肩
+          [cx - 80, cy - 40],       // 左肘
+          [cx + 75, cy - 35],       // 右肘
+          [cx - 100, cy - 70],      // 左腕
+          [cx + 85, cy - 65],       // 右腕
+          [cx - 40, cy + 20],       // 左髋
+          [cx + 40, cy + 20],       // 右髋
+          [cx - 45, cy + 80],       // 左膝
+          [cx + 45, cy + 80],       // 右膝
+          [cx - 50, cy + 150],      // 左踝
+          [cx + 50, cy + 150]       // 右踝
+        ];
       }
-    }
+    };
 
-    // 各种火柴人绘制函数
-    function drawRunningStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 60, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体
-      ctx.beginPath();
-      ctx.moveTo(x, y - 45);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      
-      // 左臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x - 30, y - 20);
-      ctx.stroke();
-      
-      // 右臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x + 20, y - 40);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 25, y + 40);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 15, y + 45);
-      ctx.stroke();
-    }
+    // 绘制OpenPose骨骼
+    function drawOpenPoseSkeleton(action) {
+      initCanvas();
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
 
-    function drawJumpingStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 70, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体
-      ctx.beginPath();
-      ctx.moveTo(x, y - 55);
-      ctx.lineTo(x, y - 10);
-      ctx.stroke();
-      
-      // 左臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 40);
-      ctx.lineTo(x - 35, y - 65);
-      ctx.stroke();
-      
-      // 右臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 40);
-      ctx.lineTo(x + 35, y - 65);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x, y - 10);
-      ctx.lineTo(x - 20, y + 20);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x, y - 10);
-      ctx.lineTo(x + 20, y + 20);
-      ctx.stroke();
-    }
+      // 获取这个动作的关键点坐标
+      const poseFunc = openPosePoses[action];
+      if (!poseFunc) return;
+      const keypoints = poseFunc();
 
-    function drawWavingStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 60, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体
-      ctx.beginPath();
-      ctx.moveTo(x, y - 45);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      
-      // 左臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x - 25, y - 45);
-      ctx.stroke();
-      
-      // 右臂（挥动状态）
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x + 20, y - 60);
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.moveTo(x + 20, y - 60);
-      ctx.lineTo(x + 35, y - 55);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 15, y + 35);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 15, y + 35);
-      ctx.stroke();
-    }
+      // 绘制骨骼连接（线条）
+      ctx.strokeStyle = '#0066FF';
+      ctx.globalAlpha = 0.8;
+      BONE_PAIRS.forEach(([from, to]) => {
+        const [x1, y1] = keypoints[from];
+        const [x2, y2] = keypoints[to];
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      });
 
-    function drawDancingStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 60, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体（倾斜）
-      ctx.beginPath();
-      ctx.moveTo(x, y - 45);
-      ctx.lineTo(x + 10, y);
-      ctx.stroke();
-      
-      // 左臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x - 35, y - 40);
-      ctx.stroke();
-      
-      // 右臂
-      ctx.beginPath();
-      ctx.moveTo(x + 10, y - 25);
-      ctx.lineTo(x + 40, y - 35);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x + 10, y);
-      ctx.lineTo(x - 20, y + 45);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x + 10, y);
-      ctx.lineTo(x + 30, y + 40);
-      ctx.stroke();
-    }
+      // 绘制关键点（圆点）
+      ctx.globalAlpha = 1;
+      keypoints.forEach((point, idx) => {
+        const [x, y] = point;
+        const color = OPENPOSE_SKELETON[idx].color;
+        
+        // 绘制关键点圆圈
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 白色边框
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.stroke();
+      });
 
-    function drawSittingStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 60, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体（弯曲）
-      ctx.beginPath();
-      ctx.moveTo(x, y - 45);
-      ctx.lineTo(x, y - 20);
-      ctx.stroke();
-      
-      // 左臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x - 20, y - 30);
-      ctx.stroke();
-      
-      // 右臂
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x + 20, y - 30);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x, y - 20);
-      ctx.lineTo(x - 25, y + 10);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x, y - 20);
-      ctx.lineTo(x + 25, y + 10);
-      ctx.stroke();
-    }
-
-    function drawThinkingStickFigure(x, y) {
-      // 头
-      ctx.beginPath();
-      ctx.arc(x, y - 60, 15, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 思考的气泡
-      ctx.beginPath();
-      ctx.arc(x + 35, y - 80, 8, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // 身体
-      ctx.beginPath();
-      ctx.moveTo(x, y - 45);
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      
-      // 左臂（托脸）
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x - 20, y - 50);
-      ctx.stroke();
-      
-      // 右臂（托脸）
-      ctx.beginPath();
-      ctx.moveTo(x, y - 35);
-      ctx.lineTo(x + 15, y - 55);
-      ctx.stroke();
-      
-      // 左腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 15, y + 35);
-      ctx.stroke();
-      
-      // 右腿
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x + 15, y + 35);
-      ctx.stroke();
+      // 更新动作提示词
+      updatePromptForAction(action);
     }
 
     // 关键词按钮
@@ -866,24 +934,50 @@
     });
 
     // 更新提示词（基于动作）
+    // 快速预设的详细提示词
+    const presetPrompts = {
+      'running': '一个10岁的男孩，短发，穿蓝色运动服和白色运动鞋，在操场上奔跑，身体前倾，双臂有力摆动，左右腿交替抬起，充满动感',
+      'jumping': '一个12岁的女孩，马尾辫，穿粉色T恤和牛仔短裤，跳跃在空中，双手高举，身体舒展，双脚离地，表情兴奋喜悦',
+      'waving': '一个11岁的男孩，齐刘海，穿白色衬衫和黑色长裤，右手高高举起挥手打招呼，脸上洋溢着灿烂笑容，姿态友好',
+      'dancing': '一个11岁的女孩，长发飘逸，穿紫色舞蹈裙和粉色舞鞋，在舞台上翩翩起舞，身体优雅摆动，双臂舞动如蝴蝶，充满艺术感',
+      'sitting': '一个9岁的男孩，圆寸头，穿橙色卫衣和深蓝色牛仔裤，坐在木椅上，姿态放松自然，双手轻放膝盖，表情平静安详',
+      'thinking': '一个12岁的女孩，齐肩短发，穿浅绿色毛衣和灰色长裤，右手托着下巴，眼神专注深邃，眉头微蹙，陷入深深的思考'
+    };
+
     function updatePromptForAction(action) {
       selectedKeywords.clear();
-      selectedKeywords.add(action);
+      // 将英文action转换为中文用于显示
+      const actionMap = {
+        'running': '跑步',
+        'jumping': '跳跃',
+        'waving': '挥手',
+        'dancing': '跳舞',
+        'sitting': '坐着',
+        'thinking': '思考'
+      };
+      const chineseAction = actionMap[action] || action;
+      selectedKeywords.add(chineseAction);
       document.querySelectorAll('[data-keyword]').forEach(btn => {
-        if (btn.dataset.keyword === action) {
+        if (btn.dataset.keyword === chineseAction) {
           btn.classList.add('selected');
         } else {
           btn.classList.remove('selected');
         }
       });
-      updatePromptText();
+      updatePromptText(true, action);
     }
 
-    // 更新提示词文本
-    function updatePromptText() {
-      const base = '一个小朋友，全身，姿势自然，四肢完整，素描风格，干净背景';
-      const actions = Array.from(selectedKeywords).join('或');
-      const prompt = actions ? `${base}，${actions}` : base;
+    // 更新提示词文本（只显示用户需要输入的部分，系统会自动追加风格等信息）
+    function updatePromptText(isPreset = false, englishAction = null) {
+      let prompt;
+      if (isPreset && englishAction) {
+        // 使用快速预设的详细提示词
+        prompt = presetPrompts[englishAction] || `小朋友，${englishAction}`;
+      } else {
+        // 用户手动选择时的简化提示词
+        const actionKeywords = Array.from(selectedKeywords).join('或');
+        prompt = actionKeywords ? `小朋友，${actionKeywords}` : '小朋友';
+      }
       document.getElementById('promptText').value = prompt;
     }
 
@@ -901,28 +995,33 @@
     // 生成图片函数
     async function generateImage(prompt) {
       const btn = document.getElementById('generateBtn');
-      const resultDiv = document.getElementById('classroomResult');
       
       btn.disabled = true;
       btn.innerHTML = '<span class="loading-spinner"></span> 生成中...';
       
       try {
         const formData = new FormData();
-        
-        // 获取Canvas并转换为Blob
         const canvas = document.getElementById('drawingCanvas');
+        
+        // 异步获取blob并发送请求
         canvas.toBlob((blob) => {
+          if (!blob) {
+            alert('无法获取canvas数据');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 生成图片';
+            return;
+          }
+          
           formData.append('image', blob, 'sketch.png');
           
-          // 完善提示词：添加详细的素描风格、解剖学、光影等要素
+          // 使用已经完善好的提示词（在updatePromptText中已包含风格信息）
           const userPrompt = document.getElementById('promptText').value;
-          const enhancedPrompt = `${userPrompt}, 铅笔素描, 解剖学人体, 白色纸质背景, 黑白灰色调, 精细线条, 深色阴影, 专业美术风格, 高清细节`;
-          formData.append('prompt', enhancedPrompt);
+          formData.append('prompt', userPrompt);
           formData.append('style', 'none');
-          formData.append('aspect_ratio', '512x512');
+          formData.append('aspect_ratio', '512x768');
           formData.append('lesson', 'action');
           
-          sendImageRequest(formData, prompt, btn, resultDiv);
+          sendImageRequest(formData, btn);
         }, 'image/png');
       } catch (error) {
         alert('错误：' + error.message);
@@ -931,12 +1030,8 @@
       }
     }
 
-    async function sendImageRequest(formData, originalPrompt, btn, resultDiv) {
+    async function sendImageRequest(formData, btn) {
       try {
-        // 先获取Canvas的图片URL用于对比显示
-        const canvas = document.getElementById('drawingCanvas');
-        const sketchImageUrl = canvas.toDataURL('image/png');
-        
         const response = await fetch('/api/generate_image', {
           method: 'POST',
           body: formData
@@ -948,35 +1043,76 @@
 
         const data = await response.json();
         
-        // 显示结果：火柴人原图 vs AI生成图
-        resultDiv.innerHTML = `
-          <div class="result-card" style="margin-top: 3rem;">
-            <div style="background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-              <h3 style="margin-top: 0; color: #1a1a1a;">✨ 生成结果对比</h3>
-              
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0;">
-                <div>
-                  <h4 style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">📝 你绘制的火柴人</h4>
-                  <img src="${sketchImageUrl}" alt="火柴人原图" style="max-width: 100%; border: 2px solid #ddd; border-radius: 8px; background: white;">
-                </div>
-                <div>
-                  <h4 style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; text-align: center;">🎨 AI生成的图片</h4>
-                  <img src="${data.image_url}" alt="生成的图片" style="max-width: 100%; border: 2px solid #00704A; border-radius: 8px;">
-                </div>
-              </div>
-              
-              <p style="color: #666; word-break: break-word; margin-top: 1.5rem;"><strong>提示词：</strong> ${originalPrompt}</p>
-              <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button onclick="downloadImage('${data.image_url}')" style="padding: 0.6rem 1.2rem; background: #00704A; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                  <i class="fas fa-download"></i> 下载生成图片
-                </button>
-                <button onclick="downloadImage('${sketchImageUrl}', 'sketch.png')" style="padding: 0.6rem 1.2rem; background: #666; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                  <i class="fas fa-download"></i> 下载火柴人
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
+        // 显示结果
+        const canvasLayer = document.getElementById('canvasGeneratedLayer');
+        const canvasGeneratedImg = document.getElementById('canvasGeneratedImg');
+        const resultSection = document.getElementById('resultDisplaySection');
+        const resultImg = document.getElementById('resultImg');
+        
+        // 存储图片URL供下载使用
+        window.currentGeneratedImageUrl = data.image_url;
+        
+        // 设置生成图片的源，并在加载完成后显示
+        canvasGeneratedImg.onload = function() {
+          // 使用toggleCanvasView确保所有样式设置一致
+          setTimeout(() => {
+            const canvasLayer = document.getElementById('canvasGeneratedLayer');
+            const resultSection = document.getElementById('resultDisplaySection');
+            canvasLayer.style.display = 'block';
+            resultSection.style.display = 'none';
+            // 强制重排
+            void canvasLayer.offsetHeight;
+          }, 0);
+        };
+        canvasGeneratedImg.src = data.image_url;
+        resultImg.src = data.image_url;
+        
+        // 设置图片点击全屏查看
+        if (window.ImageViewer) {
+          canvasGeneratedImg.style.cursor = 'pointer';
+          canvasGeneratedImg.onclick = function() {
+            window.ImageViewer.open(0);
+          };
+          
+          resultImg.style.cursor = 'pointer';
+          resultImg.onclick = function() {
+            window.ImageViewer.open(0);
+          };
+          
+          // 初始化图片查看器
+          window.ImageViewer.init('.canvas-generated-layer img, #resultImg');
+        }
+        
+        // 添加切换和下载按钮（如果不存在）
+        let controlDiv = document.getElementById('canvasControlDiv');
+        if (!controlDiv) {
+          const canvasSection = document.querySelector('.canvas-section');
+          controlDiv = document.createElement('div');
+          controlDiv.id = 'canvasControlDiv';
+          controlDiv.style.cssText = 'display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;';
+          controlDiv.innerHTML = `
+            <button class="view-toggle-btn active" onclick="toggleCanvasView('overlay')" id="overlayBtn" style="padding: 0.5rem 1rem; background: #6f42c1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-layer-group"></i> 叠加显示
+            </button>
+            <button class="view-toggle-btn" onclick="toggleCanvasView('sideBySide')" id="sideBySideBtn" style="padding: 0.5rem 1rem; background: #999; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-columns"></i> 并排显示
+            </button>
+            <button onclick="downloadGeneratedImage()" style="padding: 0.5rem 1rem; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-download"></i> 下载生成图片
+            </button>
+            <button onclick="downloadSketchImage()" style="padding: 0.5rem 1rem; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-download"></i> 下载火柴人
+            </button>
+          `;
+          canvasSection.appendChild(controlDiv);
+        } else {
+          // 重置按钮状态为叠加显示
+          document.getElementById('overlayBtn').classList.add('active');
+          document.getElementById('overlayBtn').style.background = '#6f42c1';
+          document.getElementById('sideBySideBtn').classList.remove('active');
+          document.getElementById('sideBySideBtn').style.background = '#999';
+        }
+        
       } catch (error) {
         alert('错误：' + error.message);
       } finally {
@@ -985,11 +1121,75 @@
       }
     }
 
-    function downloadImage(url) {
+    // 切换显示模式（叠加或并排）
+    function toggleCanvasView(mode) {
+      const canvasLayer = document.getElementById('canvasGeneratedLayer');
+      const resultSection = document.getElementById('resultDisplaySection');
+      const resultImg = document.getElementById('resultImg');
+      const canvasGeneratedImg = document.getElementById('canvasGeneratedImg');
+      const overlayBtn = document.getElementById('overlayBtn');
+      const sideBySideBtn = document.getElementById('sideBySideBtn');
+      
+      if (mode === 'overlay') {
+        // 叠加显示：在canvas容器内显示，作为参考背景
+        canvasLayer.style.display = 'block';
+        resultSection.style.display = 'none';
+        
+        // 更新按钮状态
+        overlayBtn.classList.add('active');
+        overlayBtn.style.background = '#6f42c1';
+        sideBySideBtn.classList.remove('active');
+        sideBySideBtn.style.background = '#999';
+      } else if (mode === 'sideBySide') {
+        // 并排显示：隐藏canvas内的图片层，在独立结果区域显示
+        canvasLayer.style.display = 'none';
+        resultSection.style.display = 'block';
+        resultImg.src = canvasGeneratedImg.src;
+        
+        // 更新按钮状态
+        sideBySideBtn.classList.add('active');
+        sideBySideBtn.style.background = '#6f42c1';
+        overlayBtn.classList.remove('active');
+        overlayBtn.style.background = '#999';
+      }
+    }
+
+    function downloadImage(url, filename = 'stick_figure_action.png') {
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'stick_figure_action.png';
+      a.download = filename;
       a.click();
+    }
+
+    // 下载生成的图片
+    function downloadGeneratedImage() {
+      if (window.currentGeneratedImageUrl) {
+        downloadImage(window.currentGeneratedImageUrl, 'generated_image.png');
+      } else {
+        alert('请先生成图片');
+      }
+    }
+
+    // 下载火柴人图片
+    function downloadSketchImage() {
+      if (window.currentSketchImageUrl) {
+        downloadImage(window.currentSketchImageUrl, 'sketch.png');
+      } else {
+        alert('请先生成图片');
+      }
+    }
+
+    // 初始化全屏图片查看器
+    if (typeof ImageViewer !== 'undefined') {
+      ImageViewer.init();
+      
+      // 为结果图片添加点击全屏查看功能
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('result-img-clickable')) {
+          ImageViewer.images = [e.target.src];
+          ImageViewer.open(0);
+        }
+      });
     }
 
     // 初始化
