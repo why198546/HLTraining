@@ -1,5 +1,6 @@
 """创作相关API端点 - 支持图片、3D模型、视频生成"""
 import os
+import re
 import uuid
 from datetime import datetime
 
@@ -17,6 +18,36 @@ ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 def allowed_file(filename):
     """检查文件扩展名是否允许"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_IMAGE_EXTENSIONS
+
+# 美术专业术语字典 - 用于日志记录和验证
+# 注意：不再转换成英文，因为Gemini能很好理解中文
+ART_TERMINOLOGY_MAPPING = {
+    r'[一二三四五六七八九]头身比例': True,  # 用于检测，不转换
+    r'[一二三四五六七八九]\.5头身比例': True,
+    r'S型身材': True,
+    r'A字身材': True,
+    r'H字身材': True,
+    r'梨形身材': True,
+    r'沙漏型': True,
+    r'矩形身材': True,
+}
+
+def enhance_art_terminology(prompt: str) -> str:
+    """检测美术专业术语并记录日志
+    不进行转换 - 保留原始中文，因为Gemini能很好理解中文术语
+    """
+    if not prompt:
+        return prompt
+    
+    # 仅用于日志记录
+    for pattern in ART_TERMINOLOGY_MAPPING.keys():
+        if re.search(pattern, prompt, re.IGNORECASE):
+            match = re.search(pattern, prompt, re.IGNORECASE)
+            if match:
+                print(f"   📚 检测到美术术语: {match.group(0)}")
+    
+    # 返回原始提示词，不做任何转换
+    return prompt
 
 def save_uploaded_file(file, session_id=None, file_type='upload'):
     """保存上传的文件到uploads目录"""
@@ -223,6 +254,7 @@ def generate_image():
                 # 嵌入默认风格：素描、白色背景、现代中国人形象
                 enhanced_prompt = (
                     f"Detailed pencil sketch of a modern Chinese person. Pose: {pose_description}. "
+                    f"Use the provided hand-drawn pose as ground truth and match it exactly; all other details follow the prompt. "
                     f"Appearance: {prompt}. "
                     f"Style: fine shading and hatching technique, anatomically accurate. "
                     f"Background: pure white. "
@@ -234,8 +266,9 @@ def generate_image():
                 # 如果没有姿态描述，为action lesson追加系统prompt
                 if lesson_type == 'action':
                     action_system_prompt = (
-                        "Modern Chinese character, pencil sketch style, grayscale, white background, meticulous and beautiful. "
-                        "IMPORTANT: Draw only the person, NO skeleton lines, NO bones, NO reference markers visible."
+                        "Use the hand-drawn pose as ground truth and match it exactly; all other details follow the prompt. "
+                        "Modern Chinese character, full-body shot, colorful manga style, pure white background. "
+                        "IMPORTANT: Draw only the person, no skeleton lines, no bones, no reference markers visible."
                     )
                     prompt = f"{prompt}. {action_system_prompt}"
                     print(f"   追加action系统prompt: {prompt[:200]}...")
@@ -249,20 +282,30 @@ def generate_image():
                     prompt = spatial_guidance + prompt
                     print(f"   使用默认引导语: {prompt[:200]}...")
 
-            # 如果是中文提示词，翻译成英文以获得更好的AI效果
-            original_prompt = prompt
-            if prompt and any('\u4e00' <= c <= '\u9fff' for c in prompt):
-                print(f"🌐 检测到中文提示词，正在翻译为英文...")
-                print(f"   原始中文: {prompt}")
+            # 检测美术专业术语
+            print(f"🎨 检测美术专业术语...")
+            enhance_art_terminology(prompt)  # 仅用于日志，返回值不使用
+            
+            # *** 关键改变：优先使用中文，因为Gemini对中文的理解很好 ***
+            has_chinese = prompt and any('\u4e00' <= c <= '\u9fff' for c in prompt)
+            has_art_terms = any(re.search(pattern, prompt, re.IGNORECASE) for pattern in ART_TERMINOLOGY_MAPPING.keys())
+            
+            if has_art_terms:
+                print(f"✅ 检测到美术术语，保留中文原文以获得最佳理解")
+                print(f"   (Gemini能很好理解中文的几头身、身材等术语)")
+            elif has_chinese and not has_art_terms:
+                print(f"🌐 检测到中文但无美术术语，翻译为英文...")
+                print(f"   原始: {prompt[:100]}...")
                 try:
                     translated_prompt = translate_prompt(prompt)
-                    print(f"   ✅ 翻译成功: {translated_prompt}")
+                    print(f"   ✅ 翻译成功: {translated_prompt[:100]}...")
                     prompt = translated_prompt
                 except Exception as e:
-                    print(f"⚠️ 翻译失败，使用原始中文提示词: {e}")
-                    # 继续使用原始提示词
+                    print(f"⚠️ 翻译失败，保留中文: {e}")
+            else:
+                print(f"✅ 已是英文，直接使用")
             
-            print(f"📝 最终使用的提示词: {prompt}")
+            print(f"📝 最终使用的提示词: {prompt[:150]}...")
             
             # 使用骨架图模式（Gemini 2.5 Flash Image需要图片输入）
             sketch_arg = uploaded_image_path

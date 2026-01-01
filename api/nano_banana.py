@@ -99,9 +99,15 @@ class NanoBananaAPI:
                 
                 style_desc = style_prompts.get(style, style_prompts['cute'])
                 
-                # 简化提示词 - 减少复杂度，加快生成
+                # 构建提示词
                 if description:
-                    prompt = f"这张素描是{description}，请按照线条上色。风格：{style_desc}"
+                    # 如果用户提示词中包含中文，直接使用
+                    # Gemini 2.5对中文理解很好，尤其是美术术语
+                    if any('\u4e00' <= c <= '\u9fff' for c in description):
+                        prompt = f"请仔细按照这个描述上色：{description}。风格：{style_desc}。"
+                    else:
+                        # 如果是英文，使用更强的指示
+                        prompt = f"Follow this description precisely: {description}. Style: {style_desc}."
                 else:
                     prompt = f"给这张素描上色，保持线条结构。风格：{style_desc}"
             

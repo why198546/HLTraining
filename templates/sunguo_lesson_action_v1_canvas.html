@@ -494,15 +494,16 @@
               <textarea class="prompt-textarea" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
 例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
 例如：年轻女孩，长发，穿粉色连衣裙
-（系统会自动生成素描风格的现代中国人形象，仅显示人物，无骨骼图）" style="padding-right: 3rem;"></textarea>
+（系统会自动生成彩色漫画风格的现代中国人形象，仅显示人物，无骨骼图）" style="padding-right: 3rem;"></textarea>
               <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入" style="position: absolute; right: 0.5rem; bottom: 0.5rem; background: #00704A; color: white; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
                 <i class="fas fa-microphone"></i>
               </button>
             </div>
             
             <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #666;">
-              <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由画板控制，风格自动为素描<br>
-              <strong>⚠️ 重要：</strong>生成的图片<strong>仅显示人物形象</strong>，不会有任何骨骼图、辅助线或节点标记
+              <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由画板控制，风格自动为<strong>彩色漫画</strong><br>
+              <strong>⚠️ 重要：</strong>生成的图片<strong>仅显示人物形象</strong>，不会有任何骨骼图、辅助线或节点标记<br>
+              <strong>🎨 美术术语：</strong>可选择使用 n头身比例（如3头身、4.5头身）、S型身材 等专业术语，AI会更准确理解！
             </div>
           </div>
 
@@ -981,14 +982,14 @@
     });
 
     // 更新提示词（基于动作）
-    // 快速预设的详细提示词
+    // 快速预设的详细提示词 - 强调全身像包含腿脚
     const presetPrompts = {
-      'running': '一个10岁的男孩，短发，穿蓝色运动服和白色运动鞋，在操场上奔跑，身体前倾，双臂有力摆动，左右腿交替抬起，充满动感',
-      'jumping': '一个12岁的女孩，马尾辫，穿粉色T恤和牛仔短裤，跳跃在空中，双手高举，身体舒展，双脚离地，表情兴奋喜悦',
-      'waving': '一个11岁的男孩，齐刘海，穿白色衬衫和黑色长裤，右手高高举起挥手打招呼，脸上洋溢着灿烂笑容，姿态友好',
-      'dancing': '一个11岁的女孩，长发飘逸，穿紫色舞蹈裙和粉色舞鞋，在舞台上翩翩起舞，身体优雅摆动，双臂舞动如蝴蝶，充满艺术感',
-      'sitting': '一个9岁的男孩，圆寸头，穿橙色卫衣和深蓝色牛仔裤，坐在木椅上，姿态放松自然，双手轻放膝盖，表情平静安详',
-      'thinking': '一个12岁的女孩，齐肩短发，穿浅绿色毛衣和灰色长裤，右手托着下巴，眼神专注深邃，眉头微蹙，陷入深深的思考'
+      'running': '一个10岁的男孩，3头身比例，短发，穿蓝色运动服和白色运动鞋，在操场上奔跑，身体前倾，双臂有力摆动，左右腿交替抬起，充满动感',
+      'jumping': '一个12岁的女孩，3.5头身比例，马尾辫，穿粉色T恤和牛仔短裤，跳跃在空中，双手高举，身体舒展，双脚离地，表情兴奋喜悦',
+      'waving': '一个11岁的男孩，3头身比例，齐刘海，穿白色衬衫和黑色长裤，右手高高举起挥手打招呼，脸上洋溢着灿烂笑容，姿态友好',
+      'dancing': '一个11岁的女孩，3.5头身比例，长发飘逸，穿紫色舞蹈裙和粉色舞鞋，在舞台上翩翩起舞，身体优雅摆动，双臂舞动如蝴蝶，充满艺术感',
+      'sitting': '一个9岁的男孩，3头身比例，圆寸头，穿橙色卫衣和深蓝色牛仔裤，坐在木椅上，姿态放松自然，双手轻放膝盖，表情平静安详',
+      'thinking': '一个12岁的女孩，3.5头身比例，齐肩短发，穿浅绿色毛衣和灰色长裤，右手托着下巴，眼神专注深邃，眉头微蹙，陷入深深的思考'
     };
 
     function updatePromptForAction(action) {
@@ -1018,12 +1019,12 @@
     function updatePromptText(isPreset = false, englishAction = null) {
       let prompt;
       if (isPreset && englishAction) {
-        // 使用快速预设的详细提示词
-        prompt = presetPrompts[englishAction] || `小朋友，${englishAction}`;
+        // 使用快速预设的详细提示词；若缺省则留空让用户自行填写
+        prompt = presetPrompts[englishAction] || '';
       } else {
-        // 用户手动选择时的简化提示词
+        // 用户手动选择时的简化提示词；无选择时留空
         const actionKeywords = Array.from(selectedKeywords).join('或');
-        prompt = actionKeywords ? `小朋友，${actionKeywords}` : '小朋友';
+        prompt = actionKeywords ? actionKeywords : '';
       }
       document.getElementById('promptText').value = prompt;
     }
