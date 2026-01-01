@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>选择第 2 节课设计方案 - 松果课堂</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .design-chooser {
+      max-width: 1200px;
+      margin: 3rem auto;
+      padding: 0 1.5rem;
+    }
+
+    .chooser-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .chooser-title {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 0.5rem;
+    }
+
+    .chooser-subtitle {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+
+    .chooser-instruction {
+      background: linear-gradient(135deg, #f0f9f6 0%, #e8f5f1 100%);
+      border-left: 4px solid #00704A;
+      padding: 1.2rem;
+      border-radius: 8px;
+      color: #333;
+      font-size: 1rem;
+    }
+
+    .design-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .design-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .design-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 112, 74, 0.15);
+      border-color: #00704A;
+    }
+
+    .design-card.active {
+      border-color: #00704A;
+      background: #f0f9f6;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+      color: white;
+      padding: 2rem 1.5rem;
+      text-align: center;
+    }
+
+    .card-number {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      opacity: 0.9;
+    }
+
+    .card-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .card-emoji {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-content {
+      padding: 2rem 1.5rem;
+    }
+
+    .feature-list {
+      margin: 1.5rem 0;
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 0.8rem 0;
+      padding-left: 2rem;
+      position: relative;
+      font-size: 0.95rem;
+      color: #444;
+      line-height: 1.5;
+    }
+
+    .feature-list li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #00704A;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .pros-and-cons {
+      margin-top: 1.5rem;
+      border-top: 1px solid #eee;
+      padding-top: 1.5rem;
+    }
+
+    .pros-section {
+      margin-bottom: 1rem;
+    }
+
+    .pros-title {
+      font-weight: 600;
+      color: #27ae60;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .cons-title {
+      font-weight: 600;
+      color: #e67e22;
+      font-size: 0.95rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pros-list,
+    .cons-list {
+      font-size: 0.85rem;
+      color: #666;
+      margin-left: 1rem;
+      list-style: none;
+      padding: 0;
+    }
+
+    .pros-list li,
+    .cons-list li {
+      padding: 0.3rem 0;
+      padding-left: 1.5rem;
+      position: relative;
+    }
+
+    .pros-list li:before {
+      content: "+";
+      position: absolute;
+      left: 0;
+      color: #27ae60;
+      font-weight: 700;
+    }
+
+    .cons-list li:before {
+      content: "-";
+      position: absolute;
+      left: 0;
+      color: #e67e22;
+      font-weight: 700;
+    }
+
+    .best-for {
+      background: #f9f9f9;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      border-left: 3px solid #00704A;
+    }
+
+    .best-for-label {
+      font-weight: 600;
+      color: #00704A;
+      margin-bottom: 0.3rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+
+    .btn-view {
+      flex: 1;
+      padding: 1rem;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      color: #333;
+    }
+
+    .btn-view:hover {
+      background: #e8e8e8;
+      border-color: #999;
+    }
+
+    .btn-choose {
+      flex: 1;
+      padding: 1rem;
+      background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.2s ease;
+    }
+
+    .btn-choose:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 112, 74, 0.3);
+    }
+
+    .btn-choose:active {
+      transform: translateY(0);
+    }
+
+    .comparison-section {
+      margin-top: 4rem;
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .comparison-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .comparison-table th {
+      background: #f5f5f5;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .comparison-table td {
+      color: #666;
+    }
+
+    .comparison-table tr:hover {
+      background: #f9f9f9;
+    }
+
+    @media (max-width: 768px) {
+      .design-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chooser-title {
+        font-size: 1.6rem;
+      }
+
+      .design-card {
+        margin: 0;
+      }
+    }
+
+    .current-page-info {
+      background: #fffbea;
+      border-left: 4px solid #f39c12;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    .current-page-info strong {
+      color: #f39c12;
+    }
+  </style>
+</head>
+<body>
+  {% include 'components/header.html' %}
+
+  <main class="classroom-page">
+    <div class="classroom-container">
+      <div class="classroom-breadcrumb">
+        <a href="{{ url_for('main.sunguo_class') }}" class="breadcrumb-link">&larr; 返回松果课堂</a>
+      </div>
+
+      <div class="design-chooser">
+        <div class="chooser-header">
+          <h1 class="chooser-title">第 2 节课：动作</h1>
+          <p class="chooser-subtitle">选择一个设计方案开始学习</p>
+          <div class="chooser-instruction">
+            <strong>📋 说明：</strong>我们为"动作"课设计了两个完全不同的交互方式。请选择一个你最喜欢的方案，或者都尝试一下！两个方案都能让你通过设计火柴人的动作，结合 AI 生成精美的人物形象。
+          </div>
+        </div>
+
+        <div class="design-grid">
+          <!-- 方案 1：绘图板 -->
+          <div class="design-card">
+            <div class="card-header">
+              <div class="card-emoji">🎨</div>
+              <div class="card-title">绘图板方案</div>
+              <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">自由创作 + AI 智能生成</p>
+            </div>
+
+            <div class="card-content">
+              <ul class="feature-list">
+                <li>像在纸上一样自由绘制火柴人</li>
+                <li>支持笔画、橡皮、颜色选择</li>
+                <li>6 种预设动作快速开始</li>
+                <li>12 个动作关键词帮你优化提示词</li>
+                <li>完全自由度的艺术创作体验</li>
+              </ul>
+
+              <div class="pros-and-cons">
+                <div class="pros-section">
+                  <div class="pros-title">
+                    <span>✓ 优点</span>
+                  </div>
+                  <ul class="pros-list">
+                    <li>自由度最高，激发创意</li>
+                    <li>像画画一样直观友好</li>
+                    <li>可以画出独特的动作</li>
+                  </ul>
+                </div>
+
+                <div class="pros-section">
+                  <div class="cons-title">
+                    <span>⚠ 考虑</span>
+                  </div>
+                  <ul class="cons-list">
+                    <li>需要一定的绘画能力</li>
+                    <li>用触屏体验可能不太理想</li>
+                  </ul>
+                </div>
+
+                <div class="best-for">
+                  <div class="best-for-label">最适合：</div>
+                  <div>喜欢自由创作、想像力丰富的孩子</div>
+                </div>
+              </div>
+
+              <div class="action-buttons">
+                <a href="{{ url_for('main.sunguo_lesson_action_v1') }}" class="btn-view">
+                  👁️ 预览
+                </a>
+                <a href="{{ url_for('main.sunguo_lesson_action_v1') }}" class="btn-choose">
+                  选择此方案 →
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 方案 2：拖拽火柴人 -->
+          <div class="design-card">
+            <div class="card-header">
+              <div class="card-emoji">🤖</div>
+              <div class="card-title">拖拽编辑方案</div>
+              <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">交互式设计 + 参数控制</p>
+            </div>
+
+            <div class="card-content">
+              <ul class="feature-list">
+                <li>直观拖拽火柴人的各个部位</li>
+                <li>实时显示每个关节的角度数据</li>
+                <li>6 种预设姿势一键应用</li>
+                <li>随机生成有趣的新姿势</li>
+                <li>参数精确控制每个动作细节</li>
+              </ul>
+
+              <div class="pros-and-cons">
+                <div class="pros-section">
+                  <div class="pros-title">
+                    <span>✓ 优点</span>
+                  </div>
+                  <ul class="pros-list">
+                    <li>超级直观，拖拽即可操作</li>
+                    <li>无需绘画基础，人人可用</li>
+                    <li>准确的参数控制</li>
+                    <li>触屏体验良好</li>
+                  </ul>
+                </div>
+
+                <div class="pros-section">
+                  <div class="cons-title">
+                    <span>⚠ 考虑</span>
+                  </div>
+                  <ul class="cons-list">
+                    <li>相比绘图方案，自由度略低</li>
+                    <li>限制在预定义的部位范围内</li>
+                  </ul>
+                </div>
+
+                <div class="best-for">
+                  <div class="best-for-label">最适合：</div>
+                  <div>喜欢参与式交互、追求精确控制的孩子</div>
+                </div>
+              </div>
+
+              <div class="action-buttons">
+                <a href="{{ url_for('main.sunguo_lesson_action_v2') }}" class="btn-view">
+                  👁️ 预览
+                </a>
+                <a href="{{ url_for('main.sunguo_lesson_action_v2') }}" class="btn-choose">
+                  选择此方案 →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 对比表格 -->
+        <div class="comparison-section">
+          <h2 class="comparison-title">详细对比</h2>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">特性</th>
+                <th style="width: 37.5%;">🎨 绘图板方案</th>
+                <th style="width: 37.5%;">🤖 拖拽编辑方案</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>操作方式</td>
+                <td>自由画笔绘制</td>
+                <td>拖拽部位调整角度</td>
+              </tr>
+              <tr>
+                <td>学习曲线</td>
+                <td>需要一定绘画基础</td>
+                <td>零门槛，直观易懂</td>
+              </tr>
+              <tr>
+                <td>创意自由度</td>
+                <td>极高，可画任意形状</td>
+                <td>中等，预设部位范围</td>
+              </tr>
+              <tr>
+                <td>精确度</td>
+                <td>取决于手工绘制水平</td>
+                <td>高，实时显示角度</td>
+              </tr>
+              <tr>
+                <td>移动设备体验</td>
+                <td>用手指画，体验一般</td>
+                <td>触屏拖拽，体验很好</td>
+              </tr>
+              <tr>
+                <td>预设动作</td>
+                <td>6 种快速开始</td>
+                <td>6 种快速开始</td>
+              </tr>
+              <tr>
+                <td>提示词优化</td>
+                <td>12 个关键词可选</td>
+                <td>8 个手势可选</td>
+              </tr>
+              <tr>
+                <td>最佳场景</td>
+                <td>美术兴趣班、创意课</td>
+                <td>编程思维、交互学习</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 原始方案参考 -->
+        <div style="margin-top: 3rem; padding: 1.5rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <h3 style="margin-top: 0; color: #1a1a1a;">📌 其他方案</h3>
+          <p style="color: #666;">原始的文字输入方案仍然可用。选择以下选项查看：</p>
+          <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <a href="{{ url_for('main.sunguo_lesson', lesson_key='action') }}" style="padding: 0.8rem 1.5rem; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: #333; font-weight: 500; transition: all 0.2s ease;" onmouseover="this.style.background='#e8e8e8'" onmouseout="this.style.background='#f5f5f5'">
+              📝 原始文字输入方案
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 可以添加任何额外的交互脚本
+  </script>
+</body>
+</html>

@@ -57,9 +57,31 @@ class NanoBananaAPI:
             if not self.client:
                 raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
             
+            # 要求必须提供骨架参考图
+            if not sketch_path or not os.path.exists(sketch_path):
+                raise Exception(f"必须提供有效的骨架参考图: {sketch_path}")
+            
+            print(f"📁 图片路径: {sketch_path}")
+            
             # 读取图像
+            file_size = os.path.getsize(sketch_path)
+            print(f"📊 文件大小: {file_size / 1024:.1f} KB")
+            
             with open(sketch_path, 'rb') as f:
                 image_bytes = f.read()
+            
+            print(f"✅ 已读取图片，字节数: {len(image_bytes)}")
+            
+            # 验证图片内容
+            try:
+                import io
+
+                from PIL import Image
+                img = Image.open(io.BytesIO(image_bytes))
+                print(f"📐 图片尺寸: {img.width} x {img.height}")
+                print(f"🎨 图片模式: {img.mode}")
+            except Exception as e:
+                print(f"⚠️ 图片验证失败: {e}")
             
             # style="none" 时为专家模式，直接使用用户输入
             if style == "none":
@@ -106,15 +128,18 @@ class NanoBananaAPI:
                     else:
                         ratio_str = aspect_ratio
                     
-                    # 使用Gemini 2.5 Flash Image - 这才是真正的Nano Banana！
+                    # 使用Gemini 2.5 Flash Image - 更接近官网设置
                     config_kwargs = {
                         'response_modalities': ["IMAGE"],  # 明确要求返回图片
-                        'temperature': temperature,  # 使用传入的temperature参数（官方默认值1）
-                        'top_p': top_p,  # 核采样参数，控制多样性（官方默认值0.95）
-                        'image_config': types.ImageConfig(
-                            aspect_ratio=ratio_str,  # 使用比例格式
-                        )
+                        'temperature': temperature,  # 使用传入的temperature参数
+                        'top_p': top_p,  # 核采样参数，控制多样性
                     }
+                    
+                    # 只在需要时指定宽高比（可能是限制因素）
+                    if aspect_ratio and aspect_ratio != "512x512":
+                        config_kwargs['image_config'] = types.ImageConfig(
+                            aspect_ratio=ratio_str,
+                        )
                     
                     # 如果提供了seed参数，添加到配置中
                     if seed is not None:
@@ -122,15 +147,23 @@ class NanoBananaAPI:
                     
                     config = types.GenerateContentConfig(**config_kwargs)
                     
+                    print(f"🔥 正在调用Gemini 2.5 Flash Image...")
+                    print(f"   📝 提示词: {prompt[:80]}...")
+                    print(f"   📊 配置: temperature={temperature}, top_p={top_p}, ratio={ratio_str}")
+                    # 必须附加骨架图
+                    print(f"   🖼️ 发送图片: {len(image_bytes)} 字节")
+                    
+                    contents = [
+                        prompt,
+                        types.Part.from_bytes(
+                            data=image_bytes,
+                            mime_type='image/png'
+                        )
+                    ]
+
                     response = self.client.models.generate_content(
                         model='models/gemini-2.5-flash-image',  # 使用Gemini 2.5 Flash Image
-                        contents=[
-                            prompt,
-                            types.Part.from_bytes(
-                                data=image_bytes,
-                                mime_type='image/png'
-                            )
-                        ],
+                        contents=contents,
                         config=config
                     )
                     
@@ -144,7 +177,9 @@ class NanoBananaAPI:
                     print(f"🔍 candidates存在: {hasattr(response, 'candidates')}")
                     if not hasattr(response, 'candidates') or not response.candidates:
                         print("❌ 响应中没有candidates")
-                        last_error = "响应中没有candidates"
+                        if hasattr(response, 'prompt_feedback'):
+                            print(f"   反馈信息: {response.prompt_feedback}")
+                        last_error = "响应中没有candidates（可能被过滤或模型不支持此格式）"
                         continue
                     
                     print(f"🔍 candidates数量: {len(response.candidates)}")

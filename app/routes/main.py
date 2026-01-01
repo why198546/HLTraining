@@ -42,6 +42,27 @@ def sunguo_lesson(lesson_key):
     return render_template('sunguo_lesson.html', lesson_key=lesson_key, lesson=lesson)
 
 
+@main_bp.route('/sunguo-action-chooser')
+@login_required
+def sunguo_action_chooser():
+    """松果课堂第 2 节课 - 动作方案选择页"""
+    return render_template('sunguo_lesson_action_chooser.html')
+
+
+@main_bp.route('/sunguo-action-v1')
+@login_required
+def sunguo_lesson_action_v1():
+    """松果课堂第 2 节课 - 绘图板方案"""
+    return render_template('sunguo_lesson_action_v1_canvas.html')
+
+
+@main_bp.route('/sunguo-action-v2')
+@login_required
+def sunguo_lesson_action_v2():
+    """松果课堂第 2 节课 - 拖拽编辑方案（增强版）"""
+    return render_template('sunguo_lesson_action_v2_puppet_enhanced.html')
+
+
 @main_bp.route('/tutorial')
 def tutorial():
     """教程页面"""

@@ -73,6 +73,7 @@ def generate_image():
         # 导入API（延迟导入以避免循环依赖）
         print("🔄 开始导入NanoBananaAPI...", flush=True)
         from api.nano_banana import NanoBananaAPI
+        from api.prompt_translator import translate_prompt
         print("✅ NanoBananaAPI导入成功", flush=True)
         
         print(f"🎫 Token剩余: {current_user.image_token_remaining}", flush=True)
@@ -88,10 +89,12 @@ def generate_image():
         
         # 获取参数
         prompt = request.form.get('prompt', '').strip()
+        pose_description = request.form.get('pose_description', '').strip()  # 自然语言姿态描述
         style = request.form.get('style', 'cute')
         color_preference = request.form.get('color_preference', 'colorful')
         aspect_ratio = request.form.get('aspect_ratio', '512x512')
         session_id = request.form.get('session_id') or str(uuid.uuid4())
+        # 不再支持JSON模式，仅使用骨架图+prompt
         
         # 根据用户角色设置默认 style：管理员、老师为 none，其他为 cute
         if not request.form.get('style'):  # 如果前端没有传 style
@@ -105,8 +108,9 @@ def generate_image():
         print(f"   style: {style} (用户角色: {current_user.role})")
         print(f"   aspect_ratio: {aspect_ratio}")
         print(f"   session_id: {session_id}")
+        # 简化日志
         
-        # 获取上传的图片（可选）
+        # 获取上传的骨架图（必须）
         uploaded_image_path = None
         uploaded_filename = None
         if 'image' in request.files:
@@ -117,6 +121,27 @@ def generate_image():
                 if uploaded_filename:
                     uploaded_image_path = os.path.join(current_app.root_path, '..', 'uploads', uploaded_filename)
                     print(f"✅ 文件已保存: {uploaded_filename}")
+                    
+                    # 验证图片有效性
+                    if os.path.exists(uploaded_image_path):
+                        file_size = os.path.getsize(uploaded_image_path)
+                        print(f"   📊 文件大小: {file_size / 1024:.1f} KB")
+                        
+                        # 尝试验证图片格式
+                        try:
+                            from PIL import Image
+                            img = Image.open(uploaded_image_path)
+                            print(f"   📐 图片尺寸: {img.width} x {img.height}")
+                            print(f"   🎨 图片模式: {img.mode}")
+                            
+                            # 检查图片是否包含内容（不全是黑色或白色）
+                            pixels = list(img.getdata())
+                            unique_colors = len(set(pixels))
+                            print(f"   🌈 唯一颜色数: {unique_colors}")
+                            if unique_colors <= 2:
+                                print(f"   ⚠️ 警告：图片颜色过少，可能不是有效的OpenPose图")
+                        except Exception as e:
+                            print(f"   ⚠️ 图片验证失败: {str(e)}")
         
         # 如果没有上传新图片，但有session_id，尝试从之前的记录中获取
         if not uploaded_image_path and session_id:
@@ -132,47 +157,22 @@ def generate_image():
                     uploaded_image_path = None
                     uploaded_filename = None
         
-        # 验证：必须有prompt或上传图片
-        if not prompt and not uploaded_image_path:
-            print("❌ 缺少prompt和图片")
+        # 验证：必须提供提示词和骨架图
+        if not prompt:
+            print("❌ 缺少prompt")
             return jsonify({
                 'success': False,
-                'error': '请输入文字描述或上传图片'
+                'error': '请输入角色描述'
             }), 400
         
-        # 如果有图片但没有prompt，根据风格生成默认prompt
-        if uploaded_image_path and not prompt:
-            print("📝 图片存在但无prompt，生成默认prompt")
-            style_prompts = {
-                'cute': '可爱的卡通风格，色彩丰富，柔和的线条',
-                'realistic': '写实风格，细腻的细节，自然的光影',
-                'anime': '日系动漫风格，明亮的色彩，精致的线条',
-                'fantasy': '奇幻风格，梦幻的色彩，充满想象力',
-                'model_3d': '3D建模风格，清晰的轮廓，适合建模的设计',
-                'none': '保持原始风格'
-            }
-            prompt = style_prompts.get(style, '色彩鲜艳，细节丰富')
-            print(f"   生成的默认prompt: {prompt}")
+        if not uploaded_image_path:
+            print("❌ 缺少骨架图")
+            return jsonify({
+                'success': False,
+                'error': '请先绘制姿态骨架图'
+            }), 400
         
-        # 如果只有prompt没有图片，创建一个临时白色画布作为基础
-        if prompt and not uploaded_image_path:
-            print("🎨 创建临时白色画布（仅文字模式）")
-            import tempfile
-
-            from PIL import Image
-
-            # 创建临时白色画布
-            temp_img = Image.new('RGB', (512, 512), 'white')
-            temp_file = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
-            temp_img.save(temp_file.name)
-            temp_file.close()
-            uploaded_image_path = temp_file.name
-            
-            # 标记为临时文件，稍后删除
-            temp_file_to_delete = temp_file.name
-            print(f"✅ 临时文件创建: {temp_file.name}")
-        else:
-            temp_file_to_delete = None
+        # 不需要默认prompt和临时画布，必须由用户提供骨架图
         
         try:
             # 调用AI生成图片
@@ -182,20 +182,30 @@ def generate_image():
             print(f"   prompt: {prompt[:50] if prompt else '(无)'}...")
             
             # 获取temperature参数（用于控制生成的创意程度）
-            temperature = request.form.get('temperature', '1')
+            # 对于action lesson，使用稍高的temperature以获得更丰富的效果（类似Gemini网站的默认行为）
+            lesson_type = request.form.get('lesson', 'default')
+            if request.form.get('temperature'):
+                temperature = request.form.get('temperature')
+            else:
+                # action lesson默认使用1.5以获得更生动的效果
+                temperature = '1.5' if lesson_type == 'action' else '1.0'
             try:
                 temperature = float(temperature)
                 temperature = max(0.0, min(2.0, temperature))  # nano banana允许到2.0
             except (ValueError, TypeError):
-                temperature = 1
+                temperature = 1.5 if lesson_type == 'action' else 1.0
             
             # 获取top_p参数（核采样 - 控制多样性）
-            top_p = request.form.get('top_p', '0.95')
+            # 对于action lesson，使用稍低的top_p以获得更稳定的质量
+            if request.form.get('top_p'):
+                top_p = request.form.get('top_p')
+            else:
+                top_p = '0.85' if lesson_type == 'action' else '0.95'
             try:
                 top_p = float(top_p)
                 top_p = max(0.0, min(1.0, top_p))  # 限制在0.0-1.0之间
             except (ValueError, TypeError):
-                top_p = 0.95
+                top_p = 0.85 if lesson_type == 'action' else 0.95
             
             # 获取seed参数（用于控制随机性）
             seed = request.form.get('seed')
@@ -207,8 +217,49 @@ def generate_image():
             
             print(f"   temperature: {temperature}, top_p: {top_p}, seed: {seed}")
             
+            # 如果有姿态描述，优先使用（比空洞的“严格遵循”更有效）
+            if pose_description:
+                print(f"   姿态描述: {pose_description}")
+                # 嵌入默认风格：素描、白色背景、现代中国人形象
+                enhanced_prompt = (
+                    f"Detailed pencil sketch of a modern Chinese person. Pose: {pose_description}. "
+                    f"Appearance: {prompt}. "
+                    f"Style: fine shading and hatching technique, anatomically accurate. "
+                    f"Background: pure white. "
+                    f"IMPORTANT: Draw only the person, NO skeleton lines, NO bones, NO reference markers visible."
+                )
+                prompt = enhanced_prompt
+                print(f"   增强提示词(素描风格): {prompt[:200]}...")
+            else:
+                # 如果没有姿态描述，使用原有的空间引导语
+                spatial_guidance = (
+                    "CRITICAL: The character's pose must EXACTLY match the provided color-coded OpenPose skeleton reference image. "
+                    "Blue lines indicate LEFT limbs, orange/red lines indicate RIGHT limbs. "
+                    "Character description: "
+                )
+                prompt = spatial_guidance + prompt
+                print(f"   使用默认引导语: {prompt[:200]}...")
+
+            # 如果是中文提示词，翻译成英文以获得更好的AI效果
+            original_prompt = prompt
+            if prompt and any('\u4e00' <= c <= '\u9fff' for c in prompt):
+                print(f"🌐 检测到中文提示词，正在翻译为英文...")
+                print(f"   原始中文: {prompt}")
+                try:
+                    translated_prompt = translate_prompt(prompt)
+                    print(f"   ✅ 翻译成功: {translated_prompt}")
+                    prompt = translated_prompt
+                except Exception as e:
+                    print(f"⚠️ 翻译失败，使用原始中文提示词: {e}")
+                    # 继续使用原始提示词
+            
+            print(f"📝 最终使用的提示词: {prompt}")
+            
+            # 使用骨架图模式（Gemini 2.5 Flash Image需要图片输入）
+            sketch_arg = uploaded_image_path
+
             result = nano_api.generate_image_from_reference(
-                sketch_path=uploaded_image_path,
+                sketch_path=sketch_arg,
                 description=prompt,
                 style=style,
                 aspect_ratio=aspect_ratio,
@@ -221,19 +272,22 @@ def generate_image():
             if not result:
                 current_app.logger.error(f"❌ API返回空结果（可能触发了内容过滤或网络问题）")
                 print(f"⚠️ 提示：AI服务可能暂时不可用，请检查网络连接或稍后重试", flush=True)
+                print(f"   sketch_arg: {sketch_arg}")
                 return jsonify({
                     'success': False,
-                    'error': 'AI服务暂时不可用，请检查网络连接或更换风格后重试',
-                    'tip': '如果问题持续，请联系技术支持'
-                }), 503  # 改为503 Service Unavailable
-        finally:
-            # 清理临时文件
-            if temp_file_to_delete and os.path.exists(temp_file_to_delete):
-                try:
-                    os.unlink(temp_file_to_delete)
-                    print(f"🗑️ 临时文件已删除: {temp_file_to_delete}")
-                except Exception as e:
-                    print(f"⚠️ 删除临时文件失败: {e}")
+                    'error': 'AI服务返回空结果，可能是：1) 提示词被过滤 2) 网络问题 3) API配额耗尽',
+                    'tip': '尝试修改提示词或稍后重试'
+                }), 503
+        except Exception as api_error:
+            current_app.logger.error(f"❌ API调用异常: {str(api_error)}")
+            print(f"❌ API调用异常详情: {type(api_error).__name__}: {str(api_error)}")
+            import traceback
+            print(traceback.format_exc())
+            return jsonify({
+                'success': False,
+                'error': f'生成失败: {str(api_error)}',
+                'tip': '请检查后台日志获取详细错误信息'
+            }), 503
         
         # result现在是图片路径字符串
         colored_image_path = result
@@ -366,9 +420,10 @@ def generate_image():
 def load_image_from_url():
     """从URL加载图片（用于粘贴图片链接）"""
     try:
-        import requests
         import base64
         from io import BytesIO
+
+        import requests
         from PIL import Image
         
         data = request.get_json()
@@ -1104,7 +1159,7 @@ def analyze_image_features():
             # 使用Gemini Vision API分析图片特征
             import google.generativeai as genai
             from PIL import Image
-            
+
             # 读取图片
             img = Image.open(image_path)
             

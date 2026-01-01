@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第 2 节课：动作（拖拽编辑方案） - 松果课堂</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/image-viewer.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .action-v2-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* 提示词部分 - 置顶 */
+    .prompt-section-v2 {
+      order: -1;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 编辑器全宽 */
+    .puppet-editor-result-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .puppet-editor-section {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      width: 100%;
+    }
+
+    .section-header {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* 取景框 - 2:3竖屏，响应式 */
+    .puppet-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 512px;
+      aspect-ratio: 2 / 3;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 3px solid #00704A;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 0 10px rgba(0, 112, 74, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* SVG 画布容器 - 支持缩放和平移 */
+    .puppet-svg-container {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .puppet-svg-container:active {
+      cursor: grabbing;
+    }
+
+    .puppet-svg-canvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .puppet-svg-canvas.panning {
+      cursor: grabbing;
+    }
+
+    /* 生成图片层 - 叠加在SVG容器下方作为参考 */
+    .generated-image-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.6;
+      transition: all 0.3s ease;
+      z-index: 5;
+      display: none;
+      pointer-events: none; /* 不阻挡骨骼图的交互 */
+    }
+
+    .generated-image-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: fill; /* 1:1对齐，不裁剪不留白 */
+      display: block;
+    }
+
+    /* SVG容器在叠加时保持在前面，可交互 */
+    .puppet-svg-container {
+      position: relative;
+      z-index: 10;
+    }
+
+    /* SVG背景设为半透明，让生成图片可见 */
+    .puppet-svg-canvas {
+      background: transparent;
+    }
+
+    .generated-image-layer.side-by-side {
+      position: static;
+      width: 48%;
+      margin-left: auto;
+      opacity: 1;
+      flex: 1;
+    }
+
+    /* 当并排显示时，调整容器布局 - 纵向排列，骨骼图上，生成图片下 */
+    .puppet-canvas-wrapper.side-by-side-mode {
+      display: flex;
+      aspect-ratio: auto;
+      gap: 1rem;
+      flex-direction: column;
+    }
+
+    .puppet-canvas-wrapper.side-by-side-mode .puppet-svg-container {
+      flex: 0 0 auto;
+      aspect-ratio: 2/3;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .puppet-canvas-wrapper.side-by-side-mode .generated-image-layer {
+      position: static;
+      flex: 0 0 auto;
+      aspect-ratio: 2/3;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* 独立结果显示区域 */
+    .result-display-section {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .result-display-section .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #00704A;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #00704A;
+    }
+
+    .result-image-container {
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .result-image-container img {
+      width: 512px;
+      height: 768px;
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .result-image-container img:hover {
+      transform: scale(1.02);
+    }
+
+    /* 取景框控制工具 */
+    .canvas-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .canvas-controls button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border: 1px solid #00704A;
+      background: white;
+      color: #00704A;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .canvas-controls button:hover {
+      background: #00704A;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(0, 112, 74, 0.3);
+    }
+
+    .zoom-display {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+
+    /* 小按钮样式 */
+    .preset-action-btn-small, .control-btn-small {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      border: 1px solid #00704A;
+      background: white;
+      color: #00704A;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .preset-action-btn-small:hover, .control-btn-small:hover {
+      background: #00704A;
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .preset-action-btn-small:active, .control-btn-small:active {
+      transform: translateY(0);
+    }
+
+    .preset-action-btn-small.selected {
+      background: #00704A;
+      color: white;
+      transform: scale(1.05);
+      box-shadow: 0 2px 8px rgba(0, 112, 74, 0.3);
+    }
+
+    .control-btn-small {
+      background: #f0f0f0;
+      color: #333;
+      border-color: #ddd;
+    }
+
+    .control-btn-small:hover {
+      background: #00704A;
+      color: white;
+      border-color: #00704A;
+    }
+
+    /* 关节样式 */
+    .joint {
+      cursor: grab;
+      transition: r 0.1s ease, fill 0.1s ease;
+      user-select: none;
+    }
+
+    .joint:hover {
+      fill: #ff6b6b;
+      r: 7;
+    }
+
+    .joint.dragging {
+      fill: #ff4757;
+      r: 8;
+      filter: drop-shadow(0 0 8px rgba(255, 107, 107, 0.6));
+    }
+
+    /* 线条（骨骼）样式 - OpenPose颜色在SVG元素上定义 */
+    .bone {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .puppet-tools {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .tool-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #555;
+      width: 100%;
+      margin-bottom: 0.3rem;
+    }
+
+    .action-presets {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+
+    .preset-label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 0.8rem;
+    }
+
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .preset-action-btn {
+      padding: 0.7rem;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .preset-action-btn:hover {
+      border-color: #00704A;
+      background: #f0f9f6;
+      transform: translateY(-2px);
+    }
+
+    .preset-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .preset-name {
+      font-size: 0.7rem;
+      color: #666;
+    }
+
+    .control-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.8rem;
+    }
+
+    .control-btn {
+      flex: 1;
+      padding: 0.6rem;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .control-btn:hover {
+      border-color: #00704A;
+      background: #f0f9f6;
+      color: #00704A;
+    }
+
+    .control-btn.reset-btn {
+      border-color: #e74c3c;
+      color: #e74c3c;
+    }
+
+    .control-btn.reset-btn:hover {
+      background: #ffe5e5;
+    }
+
+    .prompt-section-v2 {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .step-box {
+      margin-bottom: 1.5rem;
+    }
+
+    .step-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #00704A;
+      color: white;
+      border-radius: 50%;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .gesture-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .gesture-option {
+      padding: 0.8rem;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .gesture-option:hover {
+      border-color: #00704A;
+      background: #f0f9f6;
+    }
+
+    .gesture-option.selected {
+      background: #00704A;
+      color: white;
+      border-color: #00704A;
+    }
+
+    .gesture-emoji {
+      font-size: 1.8rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .gesture-text {
+      font-size: 0.75rem;
+    }
+
+    .prompt-area {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 1rem;
+      margin: 0.8rem 0;
+    }
+
+    .prompt-input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      resize: vertical;
+      min-height: 100px;
+      transition: all 0.2s ease;
+    }
+
+    .prompt-input:focus {
+      outline: none;
+      border-color: #00704A;
+      box-shadow: 0 0 0 3px rgba(0, 112, 74, 0.1);
+    }
+
+    .tip-text {
+      font-size: 0.85rem;
+      color: #666;
+      margin-top: 0.8rem;
+      padding: 0.6rem;
+      background: #f0f9f6;
+      border-left: 3px solid #00704A;
+      border-radius: 4px;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: all 0.3s ease;
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 112, 74, 0.3);
+    }
+
+    .generate-btn:active {
+      transform: translateY(0);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .instruction-box {
+      background: #f0f9f6;
+      border-left: 4px solid #00704A;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    .instruction-box strong {
+      color: #00704A;
+    }
+
+    @media (max-width: 1200px) {
+      .puppet-editor-result-wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 横屏布局优化 */
+    @media (min-width: 768px) and (orientation: landscape) {
+      .puppet-editor-result-wrapper {
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+      }
+
+      .puppet-editor-section {
+        order: 1;
+      }
+
+      .result-preview-section {
+        order: 2;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .puppet-editor-section {
+        order: 2;
+      }
+
+      .prompt-section-v2 {
+        order: 1;
+      }
+    }
+
+    .classroom-result {
+      margin-top: 3rem;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #00704A;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .angle-info {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 0.8rem;
+      margin-top: 0.8rem;
+      font-size: 0.8rem;
+      color: #666;
+      line-height: 1.6;
+      display: none;
+    }
+
+    .angle-info strong {
+      color: #00704A;
+      font-size: 0.9rem;
+    }
+
+    .joint-name {
+      color: #ff6b6b;
+      font-weight: 600;
+    }
+
+    /* 结果显示容器 - 放在编辑器内部 */
+    .image-result-wrapper {
+      display: none;
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: #f9f9f9;
+      border-radius: 8px;
+      position: relative;
+    }
+
+    .image-result-wrapper.show {
+      display: block;
+    }
+
+    .image-result-wrapper .result-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .image-comparison-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin: 1rem 0;
+      position: relative;
+    }
+
+    .image-comparison-grid.side-by-side {
+      flex-direction: row;
+    }
+
+    @media (max-width: 900px) {
+      .image-comparison-grid.side-by-side {
+        flex-direction: column;
+      }
+    }
+
+    .image-item {
+      text-align: center;
+    }
+
+    .image-item img {
+      max-width: 100%;
+      border-radius: 8px;
+      max-height: 400px;
+      object-fit: contain;
+    }
+
+    /* 叠加模式样式 */
+    .image-comparison-grid:not(.side-by-side) .image-item {
+      position: relative;
+    }
+
+    .image-comparison-grid:not(.side-by-side) .image-item:last-child {
+      margin-top: -20px;
+    }
+
+    /* 切换按钮 */
+    .view-toggle-btn {
+      padding: 0.5rem 1rem;
+      background: #f0f0f0;
+      color: #333;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .view-toggle-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .view-toggle-btn.active {
+      background: #00704A;
+      color: white;
+      border-color: #00704A;
+    }
+
+    .image-item-label {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .image-item-sublabel {
+      font-size: 0.75rem;
+      color: #999;
+      margin-top: 0.5rem;
+    }
+
+    /* 叠加预览（可选） */
+    .image-overlay-container {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .image-overlay-container img {
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .image-overlay-container .overlay-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0.5;
+      transition: opacity 0.3s ease;
+    }
+
+    .image-overlay-container:hover .overlay-image {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  {% include 'components/header.html' %}
+
+  <main class="classroom-page">
+    <div class="classroom-container">
+      <div class="classroom-breadcrumb">
+        <a href="{{ url_for('main.sunguo_class') }}" class="breadcrumb-link">&larr; 返回松果课堂</a>
+      </div>
+
+      <h1 class="classroom-title">第 2 节课：动作（拖拽编辑方案）</h1>
+      <p class="classroom-subtitle">拖拽设计火柴人的动作，让AI把它变成精美的角色</p>
+
+      <div class="action-v2-container">
+        <!-- 提示词部分 - 最上面 -->
+        <div class="prompt-section-v2">
+          <div class="step-box">
+            <div class="step-title">
+              <span class="step-num">1</span>
+              完善提示词
+            </div>
+            <div class="prompt-area">
+              <textarea class="prompt-input" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
+例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
+例如：年轻女孩，长发，穿粉色连衣裙
+（系统会自动生成素描风格的现代中国人形象）"></textarea>
+              <div class="tip-text">
+                <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由骨架图控制，风格自动为素描
+              </div>
+            </div>
+          </div>
+
+          <button class="generate-btn" id="generateBtnV2">
+            <i class="fas fa-wand-magic-sparkles"></i> 生成图片
+          </button>
+        </div>
+
+        <!-- 编辑器与结果并排 -->
+        <div class="puppet-editor-result-wrapper">
+          <!-- 左侧：拖拽编辑火柴人 -->
+          <div class="puppet-editor-section">
+          <div class="section-header">
+            <i class="fas fa-person"></i>
+            设计火柴人姿势
+          </div>
+
+          <div class="instruction-box">
+            <strong>💡 使用说明：</strong>拖拽彩色关节点调整姿势 | 在取景框内拖拽背景移动火柴人
+            <br><small style="color: #666; margin-top: 0.3rem; display: block;">🎨 采用OpenPose标准彩色编码：<span style="color: #0000ff;">蓝色=左侧</span>，<span style="color: #ff4500;">橙红色=右侧</span>，让AI更精准识别姿势</small>
+          </div>
+
+          <div class="puppet-canvas-wrapper">
+            <div class="puppet-svg-container">
+              <svg class="puppet-svg-canvas" id="puppetCanvas" viewBox="0 0 512 768" preserveAspectRatio="none">
+              <!-- 背景矩形 - 半透明让生成图片可见 -->
+              <rect width="512" height="768" fill="#f0f0f0" opacity="0.3"/>
+              <!-- 骨骼线条和关节点定义 -->
+              <g id="bones" class="bones">
+                <!-- 脖子 - 红橙色 -->
+                <line class="bone" id="neck" x1="256" y1="174" x2="256" y2="254" stroke="#ff4500" stroke-width="6"/>
+                
+                <!-- 躯干 - 橙色 -->
+                <line class="bone" id="torso" x1="256" y1="254" x2="256" y2="454" stroke="#ff8c00" stroke-width="6"/>
+                
+                <!-- 左臂 - 冷色系（蓝色渐变） -->
+                <line class="bone" id="leftUpperArm" x1="256" y1="274" x2="156" y2="334" stroke="#0000ff" stroke-width="6"/>
+                <line class="bone" id="leftForearm" x1="156" y1="334" x2="76" y2="394" stroke="#00bfff" stroke-width="6"/>
+                <line class="bone" id="leftHand" x1="76" y1="394" x2="36" y2="434" stroke="#87ceeb" stroke-width="5"/>
+                
+                <!-- 右臂 - 暖色系（红橙黄渐变） -->
+                <line class="bone" id="rightUpperArm" x1="256" y1="274" x2="356" y2="334" stroke="#ff4500" stroke-width="6"/>
+                <line class="bone" id="rightForearm" x1="356" y1="334" x2="436" y2="394" stroke="#ff8c00" stroke-width="6"/>
+                <line class="bone" id="rightHand" x1="436" y1="394" x2="476" y2="434" stroke="#ffd700" stroke-width="5"/>
+                
+                <!-- 左腿 - 冷色系（深蓝到紫色） -->
+                <line class="bone" id="leftThigh" x1="216" y1="454" x2="196" y2="634" stroke="#191970" stroke-width="6"/>
+                <line class="bone" id="leftCalf" x1="196" y1="634" x2="186" y2="744" stroke="#8a2be2" stroke-width="6"/>
+                <line class="bone" id="leftFoot" x1="186" y1="744" x2="156" y2="754" stroke="#9370db" stroke-width="5"/>
+                
+                <!-- 右腿 - 暖色系（红褐到橙红） -->
+                <line class="bone" id="rightThigh" x1="296" y1="454" x2="316" y2="634" stroke="#dc143c" stroke-width="6"/>
+                <line class="bone" id="rightCalf" x1="316" y1="634" x2="326" y2="744" stroke="#ff6347" stroke-width="6"/>
+                <line class="bone" id="rightFoot" x1="326" y1="744" x2="356" y2="754" stroke="#ff7f50" stroke-width="5"/>
+              </g>
+
+              <!-- 关节点 -->
+              <g id="joints" class="joints">
+                <!-- 头部/躯干中心 - 红色系 -->
+                <circle class="joint" id="head" cx="256" cy="114" r="12" fill="#ff0000"/>
+                
+                <!-- 肩膀/躯干顶部 - 橙红色 -->
+                <circle class="joint" id="shoulder" cx="256" cy="254" r="12" fill="#ff4500"/>
+                
+                <!-- 髋部/躯干底部 - 橙色 -->
+                <circle class="joint" id="hip" cx="256" cy="454" r="12" fill="#ff8c00"/>
+                
+                <!-- 左臂关节 - 冷色系（蓝色渐变） -->
+                <circle class="joint" id="leftShoulder" cx="256" cy="274" r="11" fill="#0000ff"/>
+                <circle class="joint" id="leftElbow" cx="156" cy="334" r="11" fill="#00bfff"/>
+                <circle class="joint" id="leftWrist" cx="76" cy="394" r="11" fill="#87ceeb"/>
+                <circle class="joint" id="leftFingertip" cx="36" cy="434" r="8" fill="#add8e6"/>
+                
+                <!-- 右臂关节 - 暖色系（红橙黄渐变） -->
+                <circle class="joint" id="rightShoulder" cx="256" cy="274" r="11" fill="#ff4500"/>
+                <circle class="joint" id="rightElbow" cx="356" cy="334" r="11" fill="#ff8c00"/>
+                <circle class="joint" id="rightWrist" cx="436" cy="394" r="11" fill="#ffd700"/>
+                <circle class="joint" id="rightFingertip" cx="476" cy="434" r="8" fill="#ffed4e"/>
+                
+                <!-- 左腿关节 - 冷色系（深蓝到紫色） -->
+                <circle class="joint" id="leftHip" cx="216" cy="454" r="11" fill="#191970"/>
+                <circle class="joint" id="leftKnee" cx="196" cy="634" r="11" fill="#8a2be2"/>
+                <circle class="joint" id="leftAnkle" cx="186" cy="744" r="11" fill="#9370db"/>
+                <circle class="joint" id="leftToe" cx="156" cy="754" r="8" fill="#ba55d3"/>
+                
+                <!-- 右腿关节 - 暖色系（红褐到黄绿） -->
+                <circle class="joint" id="rightHip" cx="296" cy="454" r="11" fill="#dc143c"/>
+                <circle class="joint" id="rightKnee" cx="316" cy="634" r="11" fill="#ff6347"/>
+                <circle class="joint" id="rightAnkle" cx="326" cy="744" r="11" fill="#ff7f50"/>
+                <circle class="joint" id="rightToe" cx="356" cy="754" r="8" fill="#ffa07a"/>
+              </g>
+            </svg>
+            </div>
+            <!-- 生成的图片层容器 -->
+            <div class="generated-image-layer" id="generatedImageLayer" style="display: none;">
+              <img id="generatedImgOverlay" src="" alt="生成的图片" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+          </div>
+
+          <!-- 单独的结果显示区域（并排显示时使用） -->
+          <div class="result-display-section" id="resultDisplaySection" style="display: none;">
+            <div class="section-header">
+              <i class="fas fa-image"></i>
+              生成结果
+            </div>
+            <div class="result-image-container">
+              <img id="resultImg" src="" alt="生成的图片" class="result-img-clickable" style="width: 512px; height: 768px; max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s ease;">
+            </div>
+          </div>
+
+          <!-- 控制按钮：预设动作 + 随机 + 重置 -->
+          <div class="puppet-tools">
+            <div class="all-control-buttons" style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; align-items: center;">
+              <button class="preset-action-btn-small" data-preset="running">🏃 跑步</button>
+              <button class="preset-action-btn-small" data-preset="jumping">🤸 跳跃</button>
+              <button class="preset-action-btn-small" data-preset="waving">👋 挥手</button>
+              <button class="preset-action-btn-small" data-preset="dancing">💃 跳舞</button>
+              <button class="preset-action-btn-small" data-preset="sitting">🪑 坐着</button>
+              <button class="preset-action-btn-small" data-preset="thinking">🤔 思考</button>
+              <button class="control-btn-small" id="randomBtn">
+                <i class="fas fa-shuffle"></i> 随机
+              </button>
+              <button class="control-btn-small" id="resetBtn">
+                <i class="fas fa-redo"></i> 重置
+              </button>
+            </div>
+
+            <div class="angle-info">
+              <strong>当前关键角度：</strong><br/>
+              左肘: <span class="joint-name" id="leftElbowAngle">0°</span> | 
+              右肘: <span class="joint-name" id="rightElbowAngle">0°</span><br/>
+              左膝: <span class="joint-name" id="leftKneeAngle">0°</span> | 
+              右膝: <span class="joint-name" id="rightKneeAngle">0°</span>
+            </div>
+            
+            <!-- 实时姿态描述预览 -->
+            <div class="angle-info" style="margin-top: 1rem; background: #fff3cd; border-left: 3px solid #ffc107;">
+              <strong>🤖 AI将看到的姿态：</strong><br/>
+              <span id="posePreview" style="color: #856404; font-size: 0.9rem;">调整姿态后自动更新...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="classroomResult"></div>
+    </div>
+  </main>
+
+  <!-- 全屏图片查看器 -->
+  <div id="image-viewer" class="image-viewer">
+    <div class="image-viewer-overlay"></div>
+    <button class="image-viewer-close">×</button>
+    <button class="image-viewer-print" title="打印图片">🖨️</button>
+    <button class="image-viewer-prev">‹</button>
+    <button class="image-viewer-next">›</button>
+    <div class="image-viewer-counter"></div>
+    <img class="image-viewer-img" src="" alt="" />
+  </div>
+
+  <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+  <script>
+    // 等待DOM加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+    
+    // 初始化全屏图片查看器
+    if (typeof ImageViewer !== 'undefined') {
+      ImageViewer.init();
+      
+      // 为结果图片添加点击全屏查看功能
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('result-img-clickable')) {
+          ImageViewer.images = [e.target.src];
+          ImageViewer.open(0);
+        }
+      });
+    }
+    
+    // ========== SVG初始化 ==========
+    const svg = document.getElementById('puppetCanvas');
+    const container = document.querySelector('.puppet-svg-container');
+    
+    // 检查元素是否存在
+    if (!svg || !container) {
+      console.error('Required elements not found!');
+      return;
+    }
+
+    // ========== 关节拖拽调整 ==========
+    // 关节数据结构 - 存储每个关节的位置和连接信息（512×768分辨率）
+    const joints = {
+      head: { x: 256, y: 114, element: null, parent: null },
+      shoulder: { x: 256, y: 254, element: null, parent: null },
+      hip: { x: 256, y: 454, element: null, parent: null },
+      
+      // 左臂链
+      leftShoulder: { x: 256, y: 274, element: null, parent: 'shoulder', childBone: 'leftUpperArm' },
+      leftElbow: { x: 156, y: 334, element: null, parent: 'leftShoulder', childBone: 'leftForearm', angleRef: true },
+      leftWrist: { x: 76, y: 394, element: null, parent: 'leftElbow', childBone: 'leftHand' },
+      leftFingertip: { x: 36, y: 434, element: null, parent: 'leftWrist' },
+      
+      // 右臂链
+      rightShoulder: { x: 256, y: 274, element: null, parent: 'shoulder', childBone: 'rightUpperArm' },
+      rightElbow: { x: 356, y: 334, element: null, parent: 'rightShoulder', childBone: 'rightForearm', angleRef: true },
+      rightWrist: { x: 436, y: 394, element: null, parent: 'rightElbow', childBone: 'rightHand' },
+      rightFingertip: { x: 476, y: 434, element: null, parent: 'rightWrist' },
+      
+      // 左腿链
+      leftHip: { x: 216, y: 454, element: null, parent: 'hip', childBone: 'leftThigh' },
+      leftKnee: { x: 196, y: 634, element: null, parent: 'leftHip', childBone: 'leftCalf', angleRef: true },
+      leftAnkle: { x: 186, y: 744, element: null, parent: 'leftKnee', childBone: 'leftFoot' },
+      leftToe: { x: 156, y: 754, element: null, parent: 'leftAnkle' },
+      
+      // 右腿链
+      rightHip: { x: 296, y: 454, element: null, parent: 'hip', childBone: 'rightThigh' },
+      rightKnee: { x: 316, y: 634, element: null, parent: 'rightHip', childBone: 'rightCalf', angleRef: true },
+      rightAnkle: { x: 326, y: 744, element: null, parent: 'rightKnee', childBone: 'rightFoot' },
+      rightToe: { x: 356, y: 754, element: null, parent: 'rightAnkle' }
+    };
+
+    let draggedJoint = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    // svg 已经在上面定义过了
+
+    // 初始化：获取所有关节元素
+    Object.keys(joints).forEach(key => {
+      joints[key].element = document.getElementById(key);
+      if (joints[key].element) {
+        joints[key].element.addEventListener('mousedown', startDrag);
+      }
+    });
+
+    // 拖拽开始
+    function startDrag(e) {
+      e.stopPropagation(); // 阻止事件冒泡到container
+      e.preventDefault(); // 阻止默认行为
+      draggedJoint = e.target.id;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      e.target.classList.add('dragging');
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', stopDrag);
+    }
+
+    // 拖拽中
+    function drag(e) {
+      if (!draggedJoint) return;
+
+      const joint = joints[draggedJoint];
+      const svg = document.getElementById('puppetCanvas');
+      const svgRect = svg.getBoundingClientRect();
+      
+      // 获取鼠标在屏幕上的位置
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+      
+      // 计算鼠标相对于SVG元素的位置（像素）
+      const relativeX = clientX - svgRect.left;
+      const relativeY = clientY - svgRect.top;
+      
+      // 转换为SVG坐标系 (viewBox: 0-512 x 0-768)
+      // SVG元素的实际显示尺寸 svgRect.width x svgRect.height
+      // 映射到 viewBox 的 512 x 768
+      const svgX = (relativeX / svgRect.width) * 512;
+      const svgY = (relativeY / svgRect.height) * 768;
+      
+      // 限制在边界内
+      const finalX = Math.max(20, Math.min(492, svgX));
+      const finalY = Math.max(20, Math.min(748, svgY));
+      
+      // 记录旧坐标，计算位移
+      const oldX = joint.x;
+      const oldY = joint.y;
+      
+      // 更新关节坐标
+      joint.x = finalX;
+      joint.y = finalY;
+      
+      // 计算位移
+      const deltaX = joint.x - oldX;
+      const deltaY = joint.y - oldY;
+      
+      // 立即更新该关节的视觉位置
+      joint.element.setAttribute('cx', joint.x);
+      joint.element.setAttribute('cy', joint.y);
+      
+      // 更新所有子关节位置（手和脚跟随）
+      updateChildJoints(draggedJoint, deltaX, deltaY);
+      
+      // 更新连接线
+      updateBones();
+      
+      // 不再自动更新提示词，保留用户输入
+    }
+
+    // 递归更新子关节（手和脚跟随移动）
+    function updateChildJoints(parentJointName, deltaX, deltaY) {
+      Object.keys(joints).forEach(jointName => {
+        const joint = joints[jointName];
+        // 如果这个关节的parent是当前被拖拽的关节，则移动它
+        if (joint.parent === parentJointName) {
+          joint.x += deltaX;
+          joint.y += deltaY;
+          
+          // 更新DOM
+          joint.element.setAttribute('cx', joint.x);
+          joint.element.setAttribute('cy', joint.y);
+          
+          // 递归更新这个关节的子关节
+          updateChildJoints(jointName, deltaX, deltaY);
+        }
+      });
+    }
+
+    // 更新所有骨骼（连接线）- 重写，确保准确
+    function updateBones() {
+      // 定义每条线及其连接的关节对
+      const boneConnections = {
+        'neck': ['shoulder', 'head'],  // 错误，改为正确的
+        'torso': ['shoulder', 'hip'],
+        'leftUpperArm': ['leftShoulder', 'leftElbow'],
+        'leftForearm': ['leftElbow', 'leftWrist'],
+        'leftHand': ['leftWrist', 'leftFingertip'],
+        'rightUpperArm': ['rightShoulder', 'rightElbow'],
+        'rightForearm': ['rightElbow', 'rightWrist'],
+        'rightHand': ['rightWrist', 'rightFingertip'],
+        'leftThigh': ['leftHip', 'leftKnee'],
+        'leftCalf': ['leftKnee', 'leftAnkle'],
+        'leftFoot': ['leftAnkle', 'leftToe'],
+        'rightThigh': ['rightHip', 'rightKnee'],
+        'rightCalf': ['rightKnee', 'rightAnkle'],
+        'rightFoot': ['rightAnkle', 'rightToe']
+      };
+
+      // 更新每条骨骼线
+      Object.keys(boneConnections).forEach(boneName => {
+        const [startJointName, endJointName] = boneConnections[boneName];
+        const boneElement = document.getElementById(boneName);
+        
+        if (boneElement && joints[startJointName] && joints[endJointName]) {
+          const startJoint = joints[startJointName];
+          const endJoint = joints[endJointName];
+          
+          boneElement.setAttribute('x1', startJoint.x);
+          boneElement.setAttribute('y1', startJoint.y);
+          boneElement.setAttribute('x2', endJoint.x);
+          boneElement.setAttribute('y2', endJoint.y);
+        }
+      });
+    }
+
+    // 拖拽结束
+    function stopDrag(e) {
+      if (draggedJoint) {
+        document.getElementById(draggedJoint).classList.remove('dragging');
+        draggedJoint = null;
+      }
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('mouseup', stopDrag);
+    }
+
+    // 计算两个关节之间的角度
+    function calculateAngle(joint1Name, joint2Name) {
+      const j1 = joints[joint1Name];
+      const j2 = joints[joint2Name];
+      const deltaX = j2.x - j1.x;
+      const deltaY = j2.y - j1.y;
+      return Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+    }
+
+    // 更新角度显示
+    function updateAngleDisplay() {
+      const leftElbowAngle = calculateAngle('leftShoulder', 'leftElbow');
+      const rightElbowAngle = calculateAngle('rightShoulder', 'rightElbow');
+      const leftKneeAngle = calculateAngle('leftHip', 'leftKnee');
+      const rightKneeAngle = calculateAngle('rightHip', 'rightKnee');
+
+      document.getElementById('leftElbowAngle').textContent = Math.round(leftElbowAngle) + '°';
+      document.getElementById('rightElbowAngle').textContent = Math.round(rightElbowAngle) + '°';
+      document.getElementById('leftKneeAngle').textContent = Math.round(leftKneeAngle) + '°';
+      document.getElementById('rightKneeAngle').textContent = Math.round(rightKneeAngle) + '°';
+      
+      // 更新姿态预览
+      try {
+        const poseDesc = generateNaturalPoseDescription();
+        const previewEl = document.getElementById('posePreview');
+        if (previewEl) {
+          previewEl.textContent = poseDesc;
+        }
+      } catch (err) {
+        console.warn('更新姿态预览失败:', err);
+      }
+    }
+
+    // 预设姿势 - 更新为完整的关节坐标
+    const presets = {
+      running: {
+        // 跑步：左臂向后，右臂向前，左腿向前抬起，右腿向后
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 100, y: 170 },
+        leftWrist: { x: 70, y: 200 },
+        leftFingertip: { x: 50, y: 220 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 180, y: 110 },
+        rightWrist: { x: 210, y: 90 },
+        rightFingertip: { x: 230, y: 75 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 110, y: 280 },
+        leftAnkle: { x: 105, y: 360 },
+        leftToe: { x: 95, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 170, y: 330 },
+        rightAnkle: { x: 175, y: 360 },
+        rightToe: { x: 185, y: 370 }
+      },
+      jumping: {
+        // 跳跃：双臂上举，双腿弯曲
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 100, y: 100 },
+        leftWrist: { x: 75, y: 75 },
+        leftFingertip: { x: 60, y: 60 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 180, y: 100 },
+        rightWrist: { x: 205, y: 75 },
+        rightFingertip: { x: 220, y: 60 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 105, y: 300 },
+        leftAnkle: { x: 100, y: 365 },
+        leftToe: { x: 85, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 175, y: 300 },
+        rightAnkle: { x: 180, y: 365 },
+        rightToe: { x: 195, y: 370 }
+      },
+      waving: {
+        // 挥手：右臂高举挥动，左臂自然
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 100, y: 160 },
+        leftWrist: { x: 70, y: 190 },
+        leftFingertip: { x: 50, y: 210 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 190, y: 90 },
+        rightWrist: { x: 220, y: 70 },
+        rightFingertip: { x: 240, y: 60 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 110, y: 310 },
+        leftAnkle: { x: 105, y: 365 },
+        leftToe: { x: 90, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 170, y: 310 },
+        rightAnkle: { x: 175, y: 365 },
+        rightToe: { x: 190, y: 370 }
+      },
+      dancing: {
+        // 跳舞：左臂伸展，右臂上扬，腿部动态
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 80, y: 140 },
+        leftWrist: { x: 40, y: 150 },
+        leftFingertip: { x: 20, y: 160 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 200, y: 110 },
+        rightWrist: { x: 235, y: 100 },
+        rightFingertip: { x: 255, y: 95 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 100, y: 320 },
+        leftAnkle: { x: 90, y: 365 },
+        leftToe: { x: 75, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 185, y: 300 },
+        rightAnkle: { x: 200, y: 365 },
+        rightToe: { x: 215, y: 370 }
+      },
+      sitting: {
+        // 坐着：双臂放松，膝盖弯曲成90度
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 110, y: 165 },
+        leftWrist: { x: 95, y: 200 },
+        leftFingertip: { x: 85, y: 220 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 170, y: 165 },
+        rightWrist: { x: 185, y: 200 },
+        rightFingertip: { x: 195, y: 220 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 100, y: 280 },
+        leftAnkle: { x: 95, y: 365 },
+        leftToe: { x: 80, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 180, y: 280 },
+        rightAnkle: { x: 185, y: 365 },
+        rightToe: { x: 200, y: 370 }
+      },
+      thinking: {
+        // 思考：右手托下巴，左臂自然
+        leftShoulder: { x: 140, y: 130 },
+        leftElbow: { x: 105, y: 160 },
+        leftWrist: { x: 80, y: 190 },
+        leftFingertip: { x: 65, y: 210 },
+        rightShoulder: { x: 140, y: 130 },
+        rightElbow: { x: 165, y: 160 },
+        rightWrist: { x: 150, y: 100 },
+        rightFingertip: { x: 145, y: 80 },
+        leftHip: { x: 120, y: 220 },
+        leftKnee: { x: 110, y: 310 },
+        leftAnkle: { x: 105, y: 365 },
+        leftToe: { x: 90, y: 370 },
+        rightHip: { x: 160, y: 220 },
+        rightKnee: { x: 170, y: 310 },
+        rightAnkle: { x: 175, y: 365 },
+        rightToe: { x: 190, y: 370 }
+      }
+    };
+
+    // 坐标转换函数：将旧坐标（256×384基于140中心）转换为新坐标（512×768基于256中心）
+    function adjustCoords(oldX, oldY) {
+      // 先调整中心点偏移，再放大2倍
+      const offsetX = -12; // 140 → 128
+      const offsetY = 7;   // 整体向下移动
+      const adjustedX = oldX + offsetX;
+      const adjustedY = oldY + offsetY;
+      // 放大到512×768
+      return { x: adjustedX * 2, y: adjustedY * 2 };
+    }
+
+    // 预设动作对应的提示词
+    const presetPrompts = {
+      'running': '10岁小男孩，短发，穿蓝色上衣，黑色运动裤，白色球鞋',
+      'jumping': '10岁小女孩，扎马尾辫，穿粉色运动服，白色运动鞋',
+      'waving': '12岁男孩，短发，穿橙色T恤，蓝色牛仔裤',
+      'dancing': '11岁女孩，长发，穿紫色舞蹈裙，粉色舞鞋',
+      'sitting': '10岁小男孩，短发，穿白色衬衫，灰色长裤',
+      'thinking': '12岁女孩，短发，穿黄色毛衣，蓝色裙子'
+    };
+
+    // 手势选择函数
+    let selectedGesture = null;
+    function selectGesture(gesture) {
+      document.querySelectorAll('.preset-action-btn-small[data-preset]').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      const targetBtn = document.querySelector(`.preset-action-btn-small[data-preset="${gesture}"]`);
+      if (targetBtn) {
+        targetBtn.classList.add('selected');
+      }
+      selectedGesture = gesture;
+    }
+
+    document.querySelectorAll('.preset-action-btn-small[data-preset]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const presetName = btn.dataset.preset;
+        const preset = presets[presetName];
+        if (preset) {
+          // 设置骨骼姿态
+          Object.keys(preset).forEach(jointName => {
+            if (joints[jointName]) {
+              // 应用坐标调整
+              const adjusted = adjustCoords(preset[jointName].x, preset[jointName].y);
+              joints[jointName].x = adjusted.x;
+              joints[jointName].y = adjusted.y;
+              joints[jointName].element.setAttribute('cx', adjusted.x);
+              joints[jointName].element.setAttribute('cy', adjusted.y);
+            }
+          });
+          updateBones();
+          updateAngleDisplay();
+          
+          // 同时填写提示词
+          const promptText = presetPrompts[presetName] || '';
+          const promptTextElement = document.getElementById('promptText');
+          if (promptTextElement) {
+            promptTextElement.value = promptText;
+          }
+          
+          selectGesture(presetName);
+        }
+      });
+    });
+
+    // 重置按钮
+    document.getElementById('resetBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      location.reload();
+    });
+
+    // 随机姿势 - 生成合理的人形随机动作
+    document.getElementById('randomBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      
+      // 肩膀位置（相对肩部）
+      const shoulderY = joints.shoulder.y;
+      
+      // 左臂随机
+      const leftArmAngle = Math.random() * 360;
+      joints.leftElbow.x = joints.leftShoulder.x + 80 * Math.cos(leftArmAngle * Math.PI / 180);
+      joints.leftElbow.y = joints.leftShoulder.y + 60 * Math.sin(leftArmAngle * Math.PI / 180);
+      joints.leftWrist.x = joints.leftElbow.x + 80 * Math.cos(leftArmAngle * Math.PI / 180);
+      joints.leftWrist.y = joints.leftElbow.y + 60 * Math.sin(leftArmAngle * Math.PI / 180);
+      joints.leftFingertip.x = joints.leftWrist.x + 40 * Math.cos(leftArmAngle * Math.PI / 180);
+      joints.leftFingertip.y = joints.leftWrist.y + 40 * Math.sin(leftArmAngle * Math.PI / 180);
+      
+      // 右臂随机
+      const rightArmAngle = Math.random() * 360;
+      joints.rightElbow.x = joints.rightShoulder.x + 80 * Math.cos(rightArmAngle * Math.PI / 180);
+      joints.rightElbow.y = joints.rightShoulder.y + 60 * Math.sin(rightArmAngle * Math.PI / 180);
+      joints.rightWrist.x = joints.rightElbow.x + 80 * Math.cos(rightArmAngle * Math.PI / 180);
+      joints.rightWrist.y = joints.rightElbow.y + 60 * Math.sin(rightArmAngle * Math.PI / 180);
+      joints.rightFingertip.x = joints.rightWrist.x + 40 * Math.cos(rightArmAngle * Math.PI / 180);
+      joints.rightFingertip.y = joints.rightWrist.y + 40 * Math.sin(rightArmAngle * Math.PI / 180);
+      
+      // 腿部随机 - 膝盖不要超过臀部过多
+      const hipY = joints.hip.y;
+      const legSpread = 40 + Math.random() * 40; // 腿的横向展开
+      
+      // 左腿
+      joints.leftKnee.x = joints.leftHip.x - legSpread * (0.3 + Math.random() * 0.4);
+      joints.leftKnee.y = hipY + 120 + Math.random() * 60;
+      joints.leftAnkle.x = joints.leftKnee.x - 10 - Math.random() * 30;
+      joints.leftAnkle.y = joints.leftKnee.y + 100 + Math.random() * 40;
+      joints.leftToe.x = joints.leftAnkle.x - 30;
+      joints.leftToe.y = joints.leftAnkle.y + 10;
+      
+      // 右腿
+      joints.rightKnee.x = joints.rightHip.x + legSpread * (0.3 + Math.random() * 0.4);
+      joints.rightKnee.y = hipY + 120 + Math.random() * 60;
+      joints.rightAnkle.x = joints.rightKnee.x + 10 + Math.random() * 30;
+      joints.rightAnkle.y = joints.rightKnee.y + 100 + Math.random() * 40;
+      joints.rightToe.x = joints.rightAnkle.x + 30;
+      joints.rightToe.y = joints.rightAnkle.y + 10;
+      
+      // 更新所有关节的DOM元素
+      Object.keys(joints).forEach(jointName => {
+        const joint = joints[jointName];
+        if (joint.element) {
+          joint.x = Math.max(20, Math.min(492, joint.x));
+          joint.y = Math.max(20, Math.min(748, joint.y));
+          joint.element.setAttribute('cx', joint.x);
+          joint.element.setAttribute('cy', joint.y);
+        }
+      });
+      
+      updateBones();
+      updateAngleDisplay();
+      // 不调用updatePromptFromPuppet，保留用户输入的提示词
+    });
+
+    // [已废弃] 从木偶更新提示词 - 现在改用预设动作直接设置提示词
+    function updatePromptFromPuppet() {
+      // 不再自动更新提示词，避免覆盖用户输入或预设动作设置的内容
+      return;
+      // 提取当前姿势信息以生成更准确的提示词
+      // 这些元素可能在enhanced版本中不存在，所以使用默认值
+      const leftArmAngleEl = document.getElementById('leftArmAngle');
+      const rightArmAngleEl = document.getElementById('rightArmAngle');
+      const leftLegAngleEl = document.getElementById('leftLegAngle');
+      const rightLegAngleEl = document.getElementById('rightLegAngle');
+      
+      const leftArmAngle = leftArmAngleEl ? parseFloat(leftArmAngleEl.textContent) : 0;
+      const rightArmAngle = rightArmAngleEl ? parseFloat(rightArmAngleEl.textContent) : 0;
+      const leftLegAngle = leftLegAngleEl ? parseFloat(leftLegAngleEl.textContent) : 0;
+      const rightLegAngle = rightLegAngleEl ? parseFloat(rightLegAngleEl.textContent) : 0;
+      
+      // 判断动作类型
+      let actionDesc = '做出图中的姿势';
+      
+      // 简化的动作识别（基于角度的粗略判断）
+      if (Math.abs(leftLegAngle - rightLegAngle) > 30) {
+        actionDesc = '做出行走的姿势';
+      } else if (leftArmAngle < -30 || rightArmAngle > 30) {
+        if (leftLegAngle < -20 && rightLegAngle > 20) {
+          actionDesc = '做出奔跑的姿势';
+        } else {
+          actionDesc = '做出举手的姿势';
+        }
+      }
+      
+      // 根据当前骨架图动态生成提示词
+      // 分析关键关节的位置和方向，生成对应的"MUST DO"指示
+      
+      // 判断左臂方向（基于角度）
+      let leftArmDesc = 'as shown';
+      if (leftArmAngle > 200 && leftArmAngle < 340) {
+        leftArmDesc = 'DOWN';
+      } else if (leftArmAngle >= 20 && leftArmAngle <= 160) {
+        leftArmDesc = 'UP';
+      } else if (leftArmAngle > 160 && leftArmAngle <= 200) {
+        leftArmDesc = 'horizontally to the left';
+      }
+      
+      // 判断右臂方向
+      let rightArmDesc = 'as shown';
+      if (rightArmAngle > 200 && rightArmAngle < 340) {
+        rightArmDesc = 'DOWN';
+      } else if (rightArmAngle >= 20 && rightArmAngle <= 160) {
+        rightArmDesc = 'UP';
+      } else if (rightArmAngle > 160 && rightArmAngle <= 200) {
+        rightArmDesc = 'horizontally to the right';
+      }
+      
+      const base = `CRITICAL: Match the skeleton pose EXACTLY:
+
+Left arm: ${leftArmDesc} (match the skeleton exactly)
+Right arm: ${rightArmDesc} (match the skeleton exactly)
+Head: upright, looking forward
+Both legs: as shown in skeleton
+Torso: angle as shown
+
+Draw a modern Chinese child in this exact pose. Natural human form, no visible skeleton. Pencil sketch, white background.`;
+      
+      const prompt = base;
+      
+      document.getElementById('promptText').value = prompt;
+      
+      // 如果存在updateAngleDisplay函数，调用它
+      if (typeof updateAngleDisplay === 'function') {
+        updateAngleDisplay();
+      }
+    }
+
+    // 生成按钮
+    document.getElementById('generateBtnV2').addEventListener('click', (e) => {
+      e.preventDefault();
+      const promptText = document.getElementById('promptText').value;
+      if (!promptText.trim()) {
+        alert('请先选择或输入提示词');
+        return;
+      }
+      generateImage(promptText);
+    });
+
+    // 生成图片
+    async function generateImage(prompt) {
+      const btn = document.getElementById('generateBtnV2');
+      
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span> 生成中...';
+      
+      try {
+        // 确保joints对象与DOM同步（读取DOM中的最新坐标）
+        Object.keys(joints).forEach(jointName => {
+          const joint = joints[jointName];
+          const cx = parseFloat(joint.element.getAttribute('cx'));
+          const cy = parseFloat(joint.element.getAttribute('cy'));
+          // 从DOM更新joints对象的坐标
+          joint.x = cx;
+          joint.y = cy;
+        });
+        
+        // 确保所有骨骼线也已更新
+        updateBones();
+        
+        // 将SVG转换为PNG - 使用Canvas直接绘制方法
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // A4打印尺寸（512×768，2:3竖屏）
+        canvas.width = 512;
+        canvas.height = 768;
+        
+        // OpenPose标准：黑色背景
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 坐标已经是512×768，无需缩放
+        const scale = 1;
+        
+        // 定义骨骼连接
+        const boneConnections = {
+          'neck': ['shoulder', 'head'],
+          'torso': ['shoulder', 'hip'],
+          'leftUpperArm': ['leftShoulder', 'leftElbow'],
+          'leftForearm': ['leftElbow', 'leftWrist'],
+          'leftHand': ['leftWrist', 'leftFingertip'],
+          'rightUpperArm': ['rightShoulder', 'rightElbow'],
+          'rightForearm': ['rightElbow', 'rightWrist'],
+          'rightHand': ['rightWrist', 'rightFingertip'],
+          'leftThigh': ['leftHip', 'leftKnee'],
+          'leftCalf': ['leftKnee', 'leftAnkle'],
+          'leftFoot': ['leftAnkle', 'leftToe'],
+          'rightThigh': ['rightHip', 'rightKnee'],
+          'rightCalf': ['rightKnee', 'rightAnkle'],
+          'rightFoot': ['rightAnkle', 'rightToe']
+        };
+        
+        // OpenPose标准彩色编码
+        const boneColors = {
+          'neck': '#ff4500',        // 红橙色
+          'torso': '#ff8c00',       // 橙色
+          'leftUpperArm': '#0000ff',    // 蓝色
+          'leftForearm': '#00bfff',     // 天蓝色
+          'leftHand': '#87ceeb',        // 浅蓝色
+          'rightUpperArm': '#ff4500',   // 红橙色
+          'rightForearm': '#ff8c00',    // 橙色
+          'rightHand': '#ffd700',       // 金黄色
+          'leftThigh': '#191970',       // 深蓝色
+          'leftCalf': '#8a2be2',        // 蓝紫色
+          'leftFoot': '#9370db',        // 紫色
+          'rightThigh': '#dc143c',      // 红褐色
+          'rightCalf': '#ff6347',       // 橙红色
+          'rightFoot': '#ff7f50'        // 珊瑚色
+        };
+        
+        // 绘制彩色骨骼（OpenPose标准）
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // 绘制所有骨骼
+        Object.keys(boneConnections).forEach(boneName => {
+          const [startJointName, endJointName] = boneConnections[boneName];
+          const startJoint = joints[startJointName];
+          const endJoint = joints[endJointName];
+          
+          // 使用对应的颜色
+          ctx.strokeStyle = boneColors[boneName];
+          ctx.beginPath();
+          ctx.moveTo(startJoint.x * scale, startJoint.y * scale);
+          ctx.lineTo(endJoint.x * scale, endJoint.y * scale);
+          ctx.stroke();
+        });
+        
+        // OpenPose关节颜色编码
+        const jointColors = {
+          'head': '#ff0000',
+          'shoulder': '#ff4500',
+          'hip': '#ff8c00',
+          'leftShoulder': '#0000ff',
+          'leftElbow': '#00bfff',
+          'leftWrist': '#87ceeb',
+          'leftFingertip': '#add8e6',
+          'rightShoulder': '#ff4500',
+          'rightElbow': '#ff8c00',
+          'rightWrist': '#ffd700',
+          'rightFingertip': '#ffed4e',
+          'leftHip': '#191970',
+          'leftKnee': '#8a2be2',
+          'leftAnkle': '#9370db',
+          'leftToe': '#ba55d3',
+          'rightHip': '#dc143c',
+          'rightKnee': '#ff6347',
+          'rightAnkle': '#ff7f50',
+          'rightToe': '#ffa07a'
+        };
+        
+        // 绘制彩色关节点
+        Object.keys(joints).forEach(jointName => {
+          const joint = joints[jointName];
+          const radius = (jointName.includes('Fingertip') || jointName.includes('Toe') ? 8 : 11);
+          const radius2 = (jointName === 'head' || jointName === 'shoulder' || jointName === 'hip' ? 12 : radius);
+          
+          ctx.fillStyle = jointColors[jointName] || '#000000';
+          ctx.beginPath();
+          ctx.arc(joint.x * scale, joint.y * scale, radius2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        
+        // 转换为PNG Blob
+        console.log('🎨 Canvas生成信息:');
+        console.log('   Canvas尺寸:', canvas.width, 'x', canvas.height);
+        console.log('   骨骼连接数:', Object.keys(boneConnections).length);
+        console.log('   关节总数:', Object.keys(joints).length);
+        console.log('   背景色: #000000 (OpenPose标准)');
+        
+        // 获取canvas的pixel数据以验证是否有内容
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        let nonBlackPixels = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          // 检查像素是否不是纯黑色 (RGB都为0)
+          if (data[i] !== 0 || data[i+1] !== 0 || data[i+2] !== 0) {
+            nonBlackPixels++;
+          }
+        }
+        console.log('   非黑色像素数:', nonBlackPixels, '/', (canvas.width * canvas.height));
+        if (nonBlackPixels === 0) {
+          console.error('❌ 警告：Canvas上没有绘制任何内容！');
+        } else {
+          console.log('✅ Canvas包含骨骼数据');
+        }
+        
+        canvas.toBlob((blob) => {
+          // 保存预览图（直接用canvas绘制的结果，包含所有线条和关节）
+          const puppetImageUrl = canvas.toDataURL('image/png');
+          
+          console.log('✅ Canvas已转换为PNG，大小:', Math.round(blob.size / 1024), 'KB');
+          if (blob.size < 5000) {
+            console.warn('⚠️ PNG文件很小，可能内容不完整');
+          }
+          
+          const formData = new FormData();
+          formData.append('image', blob, 'puppet_pose.png');
+          
+          // 生成自然语言姿态描述
+          try {
+            const poseDesc = generateNaturalPoseDescription();
+            formData.append('pose_description', poseDesc);
+            console.log('📄 姿态描述:', poseDesc);
+          } catch (err) {
+            console.warn('生成姿态描述失败:', err);
+          }
+          
+          // 直接使用用户输入的提示词（后端会添加空间引导语前缀）
+          const userPrompt = document.getElementById('promptText').value;
+          formData.append('prompt', userPrompt);
+          formData.append('style', 'none');
+          formData.append('aspect_ratio', '512x768');
+          formData.append('lesson', 'action');
+          
+          console.log('📤 发送请求到API...');
+          console.log('   提示词:', userPrompt.substring(0, 50) + '...');
+          console.log('   图片大小:', Math.round(blob.size / 1024), 'KB');
+          
+          sendImageRequest(formData, prompt, btn, puppetImageUrl);
+        }, 'image/png');
+      } catch (error) {
+        alert('错误：' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 生成图片';
+      }
+    }
+
+    async function sendImageRequest(formData, originalPrompt, btn, puppetImageUrl) {
+      try {
+        // 使用传入的puppetImageUrl（从generateImage中的canvas绘制）
+        
+        const response = await fetch('/api/generate_image', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('生成失败，请稍后重试');
+        }
+
+        const data = await response.json();
+        
+        // 在SVG容器中显示生成的图片
+        const imageLayer = document.getElementById('generatedImageLayer');
+        const generatedImgOverlay = document.getElementById('generatedImgOverlay');
+        const canvasWrapper = document.querySelector('.puppet-canvas-wrapper');
+        const resultSection = document.getElementById('resultDisplaySection');
+        const resultImg = document.getElementById('resultImg');
+        
+        // 设置生成图片的源
+        generatedImgOverlay.src = data.image_url;
+        
+        // 默认并排显示
+        imageLayer.style.display = 'none';
+        canvasWrapper.classList.remove('side-by-side-mode');
+        resultSection.style.display = 'block';
+        resultImg.src = data.image_url;
+        
+        // 存储图片URL供下载使用
+        window.currentGeneratedImageUrl = data.image_url;
+        window.currentPuppetImageUrl = puppetImageUrl;
+        
+        // 添加叠加/并排切换按钮到骨骼图下方（如果不存在）
+        let viewToggleDiv = document.getElementById('viewToggleDiv');
+        if (!viewToggleDiv) {
+          const controlsDiv = document.querySelector('.puppet-tools');
+          viewToggleDiv = document.createElement('div');
+          viewToggleDiv.id = 'viewToggleDiv';
+          viewToggleDiv.style.cssText = 'display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;';
+          viewToggleDiv.innerHTML = `
+            <button class="view-toggle-btn" onclick="toggleImageView('overlay')" id="overlayBtn" style="padding: 0.5rem 1rem; background: #999; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-layer-group"></i> 叠加显示
+            </button>
+            <button class="view-toggle-btn active" onclick="toggleImageView('sideBySide')" id="sideBySideBtn" style="padding: 0.5rem 1rem; background: #6f42c1; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-columns"></i> 并排显示
+            </button>
+            <button onclick="downloadPuppetImage()" style="padding: 0.5rem 1rem; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-download"></i> 下载骨骼图片
+            </button>
+            <button onclick="downloadGeneratedImage()" style="padding: 0.5rem 1rem; background: #17a2b8; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fas fa-download"></i> 下载生成图片
+            </button>
+          `;
+          controlsDiv.insertAdjacentElement('afterend', viewToggleDiv);
+        } else {
+          // 重置切换按钮状态为并排显示
+          document.getElementById('overlayBtn').classList.remove('active');
+          document.getElementById('sideBySideBtn').classList.add('active');
+        }
+        
+      } catch (error) {
+        alert('错误：' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> 生成图片';
+      }
+    }
+
+    function downloadImage(url, filename = 'puppet_action.png') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+    }
+
+    // 构建OpenPose JSON（使用当前画布坐标，置信度统一为1.0）
+    function buildOpenPoseJSON(normalize = false) {
+      const order = [
+        'nose','neck','rShoulder','rElbow','rWrist',
+        'lShoulder','lElbow','lWrist',
+        'rHip','rKnee','rAnkle',
+        'lHip','lKnee','lAnkle',
+        'rEye','lEye','rEar','lEar'
+      ];
+
+      const map = {
+        nose: 'head',
+        neck: 'shoulder',
+        rShoulder: 'rightShoulder',
+        rElbow: 'rightElbow',
+        rWrist: 'rightWrist',
+        lShoulder: 'leftShoulder',
+        lElbow: 'leftElbow',
+        lWrist: 'leftWrist',
+        rHip: 'rightHip',
+        rKnee: 'rightKnee',
+        rAnkle: 'rightAnkle',
+        lHip: 'leftHip',
+        lKnee: 'leftKnee',
+        lAnkle: 'leftAnkle',
+        rEye: 'head',
+        lEye: 'head',
+        rEar: 'head',
+        lEar: 'head'
+      };
+
+      const width = 512;
+      const height = 768;
+      const pose = [];
+
+      order.forEach(key => {
+        const j = joints[map[key]];
+        const x = normalize ? j.x / width : j.x;
+        const y = normalize ? j.y / height : j.y;
+        const c = (key === 'rEye' || key === 'lEye' || key === 'rEar' || key === 'lEar') ? 0.5 : 1.0;
+        pose.push(Number(x.toFixed(4)), Number(y.toFixed(4)), c);
+      });
+
+      return {
+        people: [{
+          pose_keypoints_2d: pose,
+          canvas_width: normalize ? 1.0 : width,
+          canvas_height: normalize ? 1.0 : height
+        }]
+      };
+    }
+
+    // 初始化
+    try {
+      updateBones();
+    } catch(e) {
+      console.warn('updateBones未定义或执行错误:', e);
+    }
+    
+    // 生成自然语言姿态描述（基于关节坐标）
+    function generateNaturalPoseDescription() {
+      const parts = [];
+      
+      // 左臂分析（蓝色）
+      const leftWristY = joints.leftWrist.y;
+      const leftShoulderY = joints.leftShoulder.y;
+      const leftWristX = joints.leftWrist.x;
+      const leftShoulderX = joints.leftShoulder.x;
+      
+      if (leftWristY < leftShoulderY - 80) {
+        parts.push('left arm (BLUE) raised high above head');
+      } else if (leftWristY < leftShoulderY - 20) {
+        parts.push('left arm (BLUE) raised upward');
+      } else if (leftWristY > leftShoulderY + 80) {
+        parts.push('left arm (BLUE) hanging down naturally');
+      } else {
+        // 水平判断
+        if (Math.abs(leftWristX - leftShoulderX) > 100) {
+          parts.push('left arm (BLUE) extended horizontally to the side');
+        } else {
+          parts.push('left arm (BLUE) at side');
+        }
+      }
+      
+      // 右臂分析（橙红色）
+      const rightWristY = joints.rightWrist.y;
+      const rightShoulderY = joints.rightShoulder.y;
+      const rightWristX = joints.rightWrist.x;
+      const rightShoulderX = joints.rightShoulder.x;
+      
+      if (rightWristY < rightShoulderY - 80) {
+        parts.push('right arm (ORANGE) raised high above head');
+      } else if (rightWristY < rightShoulderY - 20) {
+        parts.push('right arm (ORANGE) raised upward');
+      } else if (rightWristY > rightShoulderY + 80) {
+        parts.push('right arm (ORANGE) hanging down naturally');
+      } else {
+        // 水平判断
+        if (Math.abs(rightWristX - rightShoulderX) > 100) {
+          parts.push('right arm (ORANGE) extended horizontally to the side');
+        } else {
+          parts.push('right arm (ORANGE) at side');
+        }
+      }
+      
+      // 腿部分析
+      const leftKneeY = joints.leftKnee.y;
+      const leftAnkleY = joints.leftAnkle.y;
+      const rightKneeY = joints.rightKnee.y;
+      const rightAnkleY = joints.rightAnkle.y;
+      
+      // 判断腿是否弯曲或抬起
+      const leftKneeBend = leftKneeY < leftAnkleY - 50;
+      const rightKneeBend = rightKneeY < rightAnkleY - 50;
+      
+      if (leftKneeBend && rightKneeBend) {
+        parts.push('both legs bent');
+      } else if (leftKneeBend) {
+        parts.push('left leg bent or raised');
+      } else if (rightKneeBend) {
+        parts.push('right leg bent or raised');
+      } else {
+        parts.push('legs standing straight');
+      }
+      
+      return parts.join(', ');
+    }
+    
+    try {
+      updateAngleDisplay();
+    } catch(e) {
+      console.warn('updateAngleDisplay未定义或执行错误:', e);
+    }
+    
+    // 不再初始调用updatePromptFromPuppet，让提示词保持为空
+    
+    }); // DOMContentLoaded 结束
+
+    // 全局函数：下载图片
+    function downloadImage(url, filename = 'puppet_action.png') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+    }
+
+    // 下载骨骼图片
+    function downloadPuppetImage() {
+      if (window.currentPuppetImageUrl) {
+        downloadImage(window.currentPuppetImageUrl, 'puppet_skeleton.png');
+      } else {
+        alert('请先生成图片');
+      }
+    }
+
+    // 下载生成的图片
+    function downloadGeneratedImage() {
+      if (window.currentGeneratedImageUrl) {
+        downloadImage(window.currentGeneratedImageUrl, 'generated_image.png');
+      } else {
+        alert('请先生成图片');
+      }
+    }
+
+    // 切换图片显示模式（叠加或并排）
+    function toggleImageView(mode) {
+      const imageLayer = document.getElementById('generatedImageLayer');
+      const resultSection = document.getElementById('resultDisplaySection');
+      const resultImg = document.getElementById('resultImg');
+      const overlayImg = document.getElementById('generatedImgOverlay');
+      const canvasWrapper = document.querySelector('.puppet-canvas-wrapper');
+      const overlayBtn = document.getElementById('overlayBtn');
+      const sideBySideBtn = document.getElementById('sideBySideBtn');
+      
+      if (mode === 'overlay') {
+        // 叠加显示：生成图片在下方作为参考，骨骼图在上方可调整
+        imageLayer.style.display = 'block';
+        imageLayer.style.opacity = '0.6';  // 降低透明度，作为参考背景
+        canvasWrapper.classList.remove('side-by-side-mode');
+        resultSection.style.display = 'none';
+        
+        // 更新按钮状态
+        overlayBtn.classList.add('active');
+        overlayBtn.style.background = '#6f42c1';
+        sideBySideBtn.classList.remove('active');
+        sideBySideBtn.style.background = '#999';
+      } else if (mode === 'sideBySide') {
+        // 并排显示：隐藏SVG内的图片层，在独立结果区域显示
+        imageLayer.style.display = 'none';
+        canvasWrapper.classList.remove('side-by-side-mode');
+        resultSection.style.display = 'block';
+        
+        // 复制图片到结果区域
+        resultImg.src = overlayImg.src;
+        
+        // 更新按钮状态
+        sideBySideBtn.classList.add('active');
+        sideBySideBtn.style.background = '#6f42c1';
+        overlayBtn.classList.remove('active');
+        overlayBtn.style.background = '#999';
+      }
+    }
+
+    // 隐藏生成的图片和控制按钮
+    function toggleImageDisplay() {
+      const imageLayer = document.getElementById('generatedImageLayer');
+      const viewToggleDiv = document.getElementById('viewToggleDiv');
+      
+      imageLayer.style.display = 'none';
+      if (viewToggleDiv) {
+        viewToggleDiv.style.display = 'none';
+      }
+    }
+
+    // 从结果容器下载生成图
+    function downloadImageFromResult() {
+      const wrapper = document.getElementById('imageResultWrapper');
+      const url = wrapper.dataset.generatedUrl;
+      if (url) downloadImage(url, 'generated_image.png');
+    }
+
+    // 从结果容器下载骨架图
+    function downloadPuppetImage() {
+      const wrapper = document.getElementById('imageResultWrapper');
+      const url = wrapper.dataset.puppetUrl;
+      if (url) downloadImage(url, 'openpose_skeleton.png');
+    }
+
+    // 切换显示模式
+    function toggleView(mode) {
+      const grid = document.getElementById('imageComparisonGrid');
+      const overlayBtn = document.getElementById('overlayBtn');
+      const sideBySideBtn = document.getElementById('sideBySideBtn');
+      
+      if (mode === 'overlay') {
+        grid.classList.remove('side-by-side');
+        overlayBtn.classList.add('active');
+        sideBySideBtn.classList.remove('active');
+      } else if (mode === 'sideBySide') {
+        grid.classList.add('side-by-side');
+        overlayBtn.classList.remove('active');
+        sideBySideBtn.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
