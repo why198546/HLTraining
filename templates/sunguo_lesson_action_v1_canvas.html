@@ -490,10 +490,15 @@
               <span class="step-number">1</span>
               完善提示词
             </div>
-            <textarea class="prompt-textarea" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
+            <div style="position: relative;">
+              <textarea class="prompt-textarea" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
 例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
 例如：年轻女孩，长发，穿粉色连衣裙
-（系统会自动生成素描风格的现代中国人形象，仅显示人物，无骨骼图）"></textarea>
+（系统会自动生成素描风格的现代中国人形象，仅显示人物，无骨骼图）" style="padding-right: 3rem;"></textarea>
+              <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入" style="position: absolute; right: 0.5rem; bottom: 0.5rem; background: #00704A; color: white; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
+                <i class="fas fa-microphone"></i>
+              </button>
+            </div>
             
             <div style="margin-top: 0.8rem; font-size: 0.9rem; color: #666;">
               <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由画板控制，风格自动为素描<br>
@@ -605,6 +610,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
   <script>
     // Canvas 绘图功能
     const canvas = document.getElementById('drawingCanvas');

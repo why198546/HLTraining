@@ -770,10 +770,15 @@
               完善提示词
             </div>
             <div class="prompt-area">
-              <textarea class="prompt-input" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
+              <div style="position: relative;">
+                <textarea class="prompt-input" id="promptText" placeholder="请用中文描述人物外貌、衣着特征...
 例如：10岁小男孩，短发，穿蓝色T恤和牛仔裤
 例如：年轻女孩，长发，穿粉色连衣裙
-（系统会自动生成素描风格的现代中国人形象，不显示骨骼图）"></textarea>
+（系统会自动生成素描风格的现代中国人形象，不显示骨骼图）" style="padding-right: 3rem;"></textarea>
+                <button type="button" class="voice-input-btn" onclick="startVoiceInput(event)" title="语音输入" style="position: absolute; right: 0.5rem; bottom: 0.5rem; background: #00704A; color: white; border: none; border-radius: 50%; width: 2.5rem; height: 2.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">
+                  <i class="fas fa-microphone"></i>
+                </button>
+              </div>
               <div class="tip-text">
                 <strong>💡 提示：</strong>只需描述<strong>外貌和衣着</strong>，姿态由骨架图控制，风格自动为素描<br>
                 <strong>⚠️ 重要：</strong>生成的图片<strong>只显示人物形象</strong>，不会有任何骨骼图、辅助线或节点标记
@@ -938,6 +943,7 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
   <script>
     // 等待DOM加载完成
     document.addEventListener('DOMContentLoaded', function() {
