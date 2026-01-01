@@ -1013,34 +1013,55 @@
       joints[key].element = document.getElementById(key);
       if (joints[key].element) {
         joints[key].element.addEventListener('mousedown', startDrag);
+        joints[key].element.addEventListener('touchstart', startDrag, { passive: false });
       }
     });
+
+    // 获取客户端坐标的辅助函数（统一处理鼠标和触摸）
+    function getClientCoordinates(e) {
+      if (e.touches && e.touches.length > 0) {
+        return {
+          clientX: e.touches[0].clientX,
+          clientY: e.touches[0].clientY
+        };
+      }
+      return {
+        clientX: e.clientX,
+        clientY: e.clientY
+      };
+    }
 
     // 拖拽开始
     function startDrag(e) {
       e.stopPropagation(); // 阻止事件冒泡到container
       e.preventDefault(); // 阻止默认行为
       draggedJoint = e.target.id;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
+      const coords = getClientCoordinates(e);
+      dragStartX = coords.clientX;
+      dragStartY = coords.clientY;
       e.target.classList.add('dragging');
       document.addEventListener('mousemove', drag);
       document.addEventListener('mouseup', stopDrag);
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('touchend', stopDrag);
+      document.addEventListener('touchcancel', stopDrag);
     }
 
     // 拖拽中
     function drag(e) {
       if (!draggedJoint) return;
+      e.preventDefault(); // 阻止页面滚动
 
       const joint = joints[draggedJoint];
       const svg = document.getElementById('puppetCanvas');
       const svgRect = svg.getBoundingClientRect();
       
-      // 获取鼠标在屏幕上的位置
-      const clientX = e.clientX;
-      const clientY = e.clientY;
+      // 获取鼠标或触摸在屏幕上的位置
+      const coords = getClientCoordinates(e);
+      const clientX = coords.clientX;
+      const clientY = coords.clientY;
       
-      // 计算鼠标相对于SVG元素的位置（像素）
+      // 计算相对于SVG元素的位置（像素）
       const relativeX = clientX - svgRect.left;
       const relativeY = clientY - svgRect.top;
       
@@ -1143,6 +1164,9 @@
       }
       document.removeEventListener('mousemove', drag);
       document.removeEventListener('mouseup', stopDrag);
+      document.removeEventListener('touchmove', drag);
+      document.removeEventListener('touchend', stopDrag);
+      document.removeEventListener('touchcancel', stopDrag);
     }
 
     // 计算两个关节之间的角度

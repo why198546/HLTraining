@@ -634,28 +634,36 @@
 
     initCanvas();
 
+    // 获取坐标的辅助函数（统一处理鼠标和触摸）
+    function getCoordinates(e, rect) {
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
     // 鼠标事件
     canvas.addEventListener('mousedown', (e) => {
       isDrawing = true;
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const coords = getCoordinates(e, rect);
       ctx.beginPath();
-      ctx.moveTo(x, y);
+      ctx.moveTo(coords.x, coords.y);
     });
 
     canvas.addEventListener('mousemove', (e) => {
       if (!isDrawing) return;
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const coords = getCoordinates(e, rect);
 
       if (currentTool === 'draw') {
         ctx.strokeStyle = penColorInput.value;
-        ctx.lineTo(x, y);
+        ctx.lineTo(coords.x, coords.y);
         ctx.stroke();
       } else if (currentTool === 'eraser') {
-        ctx.clearRect(x - 10, y - 10, 20, 20);
+        ctx.clearRect(coords.x - 10, coords.y - 10, 20, 20);
       }
     });
 
@@ -664,6 +672,39 @@
     });
 
     canvas.addEventListener('mouseleave', () => {
+      isDrawing = false;
+    });
+
+    // 触摸事件
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // 阻止页面滚动
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      const coords = getCoordinates(e, rect);
+      ctx.beginPath();
+      ctx.moveTo(coords.x, coords.y);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault(); // 阻止页面滚动
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const coords = getCoordinates(e, rect);
+
+      if (currentTool === 'draw') {
+        ctx.strokeStyle = penColorInput.value;
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+      } else if (currentTool === 'eraser') {
+        ctx.clearRect(coords.x - 10, coords.y - 10, 20, 20);
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', () => {
+      isDrawing = false;
+    });
+
+    canvas.addEventListener('touchcancel', () => {
       isDrawing = false;
     });
 
