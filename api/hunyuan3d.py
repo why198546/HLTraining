@@ -87,13 +87,11 @@ class Hunyuan3DGenerator:
             self.client = None
     
     def generate_3d_model(self, image_path, session_id=None, version_number=1, api_version='rapid'):
-        """从2D图片生成3D模型
+        """从2D图片生成3D模型，始终返回统一的dict结构
         
-        Args:
-            image_path: 图片路径
-            session_id: 会话ID，如果提供，则直接保存到session目录
-            version_number: 版本号
-            api_version: API版本，'rapid'=极速版（默认），'pro'=专业版
+        Returns:
+            { 'success': True, 'model_path': str, 'stl_path': Optional[str] }
+            { 'success': False, 'error': str }
         """
         try:
             print("🎯 开始生成3D模型...")
@@ -105,20 +103,30 @@ class Hunyuan3DGenerator:
             # 根据版本选择不同的API
             if api_version == 'pro':
                 print("📌 使用专业版API（质量更高，速度较慢）")
-                model_path = self._generate_with_ai3d_pro_api(image_path, session_id, version_number)
+                model_paths = self._generate_with_ai3d_pro_api(image_path, session_id, version_number)
             else:
                 print("📌 使用极速版API（速度更快）")
-                model_path = self._generate_with_ai3d_api(image_path, session_id, version_number)
+                model_paths = self._generate_with_ai3d_api(image_path, session_id, version_number)
             
-            if model_path:
-                return model_path
+            if model_paths:
+                return {
+                    'success': True,
+                    'model_path': model_paths.get('glb_path'),
+                    'stl_path': model_paths.get('stl_path')
+                }
             
-            # API调用失败，抛出错误
-            raise Exception("3D模型生成服务暂时不可用，请稍后重试")
+            # API调用失败
+            return {
+                'success': False,
+                'error': "3D模型生成服务暂时不可用，请稍后重试"
+            }
             
         except Exception as e:
             print(f"❌ 3D模型生成错误: {str(e)}")
-            raise e
+            return {
+                'success': False,
+                'error': str(e)
+            }
     
     def _generate_with_ai3d_api(self, image_path, session_id=None, version_number=1):
         """使用腾讯云AI3D极速版API生成3D模型（单图模式）"""
@@ -527,11 +535,7 @@ class Hunyuan3DGenerator:
     def _download_3d_model(self, model_url, image_path, session_id=None, version_number=1):
         """下载3D模型文件并生成STL版本用于3D打印
         
-        Args:
-            model_url: 模型下载URL
-            image_path: 源图片路径
-            session_id: 会话ID，如果提供，则保存到session目录
-            version_number: 版本号
+        Returns dict: {'glb_path': str, 'stl_path': Optional[str]}
         """
         try:
             print(f"📥 下载3D模型...")
@@ -542,17 +546,12 @@ class Hunyuan3DGenerator:
                 base_name = os.path.splitext(os.path.basename(image_path))[0]
                 unique_id = str(uuid.uuid4())[:8]
                 
-                # 决定保存目录
-                if session_id:
-                    # 保存到session目录
-                    save_dir = os.path.join('creation_sessions', session_id)
-                    glb_filename = f"model_v{version_number}_{unique_id}.glb"
-                    print(f"💾 保存到session: {session_id}")
-                else:
-                    # 保存到默认目录
-                    save_dir = self.models_folder
-                    glb_filename = f"{base_name}_ai3d_{unique_id}.glb"
-                    print(f"💾 保存到默认目录: {save_dir}")
+                # 统一保存到uploads/3d_models，便于静态访问
+                save_dir = self.models_folder
+                # 保留session信息在文件名中以防冲突
+                session_suffix = f"_{session_id}" if session_id else ""
+                glb_filename = f"model_v{version_number}{session_suffix}_{unique_id}.glb"
+                print(f"💾 保存到目录: {save_dir}")
                 
                 # 确保目录存在
                 os.makedirs(save_dir, exist_ok=True)
@@ -563,9 +562,9 @@ class Hunyuan3DGenerator:
                 
                 if is_zip:
                     print("🔍 检测到ZIP文件，开始解压...")
-                    import zipfile
                     import io
-                    
+                    import zipfile
+
                     # 创建临时ZIP文件对象
                     zip_data = io.BytesIO(content)
                     
@@ -658,7 +657,10 @@ class Hunyuan3DGenerator:
                 if stl_path:
                     print(f"✅ STL模型生成完成: {stl_path}")
                 
-                return glb_path
+                return {
+                    'glb_path': glb_path,
+                    'stl_path': stl_path
+                }
                 
             else:
                 print(f"❌ 模型下载失败: {response.status_code}")
@@ -672,8 +674,11 @@ class Hunyuan3DGenerator:
         try:
             import trimesh
             
+            print(f"🔄 开始GLB→STL转换: {glb_path}")
+            
             # 加载GLB模型
             mesh = trimesh.load(glb_path)
+            print(f"✅ GLB模型加载成功，面数: {len(mesh.faces) if hasattr(mesh, 'faces') else 'N/A'}")
             
             # 生成STL文件路径
             stl_path = glb_path.replace('.glb', '.stl')
@@ -681,12 +686,22 @@ class Hunyuan3DGenerator:
             # 导出为STL
             mesh.export(stl_path)
             
-            return stl_path
+            # 验证文件是否生成
+            if os.path.exists(stl_path):
+                file_size = os.path.getsize(stl_path)
+                print(f"✅ STL文件生成成功: {stl_path} ({file_size} bytes)")
+                return stl_path
+            else:
+                print(f"❌ STL文件未生成: {stl_path}")
+                return None
+            
         except ImportError:
             print("⚠️  trimesh未安装，无法生成STL文件。运行: pip install trimesh")
             return None
         except Exception as e:
             print(f"⚠️  GLB转STL失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     def _encode_image_to_base64(self, image_path):

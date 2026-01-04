@@ -705,8 +705,8 @@ def generate_3d():
         
         # 保存模型文件路径（相对于uploads目录）
         model_path = result.get('model_path')
+        stl_path = result.get('stl_path')
         if model_path and os.path.exists(model_path):
-            # 提取文件名
             model_filename = os.path.basename(model_path)
             artwork.model_3d = model_filename
             db.session.commit()
@@ -714,6 +714,7 @@ def generate_3d():
             return jsonify({
                 'success': True,
                 'model_url': f"/uploads/3d_models/{model_filename}",
+                'stl_url': f"/uploads/3d_models/{os.path.basename(stl_path)}" if stl_path and os.path.exists(stl_path) else None,
                 'session_id': session_id
             })
         else:
@@ -824,9 +825,12 @@ def generate_3d_direct():
         
         # 保存模型文件路径
         model_path = result.get('model_path')
+        stl_path = result.get('stl_path')
         if model_path and os.path.exists(model_path):
             model_filename = os.path.basename(model_path)
             artwork.model_3d = model_filename
+        else:
+            model_filename = None
         
         if prompt:
             artwork.prompt_text = prompt
@@ -836,6 +840,7 @@ def generate_3d_direct():
         return jsonify({
             'success': True,
             'model_url': f"/uploads/3d_models/{model_filename}" if model_path else None,
+            'stl_url': f"/uploads/3d_models/{os.path.basename(stl_path)}" if stl_path and os.path.exists(stl_path) else None,
             'session_id': session_id
         })
         
@@ -1100,8 +1105,11 @@ def finalize_artwork():
 @api_create_bp.route('/api/download_model/<session_id>')
 @login_required
 def download_model(session_id):
-    """下载3D模型文件"""
+    """下载3D模型文件，支持glb/stl格式"""
     try:
+        fmt = request.args.get('format', 'glb').lower()
+        current_app.logger.info(f'📥 下载模型请求 - Session: {session_id}, 格式: {fmt}')
+        
         artwork = Artwork.query.filter_by(session_id=session_id).first()
         if not artwork or artwork.user_id != current_user.id:
             return jsonify({
@@ -1110,20 +1118,75 @@ def download_model(session_id):
             }), 403
         
         if not artwork.model_3d:
+            current_app.logger.warning(f'⚠️ 作品 {session_id} 没有3D模型')
             return jsonify({
                 'success': False,
                 'error': '该作品没有3D模型'
             }), 404
         
-        model_path = os.path.join(current_app.root_path, '..', 'uploads', artwork.model_3d)
-        if not os.path.exists(model_path):
-            return jsonify({
-                'success': False,
-                'error': '模型文件不存在'
-            }), 404
+        current_app.logger.info(f'📁 模型文件名: {artwork.model_3d}')
+        
+        # 3D模型文件存储在uploads/3d_models目录
+        base_glb_path = os.path.join(current_app.root_path, '..', 'uploads', '3d_models', artwork.model_3d)
+        current_app.logger.info(f'🔍 检查GLB文件路径: {base_glb_path}')
+        current_app.logger.info(f'📂 文件存在: {os.path.exists(base_glb_path)}')
+        
+        if not os.path.exists(base_glb_path):
+            # 尝试旧路径（向后兼容）
+            old_path = os.path.join(current_app.root_path, '..', 'uploads', artwork.model_3d)
+            current_app.logger.info(f'🔍 尝试旧路径: {old_path}')
+            if os.path.exists(old_path):
+                base_glb_path = old_path
+                current_app.logger.info('✅ 使用旧路径')
+            else:
+                current_app.logger.error(f'❌ 文件不存在: {artwork.model_3d}')
+                return jsonify({
+                    'success': False,
+                    'error': f'模型文件不存在: {artwork.model_3d}'
+                }), 404
+
+        if fmt == 'stl':
+            stl_path = base_glb_path.replace('.glb', '.stl')
+            current_app.logger.info(f'🔍 查找STL文件: {stl_path}')
+            current_app.logger.info(f'📂 STL文件存在: {os.path.exists(stl_path)}')
+            
+            if os.path.exists(stl_path):
+                current_app.logger.info(f'✅ 发送STL文件: {stl_path}')
+                return send_file(
+                    stl_path,
+                    as_attachment=True,
+                    download_name=f"model_{session_id}.stl",
+                    mimetype='application/vnd.ms-pki.stl'
+                )
+            else:
+                # 尝试即时转换GLB为STL
+                try:
+                    import trimesh
+                    current_app.logger.info(f'🔧 即时转换GLB为STL: {base_glb_path}')
+                    mesh = trimesh.load(base_glb_path)
+                    mesh.export(stl_path)
+                    current_app.logger.info(f'✅ STL转换完成: {stl_path}')
+                    return send_file(
+                        stl_path,
+                        as_attachment=True,
+                        download_name=f"model_{session_id}.stl",
+                        mimetype='application/vnd.ms-pki.stl'
+                    )
+                except ImportError:
+                    current_app.logger.error('STL转换失败: trimesh未安装')
+                    return jsonify({
+                        'success': False,
+                        'error': 'STL转换功能未启用，需要安装trimesh库'
+                    }), 500
+                except Exception as convert_error:
+                    current_app.logger.error(f'❌ STL转换失败: {str(convert_error)}')
+                    return jsonify({
+                        'success': False,
+                        'error': f'STL文件转换失败: {str(convert_error)}'
+                    }), 500
         
         return send_file(
-            model_path,
+            base_glb_path,
             as_attachment=True,
             download_name=f"model_{session_id}.glb",
             mimetype='model/gltf-binary'

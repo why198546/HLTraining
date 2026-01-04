@@ -234,8 +234,8 @@ function showArtworkModal(element) {
         showcase.appendChild(versionsStep);
     }
     
-    // 3D模型
-    if (artworkData.modelFile) {
+    // 3D模型 - 只在有真实模型文件时显示
+    if (artworkData.modelFile && artworkData.modelFile.trim() !== '' && artworkData.modelFile !== 'null') {
         const modelStep = document.createElement('div');
         modelStep.className = 'artwork-detail-step';
         modelStep.innerHTML = `
@@ -479,6 +479,11 @@ function showModelModal(modelSrc, title) {
         event.stopPropagation();
     }
     
+    // 检查模型URL是否有效
+    if (!modelSrc || modelSrc.trim() === '' || modelSrc === 'null') {
+        alert('该作品没有3D模型文件');
+        return;
+    }
     
     // 保存当前模型URL到全局变量
     currentModelUrl = modelSrc;
@@ -529,26 +534,31 @@ function showModelModal(modelSrc, title) {
         if (typeof ModelViewer3D !== 'undefined') {
             try {
                 // 创建ModelViewer3D实例
-                const viewer = new ModelViewer3D(modelContainer, {
+                currentModelViewer = new ModelViewer3D(modelContainer, {
                     backgroundColor: 0x000000,
                     enableControls: true,
                     enableAutoRotate: false,
                     onModelLoaded: () => {
+                        console.log('✅ 3D模型加载完成');
                     },
                     onLoadError: (error) => {
-                        hldebug.error('3D model load error:', error);
+                        console.error('3D模型加载失败详情:', error);
+                        console.error('尝试加载的模型URL:', modelSrc);
                         modelContainer.innerHTML = `
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center;">
                                 <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; color: #ff6b6b;"></i>
                                 <p>3D模型加载失败</p>
-                                <p style="margin-top: 10px;"><a href="${modelSrc}" target="_blank" style="color: #4CAF50;">下载模型文件</a></p>
+                                <p style="font-size: 0.9rem; margin-top: 5px; color: #999;">模型路径: ${modelSrc}</p>
+                                <p style="font-size: 0.9rem; color: #ff6b6b;">${error.message || error}</p>
+                                <p style="margin-top: 10px;"><a href="${modelSrc}" target="_blank" style="color: #4CAF50;">尝试下载模型文件</a></p>
                             </div>
                         `;
                     }
                 });
                 
                 // 加载模型
-                viewer.loadModel(modelSrc);
+                console.log('🎯 开始加载3D模型，URL:', modelSrc);
+                currentModelViewer.loadModel(modelSrc);
                 
             } catch (error) {
                 hldebug.error('Error creating ModelViewer3D:', error);
@@ -594,69 +604,158 @@ function closeModelModal() {
     }
 }
 
-// 在Bamboo Studio中打开模型
-function openInBambooStudio() {
-    if (!currentModelUrl) {
-        alert('未找到3D模型文件');
-        return;
-    }
-    
-    // 获取完整的模型URL
-    const fullUrl = currentModelUrl.startsWith('http') 
-        ? currentModelUrl 
-        : window.location.origin + (currentModelUrl.startsWith('/') ? currentModelUrl : '/' + currentModelUrl);
-    
-    // Bamboo Studio支持多种URL协议
-    // 尝试使用bambustudio://协议打开
-    const bambooUrl = `bambustudio://open?url=${encodeURIComponent(fullUrl)}`;
-    
-    
-    // 创建隐藏的iframe来触发协议
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = bambooUrl;
-    document.body.appendChild(iframe);
-    
-    // 短暂延迟后移除iframe
-    setTimeout(() => {
-        document.body.removeChild(iframe);
-    }, 2000);
-    
-    // 提示用户
-    setTimeout(() => {
-        // 检测是否成功打开（通过页面是否失焦来判断）
-        if (document.hasFocus()) {
-            // 如果页面仍然有焦点，说明可能没有安装Bamboo Studio
-            const result = confirm(
-                '如果Bamboo Studio没有自动打开，可能是以下原因：\n\n' +
-                '1. 未安装Bamboo Studio软件\n' +
-                '2. 软件未关联STL文件格式\n\n' +
-                '是否直接下载STL文件？'
-            );
-            
-            if (result) {
-                downloadModel();
-            }
-        }
-    }, 1500);
+// 下载模型文件（STL格式用于3D打印）
+function downloadModel() {
+    downloadModelFormat(null, 'stl');
 }
 
-// 下载模型文件
-function downloadModel() {
+// 下载指定格式的模型文件
+function downloadModelFormat(event, format) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // 关闭下拉菜单
+    const menu = document.getElementById('downloadMenu');
+    if (menu) menu.style.display = 'none';
+    
     if (!currentModelUrl) {
         alert('未找到3D模型文件');
         return;
     }
     
-    // 创建下载链接
-    const link = document.createElement('a');
-    link.href = currentModelUrl;
-    link.download = currentModelUrl.split('/').pop() || 'model.stl';
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // 从modal元素获取sessionId
+    const modal = document.getElementById('artworkModal');
+    const sessionId = modal ? modal.dataset.sessionId : null;
     
+    if (!sessionId) {
+        // 如果没有sessionId，直接下载GLB文件
+        console.warn('⚠️ 未找到sessionId，直接下载GLB文件');
+        const link = document.createElement('a');
+        link.href = currentModelUrl;
+        link.download = currentModelUrl.split('/').pop() || 'model.glb';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+    }
+    
+    // 根据格式下载
+    let downloadUrl;
+    let fileName;
+    
+    switch(format) {
+        case 'stl':
+            downloadUrl = `/api/download_model/${sessionId}?format=stl`;
+            fileName = `model_${sessionId}.stl`;
+            break;
+        case 'glb':
+            downloadUrl = `/api/download_model/${sessionId}?format=glb`;
+            fileName = `model_${sessionId}.glb`;
+            break;
+        case 'obj':
+            // OBJ格式需要转换，暂时提示用户
+            alert('OBJ格式转换功能开发中\n\n建议：\n• STL格式：用于3D打印\n• GLB格式：用于网页预览和编辑');
+            return;
+        default:
+            downloadUrl = `/api/download_model/${sessionId}`;
+            fileName = `model_${sessionId}.glb`;
+    }
+    
+    console.log(`📦 下载${format.toUpperCase()}格式模型，sessionId:`, sessionId);
+    window.location.href = downloadUrl;
+}
+
+// 切换下载菜单
+function toggleDownloadMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('downloadMenu');
+    if (menu) {
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+// 点击页面其他地方关闭下载菜单
+document.addEventListener('click', function(e) {
+    const menu = document.getElementById('downloadMenu');
+    if (menu && !e.target.closest('.dropdown')) {
+        menu.style.display = 'none';
+    }
+});
+
+// 全屏切换
+let currentModelViewer = null;
+function toggleModelFullscreen() {
+    const overlay = document.getElementById('modelOverlay');
+    if (!overlay) return;
+    
+    if (!document.fullscreenElement) {
+        // 进入全屏
+        if (overlay.requestFullscreen) {
+            overlay.requestFullscreen();
+        } else if (overlay.webkitRequestFullscreen) {
+            overlay.webkitRequestFullscreen();
+        } else if (overlay.msRequestFullscreen) {
+            overlay.msRequestFullscreen();
+        }
+    } else {
+        // 退出全屏
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+}
+
+// 更新环境光强度
+function updateAmbientLight(value) {
+    const valueDisplay = document.getElementById('ambientLightValue');
+    if (valueDisplay) valueDisplay.textContent = value;
+    
+    if (currentModelViewer && currentModelViewer.setAmbientLightIntensity) {
+        currentModelViewer.setAmbientLightIntensity(value);
+    }
+}
+
+// 更新方向光强度
+function updateDirectionalLight(value) {
+    const valueDisplay = document.getElementById('directionalLightValue');
+    if (valueDisplay) valueDisplay.textContent = value;
+    
+    if (currentModelViewer && currentModelViewer.setDirectionalLightIntensity) {
+        currentModelViewer.setDirectionalLightIntensity(value);
+    }
+}
+    if (!currentModelUrl) {
+        alert('未找到3D模型文件');
+        return;
+    }
+    
+    // 从modal元素获取sessionId
+    const modal = document.getElementById('artworkModal');
+    const sessionId = modal ? modal.dataset.sessionId : null;
+    
+    if (!sessionId) {
+        // 如果没有sessionId，直接下载GLB文件
+        console.warn('⚠️ 未找到sessionId，直接下载GLB文件');
+        const link = document.createElement('a');
+        link.href = currentModelUrl;
+        link.download = currentModelUrl.split('/').pop() || 'model.glb';
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return;
+    }
+    
+    // 调用API下载STL格式（用于3D打印）
+    console.log('📦 下载STL格式模型，sessionId:', sessionId);
+    window.location.href = `/api/download_model/${sessionId}?format=stl`;
 }
 
 function toggleImageMode(img) {

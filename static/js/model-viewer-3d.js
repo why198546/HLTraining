@@ -239,6 +239,8 @@ class ModelViewer3D {
      * @param {string} format - 模型格式 ('gltf', 'glb', 'obj')
      */
     loadModel(modelUrl, format = 'auto') {
+        console.log('🔍 开始加载3D模型:', modelUrl);
+        
         // 清除之前的模型
         this.clearModel();
         
@@ -246,6 +248,7 @@ class ModelViewer3D {
         if (format === 'auto') {
             const ext = modelUrl.split('.').pop().toLowerCase();
             format = ext === 'glb' ? 'gltf' : ext;
+            console.log('📝 检测到文件扩展名:', ext, '→ 格式:', format);
         }
         
         switch (format) {
@@ -258,7 +261,9 @@ class ModelViewer3D {
                 break;
             default:
                 hldebug.error('不支持的模型格式:', format);
-                this.createPlaceholderModel();
+                if (this.onLoadError) {
+                    this.onLoadError(new Error('不支持的模型格式: ' + format));
+                }
         }
     }
     
@@ -266,6 +271,7 @@ class ModelViewer3D {
      * 加载GLTF/GLB模型
      */
     loadGLTFModel(modelUrl) {
+        console.log('📦 调用loadGLTFModel，URL:', modelUrl);
         // 直接使用fetch加载GLB文件，绕过GLTFLoader的依赖问题
         this.loadGLBDirectly(modelUrl);
     }
@@ -274,6 +280,8 @@ class ModelViewer3D {
      * 直接加载GLB文件
      */
     loadGLBDirectly(modelUrl) {
+        console.log('🚀 开始直接加载GLB文件:', modelUrl);
+        
         // 等待GLTFLoader模块加载完成
         const waitForGLTFLoader = () => {
             return new Promise((resolve, reject) => {
@@ -306,19 +314,25 @@ class ModelViewer3D {
         
         Promise.all([
             fetch(modelUrl).then(response => {
+                console.log('📥 Fetch响应状态:', response.status, response.statusText);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 return response.arrayBuffer();
+            }).then(data => {
+                console.log('✅ GLB数据下载完成，大小:', data.byteLength, 'bytes');
+                return data;
             }),
             waitForGLTFLoader()
         ])
         .then(([data, GLTFLoader]) => {
+            console.log('✅ GLTFLoader已就绪，开始解析GLB数据...');
             const loader = new GLTFLoader();
             
             // 直接解析GLB数据
             loader.parse(data, '', 
                 (gltf) => {
+                    console.log('✅ GLB解析成功！场景节点数:', gltf.scene.children.length);
                     this.currentModel = gltf.scene;
                     this.addModelToScene();
                     
@@ -327,14 +341,19 @@ class ModelViewer3D {
                     }
                 },
                 (error) => {
-                    hldebug.error('GLB文件解析错误:', error);
-                    this.createPlaceholderModel();
+                    console.error('❌ GLB文件解析错误:', error);
+                    if (this.onLoadError) {
+                        this.onLoadError(error);
+                    }
                 }
             );
         })
         .catch(error => {
-            hldebug.error('GLB文件加载或GLTFLoader初始化错误:', error);
-            this.createPlaceholderModel();
+            console.error('❌ GLB文件加载或GLTFLoader初始化错误:', error);
+            console.error('错误堆栈:', error.stack);
+            if (this.onLoadError) {
+                this.onLoadError(error);
+            }
         });
     }    /**
      * 加载OBJ模型
@@ -384,12 +403,20 @@ class ModelViewer3D {
      * 将模型添加到场景并调整位置
      */
     addModelToScene() {
-        if (!this.currentModel) return;
+        if (!this.currentModel) {
+            console.warn('⚠️ currentModel为空，无法添加到场景');
+            return;
+        }
+        
+        console.log('📐 开始调整模型大小和位置...');
         
         // 调整模型大小和位置
         const box = new THREE.Box3().setFromObject(this.currentModel);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
+        
+        console.log('📏 模型尺寸:', size);
+        console.log('📍 模型中心:', center);
         
         const maxDim = Math.max(size.x, size.y, size.z);
         const scale = maxDim > 0 ? 3 / maxDim : 1;
@@ -399,62 +426,11 @@ class ModelViewer3D {
         
         this.scene.add(this.currentModel);
         
+        console.log('✅ 模型已添加到场景，缩放比例:', scale);
+        
         // 调用加载完成回调
         if (this.config.onModelLoaded) {
             this.config.onModelLoaded(this.currentModel);
-        }
-    }
-    
-    /**
-     * 创建占位符模型
-     */
-    createPlaceholderModel() {
-        this.clearModel();
-        
-        // 创建自行车占位符模型
-        const group = new THREE.Group();
-        
-        // 车身框架
-        const frameGeometry = new THREE.BoxGeometry(2, 0.1, 0.1);
-        const frameMaterial = new THREE.MeshLambertMaterial({ color: 0x0066cc });
-        const frame = new THREE.Mesh(frameGeometry, frameMaterial);
-        frame.position.set(0, 0.5, 0);
-        group.add(frame);
-        
-        // 后轮
-        const wheelGeometry = new THREE.TorusGeometry(0.5, 0.1, 8, 16);
-        const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-        const rearWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        rearWheel.position.set(-1, 0, 0);
-        rearWheel.rotation.y = Math.PI / 2;
-        group.add(rearWheel);
-        
-        // 前轮
-        const frontWheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-        frontWheel.position.set(1, 0, 0);
-        frontWheel.rotation.y = Math.PI / 2;
-        group.add(frontWheel);
-        
-        // 座椅
-        const seatGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.4);
-        const seatMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
-        const seat = new THREE.Mesh(seatGeometry, seatMaterial);
-        seat.position.set(-0.3, 1, 0);
-        group.add(seat);
-        
-        // 把手
-        const handleGeometry = new THREE.CylinderGeometry(0.05, 0.05, 0.8);
-        const handleMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
-        const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-        handle.position.set(0.8, 1.2, 0);
-        handle.rotation.z = Math.PI / 2;
-        group.add(handle);
-        
-        this.currentModel = group;
-        this.scene.add(group);
-        
-        if (this.onModelLoaded) {
-            this.onModelLoaded(this.currentModel);
         }
     }
     

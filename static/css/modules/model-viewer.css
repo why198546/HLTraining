@@ -1,0 +1,110 @@
+.viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.viewer-title {
+    margin: 0;
+    color: #0e1b2b;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.viewer-subtitle {
+    margin: 4px 0 0;
+    color: #506078;
+    font-size: 0.95rem;
+}
+
+.viewer-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.viewer-meta-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 12px 0 16px;
+}
+
+.meta-pill {
+    background: #eef3f8;
+    color: #1f2f44;
+    border: 1px solid #d8e2ed;
+    border-radius: 24px;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+.model-viewer {
+    width: 100%;
+    height: 70vh;
+    min-height: 460px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+
+.model-viewer.gradient {
+    background: radial-gradient(circle at 20% 20%, rgba(70,120,255,0.2), transparent 35%),
+                radial-gradient(circle at 80% 30%, rgba(0,200,140,0.25), transparent 35%),
+                linear-gradient(135deg, #0b1220 0%, #111c2f 40%, #0f2b3a 100%);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.24);
+}
+
+.model-canvas-holder {
+    position: absolute;
+    inset: 0;
+}
+
+.model-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.fullscreen-viewer {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 12, 20, 0.88);
+    backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: flex;
+    padding: 0;
+}
+
+.fullscreen-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 20px;
+    box-sizing: border-box;
+}
+
+.fullscreen-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #eef3f8;
+}
+
+.fullscreen-viewer-shell {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.fullscreen {
+    height: 100%;
+}

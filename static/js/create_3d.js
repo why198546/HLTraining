@@ -1,6 +1,6 @@
 // create_3d.js - 3D模型生成页面（支持两种模式）
 let sessionId = document.getElementById('session-id').value;
-let modelViewer = null;
+let viewer = null;
 let uploadedImageFor3D = null;
 
 // Loading 函数
@@ -56,6 +56,72 @@ function handleImageUploadFor3D(event) {
     reader.readAsDataURL(file);
 }
 
+// 初始化拖拽上传，避免浏览器默认打开图片
+document.addEventListener('DOMContentLoaded', () => {
+    const uploadArea = document.querySelector('.upload-area');
+    const fileInput = document.getElementById('model-image');
+
+    if (!uploadArea || !fileInput) return;
+
+    const resetHover = () => {
+        uploadArea.style.borderColor = '#00704A';
+        uploadArea.style.background = '#f8f8f8';
+    };
+
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadArea.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            uploadArea.style.borderColor = '#004f35';
+            uploadArea.style.background = '#e8f5e9';
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadArea.addEventListener(evt, e => {
+            e.preventDefault();
+            e.stopPropagation();
+            resetHover();
+        });
+    });
+
+    uploadArea.addEventListener('drop', e => {
+        const files = e.dataTransfer ? e.dataTransfer.files : null;
+        if (!files || !files.length) return;
+
+        // DataTransfer更可靠地写入file input
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        fileInput.files = dt.files;
+
+        handleImageUploadFor3D({ target: fileInput });
+    });
+
+    // 防止将图片拖到页面其他位置时被浏览器直接打开
+    ['dragover', 'drop'].forEach(evt => {
+        document.addEventListener(evt, e => {
+            e.preventDefault();
+        });
+    });
+});
+
+// 初始化模型查看器
+document.addEventListener('DOMContentLoaded', () => {
+    viewer = ModelViewer.init({
+        containerId: 'model-container',
+        shellId: 'model-viewer-shell',
+        fullscreenShellId: 'fullscreen-viewer-shell',
+        fullscreenWrapperId: 'fullscreen-viewer',
+        metaIds: {
+            name: 'model-meta-name',
+            size: 'model-meta-size',
+            meshes: 'model-meta-meshes',
+            tris: 'model-meta-tris',
+            fullscreenName: 'fullscreen-meta-name'
+        }
+    });
+});
+
 // 基于session生成3D（有源图片）
 async function generate3D() {
     if (!sessionId) {
@@ -81,13 +147,13 @@ async function generate3D() {
         
         if (result.success) {
             document.getElementById('preview-section').style.display = 'block';
-            load3DModel(result.model_url);
+            if (viewer) viewer.loadModel(result.model_url);
             showToast('3D模型生成成功！', 'success');
         } else {
             showToast(result.message || '生成失败', 'error');
         }
     } catch (error) {
-        hldebug.error('生成失败:', error);
+        console.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
@@ -131,65 +197,23 @@ async function generate3DDirect() {
             sessionId = result.session_id;
             document.getElementById('session-id').value = sessionId;
             document.getElementById('preview-section').style.display = 'block';
-            load3DModel(result.model_url);
+            if (viewer) viewer.loadModel(result.model_url);
             showToast('3D模型生成成功！', 'success');
         } else {
             showToast(result.message || '生成失败', 'error');
         }
     } catch (error) {
-        hldebug.error('生成失败:', error);
+        console.error('生成失败:', error);
         showToast('网络错误，请重试', 'error');
     } finally {
         hideLoading();
     }
 }
 
-// 加载3D模型
+// 加载3D模型（委托给模块化查看器）
 function load3DModel(modelUrl) {
-    const container = document.getElementById('model-container');
-    
-    // 初始化Three.js场景
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-    
-    // 添加光源
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
-    
-    // 加载GLTF模型
-    const loader = new THREE.GLTFLoader();
-    loader.load(modelUrl, (gltf) => {
-        scene.add(gltf.scene);
-        
-        // 调整相机位置
-        camera.position.z = 5;
-        
-        // 添加控制器
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        
-        // 渲染循环
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }
-        animate();
-        
-        modelViewer = { scene, camera, renderer, controls };
-    }, undefined, (error) => {
-        hldebug.error('模型加载失败:', error);
-        showToast('模型加载失败', 'error');
-    });
+    if (!viewer) return;
+    viewer.loadModel(modelUrl);
 }
 
 // 下载模型
@@ -201,6 +225,14 @@ function downloadModel() {
     window.location.href = `/api/download_model/${sessionId}`;
 }
 
+function downloadStl() {
+    if (!sessionId) {
+        showToast('请先生成模型', 'warning');
+        return;
+    }
+    window.location.href = `/api/download_model/${sessionId}?format=stl`;
+}
+
 // 继续生成视频
 function continueToVideo() {
     if (!sessionId) {
@@ -210,12 +242,11 @@ function continueToVideo() {
     window.location.href = `/create/video?session_id=${sessionId}`;
 }
 
-// Loading显示/隐藏
-function showLoading(text) {
-    document.getElementById('loading-text').textContent = text;
-    document.getElementById('loading-overlay').style.display = 'flex';
+// 全屏入口/出口（委托给模块化查看器）
+function enterFullscreenViewer() {
+    if (viewer) viewer.enterFullscreen();
 }
 
-function hideLoading() {
-    document.getElementById('loading-overlay').style.display = 'none';
+function exitFullscreenViewer() {
+    if (viewer) viewer.exitFullscreen();
 }

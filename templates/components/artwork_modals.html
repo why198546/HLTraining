@@ -101,11 +101,24 @@
         <div class="model-header">
             <h3 id="modelTitle">3D模型查看器</h3>
             <div class="model-header-actions">
-                <button class="model-action-btn" onclick="openInBambooStudio()" title="在Bamboo Studio中打开">
-                    <i class="fas fa-external-link-alt"></i> 在Bamboo Studio中打开
-                </button>
-                <button class="model-action-btn" onclick="downloadModel()" title="下载STL文件">
-                    <i class="fas fa-download"></i> 下载STL
+                <div class="dropdown" style="display: inline-block; position: relative;">
+                    <button class="model-action-btn" onclick="toggleDownloadMenu(event)" title="选择下载格式">
+                        <i class="fas fa-download"></i> 下载 <i class="fas fa-caret-down"></i>
+                    </button>
+                    <div id="downloadMenu" class="dropdown-menu" style="display: none;">
+                        <a href="#" onclick="downloadModelFormat(event, 'stl')">
+                            <i class="fas fa-cube"></i> STL（3D打印）
+                        </a>
+                        <a href="#" onclick="downloadModelFormat(event, 'glb')">
+                            <i class="fas fa-file-code"></i> GLB（网页预览）
+                        </a>
+                        <a href="#" onclick="downloadModelFormat(event, 'obj')">
+                            <i class="fas fa-box"></i> OBJ（通用格式）
+                        </a>
+                    </div>
+                </div>
+                <button class="model-action-btn" onclick="toggleModelFullscreen()" title="全屏查看">
+                    <i class="fas fa-expand"></i> 全屏
                 </button>
             </div>
             <button class="model-close-btn" onclick="closeModelModal()">&times;</button>
@@ -113,6 +126,26 @@
         <div id="modelContainer" class="model-container">
             <!-- Canvas for 3D model -->
             <canvas id="modelCanvas"></canvas>
+            
+            <!-- 光照控制面板 -->
+            <div class="lighting-controls" style="position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 8px; color: white; z-index: 10; min-width: 200px;">
+                <div style="margin-bottom: 10px; font-weight: bold;">
+                    <i class="fas fa-lightbulb"></i> 光照控制
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <label style="display: block; font-size: 12px; margin-bottom: 5px;">环境光强度</label>
+                    <input type="range" id="ambientLightSlider" min="0" max="2" step="0.1" value="0.6" 
+                           style="width: 100%;" oninput="updateAmbientLight(this.value)">
+                    <span id="ambientLightValue" style="font-size: 11px; opacity: 0.7;">0.6</span>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12px; margin-bottom: 5px;">方向光强度</label>
+                    <input type="range" id="directionalLightSlider" min="0" max="2" step="0.1" value="0.8" 
+                           style="width: 100%;" oninput="updateDirectionalLight(this.value)">
+                    <span id="directionalLightValue" style="font-size: 11px; opacity: 0.7;">0.8</span>
+                </div>
+            </div>
+            
             <!-- 模型信息显示 -->
             <div id="modelInfo" style="position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px; z-index: 10;">
                 准备加载3D模型...

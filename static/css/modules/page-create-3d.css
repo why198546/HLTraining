@@ -212,26 +212,6 @@
     padding: 30px;
 }
 
-.preview-section h3 {
-    margin-bottom: 20px;
-    color: #333;
-}
-
-.model-viewer {
-    width: 100%;
-    height: 500px;
-    background: #f8f8f8;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-.model-actions {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-}
-
 /* 按钮样式 */
 .btn-primary, .btn-secondary {
     padding: 14px 32px;

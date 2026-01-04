@@ -441,7 +441,13 @@ class Artwork(db.Model):
             if filename.startswith('/') or filename.startswith('http'):
                 return filename
             
-            # 优先检查 uploads 目录（新的保存位置）
+            # 优先检查 uploads/3d_models 目录（3D模型专用）
+            if filename.endswith('.glb') or filename.endswith('.stl'):
+                models_path = f"uploads/3d_models/{filename}"
+                if os.path.exists(models_path):
+                    return f"/uploads/3d_models/{filename}"
+            
+            # 检查 uploads 目录（新的保存位置）
             uploads_path = f"uploads/{filename}"
             if os.path.exists(uploads_path):
                 return f"/uploads/{filename}"
@@ -457,8 +463,11 @@ class Artwork(db.Model):
                 if os.path.exists(creation_path):
                     return f"/creation_sessions/{self.session_id}/{filename}"
             
-            # 如果都不存在，尝试 uploads 作为默认路径
-            return f"/uploads/{filename}"
+            # 如果都不存在，根据文件类型返回默认路径
+            if filename.endswith('.glb') or filename.endswith('.stl'):
+                return f"/uploads/3d_models/{filename}"
+            else:
+                return f"/uploads/{filename}"
         
         return {
             'original_sketch': get_file_url(self.original_sketch),
