@@ -84,6 +84,8 @@ class Hunyuan3DGenerator:
             
         except Exception as e:
             print(f"❌ 腾讯云客户端初始化失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
             self.client = None
     
     def generate_3d_model(self, image_path, session_id=None, version_number=1, api_version='rapid'):
@@ -98,6 +100,7 @@ class Hunyuan3DGenerator:
             
             # 检查AI3D API是否可用
             if not self.client:
+                print("⚠️ 腾讯云客户端未初始化，client为None")
                 raise Exception("腾讯云AI3D服务未配置，请联系管理员设置API密钥")
             
             # 根据版本选择不同的API
@@ -107,6 +110,14 @@ class Hunyuan3DGenerator:
             else:
                 print("📌 使用极速版API（速度更快）")
                 model_paths = self._generate_with_ai3d_api(image_path, session_id, version_number)
+            
+            # 确保总是返回字典
+            if model_paths is None:
+                print("⚠️ 模型生成返回了None")
+                return {
+                    'success': False,
+                    'error': "3D模型生成服务暂时不可用，请稍后重试"
+                }
             
             if model_paths:
                 return {
@@ -123,6 +134,8 @@ class Hunyuan3DGenerator:
             
         except Exception as e:
             print(f"❌ 3D模型生成错误: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return {
                 'success': False,
                 'error': str(e)

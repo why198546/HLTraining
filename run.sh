@@ -78,8 +78,8 @@ start_service() {
     # 激活虚拟环境并启动服务
     echo "日志文件: $LOG_FILE"
     
-    # 后台启动
-    nohup bash -c "source .venv/bin/activate && python run.py" > "$LOG_FILE" 2> "$ERROR_LOG" &
+    # 后台启动 - 确保在项目目录中运行
+    nohup bash -c "cd $(pwd) && source .venv/bin/activate && python run.py" > "$LOG_FILE" 2> "$ERROR_LOG" &
     
     APP_PID=$!
     echo $APP_PID > "$PID_FILE"

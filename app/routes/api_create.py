@@ -808,6 +808,13 @@ def generate_3d_direct():
             api_version=api_version
         )
         
+        # 确保result是字典，如果是None则返回错误
+        if result is None:
+            return jsonify({
+                'success': False,
+                'error': '3D模型生成服务异常'
+            }), 500
+        
         if not result.get('success'):
             return jsonify({
                 'success': False,
