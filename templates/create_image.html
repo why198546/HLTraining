@@ -208,6 +208,29 @@
             padding: 0 20px;
         }
         
+        /* 纸张识别与裁切选项 */
+        #camera-tab .camera-options {
+            padding: 10px 20px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        #camera-tab .camera-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+        }
+        #camera-tab .camera-options a {
+            color: #00704A;
+            text-decoration: none;
+            display: none;
+        }
+        #camera-tab .camera-options a:hover { text-decoration: underline; }
+        
         /* 为上传标签添加padding */
         #upload-tab {
             padding: 20px;
@@ -623,6 +646,13 @@
                         <button class="camera-switch-btn" onclick="switchCameraDevice(event)" type="button" title="切换前后摄像头">
                             <i class="fas fa-sync-alt"></i>
                         </button>
+                    </div>
+                    <div class="camera-options">
+                        <label>
+                            <input id="auto-crop-paper" type="checkbox" checked>
+                            自动识别纸张并裁切
+                        </label>
+                        <a id="revert-original-link" href="#" onclick="revertOriginalPhoto();return false;">还原原图</a>
                     </div>
                     <div class="camera-controls">
                         <button id="camera-start-btn" class="camera-btn camera-btn-primary" onclick="startCamera()" type="button">

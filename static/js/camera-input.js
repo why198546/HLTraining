@@ -5,6 +5,7 @@
 
 let cameraStream = null;
 let capturedPhotoBlob = null;
+let originalCapturedPhotoBlob = null; // 原始未裁切照片
 let uploadedReferenceFile = null;  // 存储参考图片文件
 let availableCameras = [];  // 可用摄像头列表
 let currentCameraIndex = 0;  // 当前摄像头索引
@@ -349,8 +350,40 @@ function capturePhoto() {
   // 绘制完整的视频帧
   context.drawImage(video, 0, 0, videoWidth, videoHeight);
 
-  canvas.toBlob(blob => {
+  canvas.toBlob(async blob => {
+    // 保存原始照片
+    originalCapturedPhotoBlob = blob;
     capturedPhotoBlob = blob;
+
+    // 如果勾选了“自动裁切纸张”，尝试识别并裁切
+    const autoCropEl = document.getElementById('auto-crop-paper');
+    const shouldAutoCrop = autoCropEl ? autoCropEl.checked : false;
+
+    if (shouldAutoCrop) {
+      try {
+        const cropped = await autoCropPaperFromBlob(blob);
+        if (cropped) {
+          capturedPhotoBlob = cropped;
+          const revertLink = document.getElementById('revert-original-link');
+          if (revertLink) revertLink.style.display = 'inline-block';
+          if (typeof showToast === 'function') {
+            showToast('已自动识别并裁切到纸张边缘', 'success');
+          }
+        } else {
+          const revertLink = document.getElementById('revert-original-link');
+          if (revertLink) revertLink.style.display = 'none';
+          if (typeof showToast === 'function') {
+            showToast('未检测到清晰纸张边缘，已保留原图', 'info');
+          }
+        }
+      } catch (err) {
+        hldebug.error('自动裁切失败:', err);
+      }
+    } else {
+      const revertLink = document.getElementById('revert-original-link');
+      if (revertLink) revertLink.style.display = 'none';
+    }
+
     stopCamera();
     showPhotoPreview();
     updateCameraUIForPreview();
@@ -377,6 +410,167 @@ function retakePhoto() {
   capturedPhotoBlob = null;
   resetCameraUI();
   startCamera();
+}
+
+// 还原原始未裁切照片
+function revertOriginalPhoto() {
+  if (originalCapturedPhotoBlob) {
+    capturedPhotoBlob = originalCapturedPhotoBlob;
+    showPhotoPreview();
+    const revertLink = document.getElementById('revert-original-link');
+    if (revertLink) revertLink.style.display = 'none';
+  }
+}
+window.revertOriginalPhoto = revertOriginalPhoto;
+
+// ========== 纸张自动识别与裁切 ==========
+// 动态加载 OpenCV.js（仅在需要时加载）
+function loadOpenCV() {
+  return new Promise((resolve, reject) => {
+    if (window.cv && typeof window.cv.Mat !== 'undefined') {
+      resolve();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://docs.opencv.org/4.x/opencv.js';
+    script.async = true;
+    script.onload = () => {
+      // 等待 OpenCV 初始化
+      const checkReady = () => {
+        if (window.cv && window.cv.getBuildInformation) {
+          resolve();
+        } else {
+          setTimeout(checkReady, 50);
+        }
+      };
+      checkReady();
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+// 将 Blob 转换为 HTMLImageElement
+function blobToImage(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = err => {
+      URL.revokeObjectURL(url);
+      reject(err);
+    };
+    img.src = url;
+  });
+}
+
+// 自动识别纸张并裁切
+async function autoCropPaperFromBlob(blob) {
+  try {
+    await loadOpenCV();
+    const img = await blobToImage(blob);
+
+    // 读取到 OpenCV Mat
+    const src = cv.imread(img);
+    const original = src.clone();
+    const gray = new cv.Mat();
+    const blur = new cv.Mat();
+    const edges = new cv.Mat();
+
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+    cv.GaussianBlur(gray, blur, new cv.Size(5, 5), 0, 0, cv.BORDER_DEFAULT);
+    cv.Canny(blur, edges, 75, 200, 3, false);
+
+    // 找轮廓
+    const contours = new cv.MatVector();
+    const hierarchy = new cv.Mat();
+    cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+    let maxArea = 0;
+    let docContour = null;
+    for (let i = 0; i < contours.size(); i++) {
+      const cnt = contours.get(i);
+      const peri = cv.arcLength(cnt, true);
+      const approx = new cv.Mat();
+      cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+      if (approx.rows === 4) {
+        const area = cv.contourArea(approx);
+        if (area > maxArea) {
+          maxArea = area;
+          if (docContour) docContour.delete();
+          docContour = approx; // 保存四边形
+        } else {
+          approx.delete();
+        }
+      } else {
+        approx.delete();
+      }
+      cnt.delete();
+    }
+
+    let resultBlob = null;
+    if (docContour && maxArea > (src.rows * src.cols) * 0.1) {
+      // 提取四个点并排序（tl,tr,br,bl）
+      const pts = [];
+      for (let r = 0; r < docContour.rows; r++) {
+        const x = docContour.intPtr(r, 0)[0];
+        const y = docContour.intPtr(r, 0)[1];
+        pts.push({ x, y });
+      }
+      // 根据 x+y 与 x-y 进行排序
+      const sumSorted = [...pts].sort((a, b) => (a.x + a.y) - (b.x + b.y));
+      const diffSorted = [...pts].sort((a, b) => (a.x - a.y) - (b.x - b.y));
+      const tl = sumSorted[0];
+      const br = sumSorted[3];
+      const tr = diffSorted[0];
+      const bl = diffSorted[3];
+
+      const widthA = Math.hypot(br.x - bl.x, br.y - bl.y);
+      const widthB = Math.hypot(tr.x - tl.x, tr.y - tl.y);
+      const maxWidth = Math.max(widthA, widthB) | 0;
+      const heightA = Math.hypot(tr.x - br.x, tr.y - br.y);
+      const heightB = Math.hypot(tl.x - bl.x, tl.y - bl.y);
+      const maxHeight = Math.max(heightA, heightB) | 0;
+
+      const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        tl.x, tl.y,
+        tr.x, tr.y,
+        br.x, br.y,
+        bl.x, bl.y
+      ]);
+      const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+        0, 0,
+        maxWidth - 1, 0,
+        maxWidth - 1, maxHeight - 1,
+        0, maxHeight - 1
+      ]);
+
+      const M = cv.getPerspectiveTransform(srcTri, dstTri);
+      const warped = new cv.Mat();
+      cv.warpPerspective(original, warped, M, new cv.Size(maxWidth, maxHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+
+      // 写入到 canvas 并导出 blob
+      const tmpCanvas = document.createElement('canvas');
+      cv.imshow(tmpCanvas, warped);
+      resultBlob = await new Promise(res => tmpCanvas.toBlob(res, 'image/jpeg', 0.95));
+
+      // 释放资源
+      srcTri.delete(); dstTri.delete(); M.delete(); warped.delete();
+    }
+
+    // 清理
+    original.delete(); src.delete(); gray.delete(); blur.delete(); edges.delete();
+    contours.delete(); hierarchy.delete();
+    if (docContour) docContour.delete();
+
+    return resultBlob; // 若识别失败返回 null
+  } catch (e) {
+    hldebug.error('autoCropPaperFromBlob error', e);
+    return null;
+  }
 }
 
 // 使用拍照
@@ -652,6 +846,7 @@ function resetCameraUI() {
   const captureBtn = document.getElementById('camera-capture-btn');
   const retakeBtn = document.getElementById('camera-retake-btn');
   const useBtn = document.getElementById('camera-use-btn');
+  const revertLink = document.getElementById('revert-original-link');
 
   if (video) video.srcObject = null;
   
@@ -665,6 +860,8 @@ function resetCameraUI() {
   if (useBtn) useBtn.style.display = 'none';
 
   capturedPhotoBlob = null;
+  originalCapturedPhotoBlob = null;
+  if (revertLink) revertLink.style.display = 'none';
 }
 
 // 更新摄像头UI为预览状态
