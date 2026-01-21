@@ -2,6 +2,9 @@
 
 一个专为10-14岁儿童设计的AI培训网站，让孩子们通过手绘简笔画体验AI技术的魅力。
 
+> **📝 文档管理说明**  
+> 以后生成的 Markdown 说明文件都统一放在 `docs/` 目录中，保持根目录简洁。
+
 ## 🎨 项目特色
 
 - **🍌 Nano Banana 图像生成** - 使用 Google Gemini 2.5 Flash Image (Nano Banana) 进行AI图像生成

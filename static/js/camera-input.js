@@ -179,6 +179,26 @@ async function startCamera() {
     video.srcObject = stream;
     startBtn.style.display = 'none';
     captureBtn.style.display = 'flex';
+    
+    // 显示当前摄像头信息
+    if (availableCameras.length > 0) {
+      const videoTrack = stream.getVideoTracks()[0];
+      const settings = videoTrack.getSettings ? videoTrack.getSettings() : {};
+      const facingMode = settings.facingMode || '';
+      const currentCamera = availableCameras[currentCameraIndex];
+      const label = currentCamera ? currentCamera.label.toLowerCase() : '';
+      
+      let cameraType = '摄像头';
+      if (facingMode === 'user' || label.includes('front') || label.includes('前')) {
+        cameraType = '前置摄像头';
+      } else if (facingMode === 'environment' || label.includes('back') || label.includes('rear') || label.includes('后')) {
+        cameraType = '后置摄像头';
+      } else {
+        cameraType = `摄像头 ${currentCameraIndex + 1}/${availableCameras.length}`;
+      }
+      
+      updateCameraSwitchButton(cameraType);
+    }
   } catch (error) {
     hldebug.error('❌ 无法访问摄像头:', error);
     startBtn.disabled = false;
@@ -202,14 +222,25 @@ async function switchCameraDevice(event) {
   }
   
   if (availableCameras.length <= 1) {
+    if (typeof showToast === 'function') {
+      showToast('只有一个摄像头可用', 'info');
+    }
     return;
   }
   
   try {
     const switchBtn = document.querySelector('.camera-switch-btn');
+    const video = document.getElementById('camera-video');
+    
     if (switchBtn) {
       switchBtn.disabled = true;
-      switchBtn.style.opacity = '0.5';
+      switchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+    
+    // 添加淡出效果
+    if (video) {
+      video.style.opacity = '0.5';
+      video.style.transition = 'opacity 0.3s';
     }
     
     // 切换到下一个摄像头
@@ -229,23 +260,48 @@ async function switchCameraDevice(event) {
     
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     cameraStream = stream;
-    const video = document.getElementById('camera-video');
     video.srcObject = stream;
     
-    // 判断前后摄像头
+    // 等待视频加载完成后恢复透明度
+    video.onloadedmetadata = () => {
+      video.style.opacity = '1';
+    };
+    
+    // 判断前后摄像头并显示信息
     const videoTrack = stream.getVideoTracks()[0];
     const settings = videoTrack.getSettings ? videoTrack.getSettings() : {};
-    const facingMode = settings.facingMode || '未知';
-    const cameraType = facingMode === 'user' ? '前置' : '后置';
+    const facingMode = settings.facingMode || '';
     
+    // 根据label或facingMode判断摄像头类型
+    let cameraType = '摄像头';
+    const label = targetCamera.label.toLowerCase();
+    
+    if (facingMode === 'user' || label.includes('front') || label.includes('前')) {
+      cameraType = '前置摄像头';
+    } else if (facingMode === 'environment' || label.includes('back') || label.includes('rear') || label.includes('后')) {
+      cameraType = '后置摄像头';
+    } else {
+      cameraType = `摄像头 ${currentCameraIndex + 1}/${availableCameras.length}`;
+    }
+    
+    // 更新按钮图标和提示
+    updateCameraSwitchButton(cameraType);
+    
+    // 显示切换成功提示
+    if (typeof showToast === 'function') {
+      showToast(`已切换到${cameraType}`, 'success');
+    }
     
     // 恢复按钮
     if (switchBtn) {
       switchBtn.disabled = false;
-      switchBtn.style.opacity = '1';
+      switchBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
     }
   } catch (error) {
     hldebug.error('❌ 切换摄像头失败:', error);
+    if (typeof showToast === 'function') {
+      showToast('切换摄像头失败，请重试', 'error');
+    }
     
     // 尝试回滚到上一个摄像头
     currentCameraIndex = (currentCameraIndex - 1 + availableCameras.length) % availableCameras.length;
@@ -253,8 +309,27 @@ async function switchCameraDevice(event) {
     const switchBtn = document.querySelector('.camera-switch-btn');
     if (switchBtn) {
       switchBtn.disabled = false;
-      switchBtn.style.opacity = '1';
+      switchBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
     }
+    
+    const video = document.getElementById('camera-video');
+    if (video) {
+      video.style.opacity = '1';
+    }
+  }
+}
+
+// 更新摄像头切换按钮的提示
+function updateCameraSwitchButton(cameraType) {
+  const switchBtn = document.querySelector('.camera-switch-btn');
+  if (switchBtn) {
+    switchBtn.title = `当前：${cameraType} (点击切换)`;
+  }
+  
+  // 更新摄像头信息标签（如果存在）
+  const cameraInfo = document.getElementById('camera-info');
+  if (cameraInfo) {
+    cameraInfo.textContent = cameraType;
   }
 }
 
@@ -264,9 +339,15 @@ function capturePhoto() {
   const canvas = document.getElementById('camera-canvas');
   const context = canvas.getContext('2d');
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  context.drawImage(video, 0, 0);
+  // 使用视频流的原始分辨率
+  const videoWidth = video.videoWidth;
+  const videoHeight = video.videoHeight;
+  
+  canvas.width = videoWidth;
+  canvas.height = videoHeight;
+  
+  // 绘制完整的视频帧
+  context.drawImage(video, 0, 0, videoWidth, videoHeight);
 
   canvas.toBlob(blob => {
     capturedPhotoBlob = blob;
@@ -285,7 +366,7 @@ function showPhotoPreview() {
   preview.src = URL.createObjectURL(capturedPhotoBlob);
   preview.style.width = '100%';
   preview.style.height = '100%';
-  preview.style.objectFit = 'cover';
+  preview.style.objectFit = 'contain';
 
   previewArea.innerHTML = '';
   previewArea.appendChild(preview);

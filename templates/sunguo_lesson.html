@@ -435,6 +435,12 @@
             <video id="camera-video" class="camera-video" autoplay playsinline></video>
             <canvas id="camera-canvas" style="display: none;"></canvas>
             <div id="camera-status" class="camera-status" style="display: none;"></div>
+            
+            <!-- 摄像头信息显示 -->
+            <div class="camera-info-overlay">
+              <span id="camera-info" class="camera-info-text"></span>
+            </div>
+            
             <!-- 摄像头切换按钮 -->
             <button class="camera-switch-btn" onclick="switchCameraDevice(event)" type="button" title="切换前后摄像头">
               <i class="fas fa-sync-alt"></i>
