@@ -87,6 +87,7 @@ async function switchCameraTab(tabName) {
   // 隐藏所有内容
   document.querySelectorAll('.camera-tab-content').forEach(el => {
     el.classList.remove('active');
+    el.style.display = 'none';  // 确保隐藏
   });
   
   // 取消所有按钮的激活状态
@@ -98,10 +99,14 @@ async function switchCameraTab(tabName) {
   const content = document.getElementById(tabName + '-tab');
   if (content) {
     content.classList.add('active');
+    content.style.display = 'block';  // 确保显示
   }
   
   // 激活选中的按钮
-  document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
+  const btn = document.querySelector('[data-tab="' + tabName + '"]');
+  if (btn) {
+    btn.classList.add('active');
+  }
   
   // 切换到摄像头选项卡时，枚举可用摄像头并自动启动
   if (tabName === 'camera') {
@@ -136,6 +141,13 @@ async function startCamera() {
   const video = document.getElementById('camera-video');
   const startBtn = document.getElementById('camera-start-btn');
   const captureBtn = document.getElementById('camera-capture-btn');
+
+  // 检查video元素是否存在
+  if (!video) {
+    hldebug.error('❌ 无法找到video元素 #camera-video');
+    alert('页面加载出错，请刷新页面');
+    return;
+  }
 
   startBtn.disabled = true;
   startBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 启动中...';
@@ -217,12 +229,18 @@ async function startCamera() {
 
 // 切换摄像头
 async function switchCameraDevice(event) {
+  console.log('🔄 switchCameraDevice 被调用', event);
+  
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
   
+  console.log('📹 可用摄像头数量:', availableCameras.length);
+  console.log('📹 当前摄像头索引:', currentCameraIndex);
+  
   if (availableCameras.length <= 1) {
+    console.log('⚠️ 只有一个摄像头');
     if (typeof showToast === 'function') {
       showToast('只有一个摄像头可用', 'info');
     }
@@ -351,38 +369,14 @@ function capturePhoto() {
   context.drawImage(video, 0, 0, videoWidth, videoHeight);
 
   canvas.toBlob(async blob => {
-    // 保存原始照片
+    // 保存照片
     originalCapturedPhotoBlob = blob;
     capturedPhotoBlob = blob;
 
-    // 如果勾选了“自动裁切纸张”，尝试识别并裁切
-    const autoCropEl = document.getElementById('auto-crop-paper');
-    const shouldAutoCrop = autoCropEl ? autoCropEl.checked : false;
-
-    if (shouldAutoCrop) {
-      try {
-        const cropped = await autoCropPaperFromBlob(blob);
-        if (cropped) {
-          capturedPhotoBlob = cropped;
-          const revertLink = document.getElementById('revert-original-link');
-          if (revertLink) revertLink.style.display = 'inline-block';
-          if (typeof showToast === 'function') {
-            showToast('已自动识别并裁切到纸张边缘', 'success');
-          }
-        } else {
-          const revertLink = document.getElementById('revert-original-link');
-          if (revertLink) revertLink.style.display = 'none';
-          if (typeof showToast === 'function') {
-            showToast('未检测到清晰纸张边缘，已保留原图', 'info');
-          }
-        }
-      } catch (err) {
-        hldebug.error('自动裁切失败:', err);
-      }
-    } else {
-      const revertLink = document.getElementById('revert-original-link');
-      if (revertLink) revertLink.style.display = 'none';
-    }
+    // 直接上传照片，不在拍照界面进行裁剪
+    // 用户可在预览界面通过crop-tool.js进行裁剪处理
+    const revertLink = document.getElementById('revert-original-link');
+    if (revertLink) revertLink.style.display = 'none';
 
     stopCamera();
     showPhotoPreview();

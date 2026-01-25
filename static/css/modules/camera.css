@@ -1,0 +1,246 @@
+/**
+ * 摄像头模块样式
+ * 统一管理所有页面的摄像头相关样式
+ */
+
+/* ========== 摄像头标签页 ========== */
+.camera-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+    justify-content: center;
+}
+
+.camera-tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.camera-tab-btn.active {
+    background: rgba(255, 255, 255, 0.3);
+    font-weight: bold;
+}
+
+.camera-tab-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.camera-tab-content {
+    display: none;
+}
+
+.camera-tab-content.active {
+    display: block;
+}
+
+/* ========== 摄像头预览区域 ========== */
+.camera-preview-area {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.camera-preview-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 70vh;
+}
+
+#camera-video,
+#camera-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+#camera-canvas {
+    display: none;
+}
+
+/* ========== 摄像头切换按钮 ========== */
+.camera-switch-btn {
+    position: absolute !important;
+    bottom: 15px !important;
+    right: 15px !important;
+    z-index: 1000 !important;
+    width: 50px !important;
+    height: 50px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: none !important;
+    color: white !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    transition: all 0.3s !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+    justify-content: center;
+}
+
+.camera-switch-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(180deg);
+}
+
+.camera-switch-btn:active {
+    transform: rotate(180deg) scale(0.95);
+}
+
+.camera-switch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========== 摄像头信息显示 ========== */
+.camera-info-overlay {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 8px 16px;
+    border-radius: 20px;
+    z-index: 100;
+}
+
+.camera-info-text {
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* ========== 摄像头控制按钮 ========== */
+.camera-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.camera-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.camera-btn-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.camera-btn-primary:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.camera-btn-primary:active {
+    transform: translateY(0);
+}
+
+.camera-btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.camera-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.camera-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========== 摄像头选项 ========== */
+.camera-options {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.camera-options a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.3s;
+}
+
+.camera-options a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    .camera-preview-area {
+        border-radius: 8px;
+    }
+    
+    .camera-switch-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .camera-controls {
+        padding: 0 10px;
+    }
+    
+    .camera-btn {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+    
+    .camera-tabs {
+        padding: 0 10px;
+    }
+    
+    .camera-tab-btn {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .camera-switch-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .camera-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
