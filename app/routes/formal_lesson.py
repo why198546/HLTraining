@@ -223,6 +223,26 @@ def artwork_feedback():
             'formal_location': {
                 'aspects': ['场景的完整性', '细节的丰富度', '环境氛围'],
                 'encouragement': '你的场景设计很用心！'
+            },
+            'formal_composition1': {
+                'aspects': ['人物与体态的协调', '整体比例', '视觉平衡'],
+                'encouragement': '你的人物塑造很完整！'
+            },
+            'formal_composition2': {
+                'aspects': ['人物与场景的融合', '空间关系', '故事性'],
+                'encouragement': '你的画面很有故事感！'
+            },
+            'formal_composition3': {
+                'aspects': ['多元素的协调', '画面的层次', '视觉焦点'],
+                'encouragement': '你的构图很有章法！'
+            },
+            'formal_ai_animation': {
+                'aspects': ['动态表现', '节奏感', '流畅度'],
+                'encouragement': '你的作品充满了生命力！'
+            },
+            'formal_final_work': {
+                'aspects': ['创意表达', '技法运用', '情感传递'],
+                'encouragement': '这是一幅非常出色的作品！'
             }
         }
         
