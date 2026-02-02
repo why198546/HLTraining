@@ -31,6 +31,13 @@ def sunguo_class():
     return render_template('sunguo_class.html')
 
 
+@main_bp.route('/sunguo-trial-courses')
+@login_required
+def sunguo_trial_courses():
+    """松果体验课列表页"""
+    return render_template('sunguo_trial_courses.html')
+
+
 @main_bp.route('/sunguo-class/<lesson_key>')
 @login_required
 def sunguo_lesson(lesson_key):

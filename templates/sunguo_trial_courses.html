@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>松果体验课 - 松果AI</title>
+  
+  <!-- 关键CSS内联 - 防止闪烁 -->
+  <style>
+    body { margin: 0; padding: 0; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); }
+  </style>
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  {% include 'components/header.html' %}
+
+  <main class="classroom-page">
+    <div class="classroom-container">
+      <div class="classroom-breadcrumb">
+        <a href="{{ url_for('main.sunguo_class') }}" class="breadcrumb-link">&larr; 返回课堂</a>
+      </div>
+
+      <h1 class="classroom-title">松果体验课</h1>
+      <p class="classroom-subtitle">4 节趣味课程，快速上手 AI 绘画</p>
+
+      <div class="classroom-nav-actions">
+        <a class="hero-card hero-course" href="{{ url_for('main.sunguo_lesson', lesson_key='character') }}">
+          <span class="card-icon"><i class="fas fa-user"></i></span>
+          <span class="card-title">体验课 1：人物</span>
+          <span class="card-desc">发型、头型、五官、衣着</span>
+        </a>
+        <a class="hero-card hero-practice" href="{{ url_for('main.sunguo_lesson_action_v1') }}">
+          <span class="card-icon"><i class="fas fa-person-running"></i></span>
+          <span class="card-title">体验课 2：动作</span>
+          <span class="card-desc">跑、跳、挥手等动词</span>
+        </a>
+        <a class="hero-card hero-gallery" href="{{ url_for('main.sunguo_lesson', lesson_key='scene') }}">
+          <span class="card-icon"><i class="fas fa-mountain-sun"></i></span>
+          <span class="card-title">体验课 3：场景</span>
+          <span class="card-desc">教室、操场、公园、家里</span>
+        </a>
+        <a class="hero-card hero-about" href="{{ url_for('main.sunguo_lesson', lesson_key='practice') }}">
+          <span class="card-icon"><i class="fas fa-puzzle-piece"></i></span>
+          <span class="card-title">体验课 4：综合练习</span>
+          <span class="card-desc">组合成一句完整提示词</span>
+        </a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -21,39 +21,20 @@
   <main class="classroom-page">
     <div class="classroom-container">
       <h1 class="classroom-title">松果课堂</h1>
-      <p class="classroom-subtitle">先选一节课进入学习，再开始生成图片</p>
+      <p class="classroom-subtitle">选择课程类型，开始学习之旅</p>
 
-      <!-- 松果体验课 -->
-      <div class="section-title">松果体验课</div>
-      <div class="classroom-nav-actions">
-        <a class="hero-card hero-course" href="{{ url_for('main.sunguo_lesson', lesson_key='character') }}">
-          <span class="card-icon"><i class="fas fa-user"></i></span>
-          <span class="card-title">体验课 1：人物</span>
-          <span class="card-desc">发型、头型、五官、衣着</span>
+      <div class="classroom-nav-actions" style="max-width: 600px; margin-top: 60px;">
+        <!-- 松果体验课 -->
+        <a class="hero-card hero-trial" href="{{ url_for('main.sunguo_trial_courses') }}">
+          <span class="card-icon"><i class="fas fa-sparkles"></i></span>
+          <span class="card-title">松果体验课</span>
+          <span class="card-desc">4 节趣味课程，快速上手 AI 绘画</span>
         </a>
-        <a class="hero-card hero-practice" href="{{ url_for('main.sunguo_lesson_action_v1') }}">
-          <span class="card-icon"><i class="fas fa-person-running"></i></span>
-          <span class="card-title">体验课 2：动作</span>
-          <span class="card-desc">跑、跳、挥手等动词</span>
-        </a>
-        <a class="hero-card hero-gallery" href="{{ url_for('main.sunguo_lesson', lesson_key='scene') }}">
-          <span class="card-icon"><i class="fas fa-mountain-sun"></i></span>
-          <span class="card-title">体验课 3：场景</span>
-          <span class="card-desc">教室、操场、公园、家里</span>
-        </a>
-        <a class="hero-card hero-about" href="{{ url_for('main.sunguo_lesson', lesson_key='practice') }}">
-          <span class="card-icon"><i class="fas fa-puzzle-piece"></i></span>
-          <span class="card-title">体验课 4：综合练习</span>
-          <span class="card-desc">组合成一句完整提示词</span>
-        </a>
-      </div>
 
-      <!-- 正式课程 -->
-      <div class="section-title">正式课程</div>
-      <div class="classroom-nav-actions">
+        <!-- 正式课程 -->
         <a class="hero-card hero-formal" href="{{ url_for('main.sunguo_lesson', lesson_key='formal') }}">
           <span class="card-icon"><i class="fas fa-graduation-cap"></i></span>
-          <span class="card-title">AI 创意绘画基础课</span>
+          <span class="card-title">松果正式课</span>
           <span class="card-desc">系统学习 AI 绘画提示词设计与优化</span>
         </a>
       </div>

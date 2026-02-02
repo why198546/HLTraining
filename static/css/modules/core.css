@@ -142,6 +142,10 @@
     background: linear-gradient(135deg, #6b5b95 0%, #8a7ca4 100%);
 }
 
+.hero-trial .card-icon {
+    background: linear-gradient(135deg, #00704A 0%, #008C54 100%);
+}
+
 .hero-course:hover {
     box-shadow: 0 10px 24px var(--primary-shadow);
 }
@@ -160,6 +164,10 @@
 
 .hero-formal:hover {
     box-shadow: 0 10px 24px rgba(107, 91, 149, 0.3);
+}
+
+.hero-trial:hover {
+    box-shadow: 0 10px 24px rgba(0, 112, 74, 0.3);
 }
 
 @media (max-width: 992px) {
