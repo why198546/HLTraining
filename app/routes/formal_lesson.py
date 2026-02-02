@@ -11,7 +11,7 @@ from flask_login import current_user, login_required
 
 # 导入AI API
 from api.nano_banana import NanoBananaAPI
-from api.prompt_translator import translate_to_english
+from api.prompt_translator import translate_prompt
 
 formal_lesson_bp = Blueprint('formal_lesson', __name__)
 
@@ -32,7 +32,7 @@ def generate_image():
         full_prompt = f"{prompt}，卡通风格，可爱风格，儿童插画，简单背景，明亮色彩"
         
         # 翻译成英文
-        english_prompt = translate_to_english(full_prompt)
+        english_prompt = translate_prompt(full_prompt)
         
         # 调用Nano Banana API生成图片
         nb_api = NanoBananaAPI()
