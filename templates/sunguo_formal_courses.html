@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}松果正式课程 - AI培训{% endblock %}
+
+{% block head %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <style>
+    .module-section {
+      margin-bottom: 40px;
+    }
+    
+    .module-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #6b5b95;
+      margin-bottom: 20px;
+      padding-left: 15px;
+      border-left: 4px solid #6b5b95;
+    }
+    
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .course-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      border: 2px solid transparent;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .course-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(107, 91, 149, 0.2);
+      border-color: #6b5b95;
+    }
+    
+    .course-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6b5b95 0%, #8b7baa 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    
+    .course-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    
+    .course-desc {
+      font-size: 14px;
+      color: #7f8c8d;
+      line-height: 1.6;
+      flex: 1;
+    }
+    
+    .breadcrumb {
+      padding: 20px 0;
+      font-size: 14px;
+      color: #7f8c8d;
+    }
+    
+    .breadcrumb a {
+      color: #6b5b95;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    
+    .breadcrumb a:hover {
+      color: #8b7baa;
+    }
+    
+    @media (max-width: 700px) {
+      .courses-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="breadcrumb">
+    <a href="{{ url_for('main.sunguo_class') }}">松果课堂</a> / 正式课程
+  </div>
+  
+  <div class="page-header">
+    <h1>松果正式课程</h1>
+    <p class="page-subtitle">系统学习 AI 绘画提示词设计与优化</p>
+  </div>
+
+  <!-- 一、人像模块 -->
+  <div class="module-section">
+    <h2 class="module-title">一、人像</h2>
+    <div class="courses-grid">
+      {% for key, course in courses.items() if course.module == '人像' %}
+      <a href="{{ url_for('main.sunguo_formal_lesson', lesson_key=key) }}" class="course-card">
+        <div class="course-icon">🎨</div>
+        <div class="course-title">{{ course.title }}</div>
+        <div class="course-desc">{{ course.desc }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 二、体态模块 -->
+  <div class="module-section">
+    <h2 class="module-title">二、体态</h2>
+    <div class="courses-grid">
+      {% for key, course in courses.items() if course.module == '体态' %}
+      <a href="{{ url_for('main.sunguo_formal_lesson', lesson_key=key) }}" class="course-card">
+        <div class="course-icon">👕</div>
+        <div class="course-title">{{ course.title }}</div>
+        <div class="course-desc">{{ course.desc }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 三、场景模块 -->
+  <div class="module-section">
+    <h2 class="module-title">三、场景</h2>
+    <div class="courses-grid">
+      {% for key, course in courses.items() if course.module == '场景' %}
+      <a href="{{ url_for('main.sunguo_formal_lesson', lesson_key=key) }}" class="course-card">
+        <div class="course-icon">🏞️</div>
+        <div class="course-title">{{ course.title }}</div>
+        <div class="course-desc">{{ course.desc }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 四、综合创作模块 -->
+  <div class="module-section">
+    <h2 class="module-title">四、综合创作</h2>
+    <div class="courses-grid">
+      {% for key, course in courses.items() if course.module == '综合创作' %}
+      <a href="{{ url_for('main.sunguo_formal_lesson', lesson_key=key) }}" class="course-card">
+        <div class="course-icon">✨</div>
+        <div class="course-title">{{ course.title }}</div>
+        <div class="course-desc">{{ course.desc }}</div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

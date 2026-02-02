@@ -4,7 +4,7 @@ import os
 from flask import Blueprint, render_template, send_from_directory
 from flask_login import login_required
 
-from app.course_config.courses import get_all_courses, get_course
+from app.course_config.courses import get_all_courses, get_course, get_formal_courses
 
 main_bp = Blueprint('main', __name__)
 
@@ -38,19 +38,40 @@ def sunguo_trial_courses():
     return render_template('sunguo_trial_courses.html')
 
 
+@main_bp.route('/sunguo-formal-courses')
+@login_required
+def sunguo_formal_courses():
+    """松果正式课程列表页"""
+    courses = get_formal_courses()
+    # 按order排序
+    sorted_courses = dict(sorted(courses.items(), key=lambda x: x[1].get('order', 999)))
+    return render_template('sunguo_formal_courses.html', courses=sorted_courses)
+
+
+@main_bp.route('/sunguo-formal/<lesson_key>')
+@login_required
+def sunguo_formal_lesson(lesson_key):
+    """松果正式课程单节课页面"""
+    lesson = get_course(lesson_key)
+    if not lesson or lesson.get('type') != 'formal':
+        return "Not Found", 404
+    return render_template('sunguo_formal_lesson.html', lesson_key=lesson_key, lesson=lesson)
+
+
 @main_bp.route('/sunguo-class/<lesson_key>')
 @login_required
 def sunguo_lesson(lesson_key):
-    """松果课堂单节课/综合练习页面"""
+    """松果课堂单节课/综合练习页面（体验课）"""
     lesson = get_course(lesson_key)
     if not lesson:
         return "Not Found", 404
 
-    # 正式课程使用专用模板
-    if lesson.get('type') == 'formal':
-        return render_template('sunguo_lesson_formal.html', lesson_key=lesson_key, lesson=lesson)
+    # 体验课程使用原模板
+    if lesson.get('type') == 'trial':
+        return render_template('sunguo_lesson.html', lesson_key=lesson_key, lesson=lesson)
     
-    return render_template('sunguo_lesson.html', lesson_key=lesson_key, lesson=lesson)
+    # 如果是正式课程，重定向到正式课程路由
+    return "Please use /sunguo-formal/<lesson_key> for formal courses", 404
 
 
 @main_bp.route('/sunguo-action-chooser')

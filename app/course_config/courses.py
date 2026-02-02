@@ -35,23 +35,133 @@ COURSES = {
         'order': 4
     },
     
-    # 正式课程
-    'formal': {
-        'title': 'AI 创意绘画基础课',
-        'desc': '系统学习 AI 绘画提示词设计与优化',
-        'section': 'formal',
+    # 正式课程 - 一、人像模块（4课时）
+    'formal_hairstyle': {
+        'title': '第 1 课：发型',
+        'desc': '学习不同发型的特征与表现技巧',
+        'section': 'portrait',
         'type': 'formal',
-        'order': 5
+        'order': 5,
+        'module': '人像'
+    },
+    'formal_face': {
+        'title': '第 2 课：脸型',
+        'desc': '掌握各种脸型的绘画要领',
+        'section': 'portrait',
+        'type': 'formal',
+        'order': 6,
+        'module': '人像'
+    },
+    'formal_facial_features': {
+        'title': '第 3 课：五官',
+        'desc': '细致描绘眼睛、鼻子、嘴巴等五官特征',
+        'section': 'portrait',
+        'type': 'formal',
+        'order': 7,
+        'module': '人像'
+    },
+    'formal_skin_color': {
+        'title': '第 4 课：肤色',
+        'desc': '学习不同肤色的表现与光影处理',
+        'section': 'portrait',
+        'type': 'formal',
+        'order': 8,
+        'module': '人像'
     },
     
-    # 未来扩展：正式课程示例
-    # 'advanced_character': {
-    #     'title': '进阶课 1：高级人物设计',
-    #     'desc': '深入学习人物细节刻画、光影效果和情绪表达。',
-    #     'section': 'advanced_character',
-    #     'type': 'formal',
-    #     'order': 6
-    # },
+    # 正式课程 - 二、体态模块（3课时）
+    'formal_body_type': {
+        'title': '第 5 课：体型',
+        'desc': '掌握不同体型的绘画技巧',
+        'section': 'posture',
+        'type': 'formal',
+        'order': 9,
+        'module': '体态'
+    },
+    'formal_clothing': {
+        'title': '第 6 课：服饰',
+        'desc': '学习服装的搭配与细节刻画',
+        'section': 'posture',
+        'type': 'formal',
+        'order': 10,
+        'module': '体态'
+    },
+    'formal_accessories': {
+        'title': '第 7 课：饰品',
+        'desc': '学习各类饰品的表现方法',
+        'section': 'posture',
+        'type': 'formal',
+        'order': 11,
+        'module': '体态'
+    },
+    
+    # 正式课程 - 三、场景模块（3课时）
+    'formal_perspective': {
+        'title': '第 8 课：远近/透视',
+        'desc': '理解空间透视与景深关系',
+        'section': 'scene',
+        'type': 'formal',
+        'order': 12,
+        'module': '场景'
+    },
+    'formal_weather': {
+        'title': '第 9 课：天气',
+        'desc': '表现晴天、雨天等不同天气效果',
+        'section': 'scene',
+        'type': 'formal',
+        'order': 13,
+        'module': '场景'
+    },
+    'formal_location': {
+        'title': '第 10 课：地点',
+        'desc': '绘制各种场景环境与背景',
+        'section': 'scene',
+        'type': 'formal',
+        'order': 14,
+        'module': '场景'
+    },
+    
+    # 正式课程 - 四、综合创作模块（5课时）
+    'formal_composition1': {
+        'title': '第 11 课：综合练习一',
+        'desc': '人像与体态的综合应用',
+        'section': 'comprehensive',
+        'type': 'formal',
+        'order': 15,
+        'module': '综合创作'
+    },
+    'formal_composition2': {
+        'title': '第 12 课：综合练习二',
+        'desc': '人像与场景的结合创作',
+        'section': 'comprehensive',
+        'type': 'formal',
+        'order': 16,
+        'module': '综合创作'
+    },
+    'formal_composition3': {
+        'title': '第 13 课：综合练习三',
+        'desc': '多元素的整体画面构建',
+        'section': 'comprehensive',
+        'type': 'formal',
+        'order': 17,
+        'module': '综合创作'
+    },
+    'formal_ai_animation': {
+        'title': '第 14 课：AI动画',
+        'desc': '让静态作品动起来',
+        'section': 'comprehensive',
+        'type': 'formal',
+        'order': 18,
+        'module': '综合创作'
+    },
+    'formal_final_work': {
+        'title': '第 15 课：结业作品',
+        'desc': '创作并展示个人结业作品',
+        'section': 'comprehensive',
+        'type': 'formal',
+        'order': 19,
+        'module': '综合创作'
+    },
 }
 
 
