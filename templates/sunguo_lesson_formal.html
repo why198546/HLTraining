@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ lesson.title }} - 松果课堂</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/core.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gpu-acceleration.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    .formal-lesson-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .lesson-content {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      padding: 40px;
+      margin: 30px 0;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .lesson-content h2 {
+      color: #6b5b95;
+      font-size: 24px;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .lesson-content h2:first-child {
+      margin-top: 0;
+    }
+
+    .lesson-content p, .lesson-content li {
+      color: #555;
+      line-height: 1.8;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .lesson-content ul {
+      margin-left: 20px;
+      margin-bottom: 20px;
+    }
+
+    .lesson-content li {
+      margin-bottom: 10px;
+    }
+
+    .coming-soon {
+      background: linear-gradient(135deg, #f0e6ff 0%, #e8dff5 100%);
+      border: 2px dashed #b8a3d8;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      margin: 30px 0;
+      color: #6b5b95;
+    }
+
+    .coming-soon i {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.7;
+    }
+
+    .coming-soon p {
+      font-size: 18px;
+      font-weight: 600;
+      color: #6b5b95;
+      margin: 10px 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary, .btn-secondary {
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6b5b95 0%, #8a7ca4 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(107, 91, 149, 0.3);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #6b5b95;
+      border: 2px solid #6b5b95;
+    }
+
+    .btn-secondary:hover {
+      background: #f0e6ff;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 700px) {
+      .lesson-content {
+        padding: 20px;
+      }
+
+      .lesson-content h2 {
+        font-size: 20px;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+      }
+
+      .btn-primary, .btn-secondary {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  {% include 'components/header.html' %}
+
+  <main class="classroom-page">
+    <div class="formal-lesson-container">
+      <div class="classroom-breadcrumb">
+        <a href="{{ url_for('main.sunguo_class') }}" class="breadcrumb-link">&larr; 返回松果课堂</a>
+      </div>
+
+      <h1 class="classroom-title">{{ lesson.title }}</h1>
+      <p class="classroom-subtitle">{{ lesson.desc }}</p>
+
+      <div class="lesson-content">
+        <h2><i class="fas fa-book-open"></i> 课程简介</h2>
+        <p>欢迎来到 AI 创意绘画基础课！在这门课程中，你将系统学习如何为 AI 绘画工具编写高质量的提示词（Prompt）。</p>
+
+        <h2><i class="fas fa-star"></i> 课程目标</h2>
+        <ul>
+          <li>掌握 AI 绘画的基本原理和工作流程</li>
+          <li>学习高效的提示词结构和设计方法</li>
+          <li>了解不同风格、主体、场景的描述技巧</li>
+          <li>提升创意表达能力，创作独特的图片</li>
+          <li>掌握调试和优化提示词的方法</li>
+        </ul>
+
+        <h2><i class="fas fa-graduation-cap"></i> 课程内容</h2>
+        <ul>
+          <li><strong>Module 1：AI 绘画基础</strong> - 了解 AI 如何理解文字并转换为图像</li>
+          <li><strong>Module 2：提示词的黄金法则</strong> - 学习如何组织和优化描述</li>
+          <li><strong>Module 3：角色与场景设计</strong> - 创作复杂而富有表现力的场景</li>
+          <li><strong>Module 4：风格与美学</strong> - 探索不同的艺术风格表现方法</li>
+          <li><strong>Module 5：实战项目</strong> - 完成综合创作项目，展现所学</li>
+        </ul>
+
+        <h2><i class="fas fa-lightbulb"></i> 学习方式</h2>
+        <p>本课程采用理论讲解 + 实践操作相结合的方式。每个模块都包含：</p>
+        <ul>
+          <li>📖 详细的文字教程和示例</li>
+          <li>🎨 交互式的学习工具</li>
+          <li>✨ 真实的 AI 生成体验</li>
+          <li>📝 检验性的练习和反馈</li>
+        </ul>
+
+        <div class="coming-soon">
+          <div><i class="fas fa-rocket"></i></div>
+          <p>课程开发中...</p>
+          <p style="font-size: 14px; color: #999;">我们正在精心打磨课程内容，敬请期待！</p>
+        </div>
+
+        <div class="action-buttons">
+          <a href="{{ url_for('main.sunguo_class') }}" class="btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回课堂
+          </a>
+          <a href="{{ url_for('main.sunguo_lesson', lesson_key='practice') }}" class="btn-primary">
+            <i class="fas fa-play"></i> 先练习体验课
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // 可以在这里添加课程相关的交互脚本
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('Formal lesson page loaded');
+    });
+  </script>
+</body>
+</html>

@@ -35,13 +35,22 @@ COURSES = {
         'order': 4
     },
     
+    # 正式课程
+    'formal': {
+        'title': 'AI 创意绘画基础课',
+        'desc': '系统学习 AI 绘画提示词设计与优化',
+        'section': 'formal',
+        'type': 'formal',
+        'order': 5
+    },
+    
     # 未来扩展：正式课程示例
     # 'advanced_character': {
     #     'title': '进阶课 1：高级人物设计',
     #     'desc': '深入学习人物细节刻画、光影效果和情绪表达。',
     #     'section': 'advanced_character',
     #     'type': 'formal',
-    #     'order': 5
+    #     'order': 6
     # },
 }
 

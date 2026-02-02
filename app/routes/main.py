@@ -39,6 +39,10 @@ def sunguo_lesson(lesson_key):
     if not lesson:
         return "Not Found", 404
 
+    # 正式课程使用专用模板
+    if lesson.get('type') == 'formal':
+        return render_template('sunguo_lesson_formal.html', lesson_key=lesson_key, lesson=lesson)
+    
     return render_template('sunguo_lesson.html', lesson_key=lesson_key, lesson=lesson)
 
 

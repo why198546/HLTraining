@@ -138,6 +138,10 @@
     background: var(--primary-color);
 }
 
+.hero-formal .card-icon {
+    background: linear-gradient(135deg, #6b5b95 0%, #8a7ca4 100%);
+}
+
 .hero-course:hover {
     box-shadow: 0 10px 24px var(--primary-shadow);
 }
@@ -152,6 +156,10 @@
 
 .hero-about:hover {
     box-shadow: 0 10px 24px var(--primary-shadow);
+}
+
+.hero-formal:hover {
+    box-shadow: 0 10px 24px rgba(107, 91, 149, 0.3);
 }
 
 @media (max-width: 992px) {
@@ -255,6 +263,21 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+}
+
+/* 松果课堂分组标题 */
+.section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    margin-top: 32px;
+    margin-bottom: 16px;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.section-title:first-of-type {
+    margin-top: 0;
 }
 
 /* 松果课堂导航页：四个入口 */
