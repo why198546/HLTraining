@@ -10,7 +10,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 # 导入AI API
-from api.nano_banana import generate_image as nb_generate_image
+from api.nano_banana import NanoBananaAPI
 from api.prompt_translator import translate_to_english
 
 formal_lesson_bp = Blueprint('formal_lesson', __name__)
@@ -35,18 +35,21 @@ def generate_image():
         english_prompt = translate_to_english(full_prompt)
         
         # 调用Nano Banana API生成图片
-        result = nb_generate_image(english_prompt, current_user.id)
+        nb_api = NanoBananaAPI()
+        image_path = nb_api.generate_image_from_text(english_prompt, style="cute", aspect_ratio="512x512")
         
-        if result.get('success'):
+        if image_path:
+            # 返回相对URL
+            image_url = f"/uploads/{os.path.basename(image_path)}"
             return jsonify({
                 'success': True,
-                'image_url': result['image_url'],
+                'image_url': image_url,
                 'prompt': full_prompt
             })
         else:
             return jsonify({
                 'success': False,
-                'error': result.get('error', '生成失败')
+                'error': '图片生成失败，请重试'
             })
             
     except Exception as e:
