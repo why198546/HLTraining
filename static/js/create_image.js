@@ -9,9 +9,63 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDragAndDrop();
     initializePaste();
     initializeImageViewer();
+    initializePreferences();
     
     // 页面卸载时摄像头会由camera-input.js自动关闭
 });
+
+// ==================== 用户偏好设置 (localStorage) ====================
+const PREFERENCE_KEYS = {
+    STYLE: 'createImage_style',
+    ASPECT_RATIO: 'createImage_aspectRatio'
+};
+
+/**
+ * 初始化用户偏好设置
+ * 从localStorage恢复上次保存的设置，并添加监听器
+ */
+function initializePreferences() {
+    // 恢复图片风格
+    const savedStyle = localStorage.getItem(PREFERENCE_KEYS.STYLE);
+    if (savedStyle) {
+        const styleSelect = document.getElementById('image-style');
+        if (styleSelect) {
+            styleSelect.value = savedStyle;
+        }
+    }
+    
+    // 恢复分辨率
+    const savedAspectRatio = localStorage.getItem(PREFERENCE_KEYS.ASPECT_RATIO);
+    if (savedAspectRatio) {
+        const aspectRatioSelect = document.getElementById('aspect-ratio');
+        if (aspectRatioSelect) {
+            aspectRatioSelect.value = savedAspectRatio;
+        }
+    }
+    
+    // 添加变化监听器，自动保存设置
+    const styleSelect = document.getElementById('image-style');
+    if (styleSelect) {
+        styleSelect.addEventListener('change', function() {
+            localStorage.setItem(PREFERENCE_KEYS.STYLE, this.value);
+        });
+    }
+    
+    const aspectRatioSelect = document.getElementById('aspect-ratio');
+    if (aspectRatioSelect) {
+        aspectRatioSelect.addEventListener('change', function() {
+            localStorage.setItem(PREFERENCE_KEYS.ASPECT_RATIO, this.value);
+        });
+    }
+}
+
+/**
+ * 清除本地保存的偏好设置（可选功能）
+ */
+function clearPreferences() {
+    localStorage.removeItem(PREFERENCE_KEYS.STYLE);
+    localStorage.removeItem(PREFERENCE_KEYS.ASPECT_RATIO);
+}
 
 // Loading 函数
 function showLoading(message = '加载中...') {
@@ -190,31 +244,76 @@ async function loadImageFromUrl(url) {
 function displayImagePreview(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
-        document.getElementById('uploaded-image').src = e.target.result;
+        const imgSrc = e.target.result;
+        const previewImg = document.getElementById('uploaded-image');
+        previewImg.src = imgSrc;
         document.getElementById('uploaded-image-preview').style.display = 'block';
+        
+        // 加载完成后分析宽高比和纸张
+        previewImg.onload = function() {
+            analyzeImageAndUpdateAspectRatio(previewImg);
+        };
     };
     reader.readAsDataURL(file);
 }
 
-// Toast辅助函数
-function showToast(message, type = 'info') {
-    if (window.toast) {
-        window.toast.show(message, type);
-    } else {
-        alert(message);
+/**
+ * 分析图片的宽高比，自动匹配最接近的分辨率选项
+ */
+function analyzeImageAndUpdateAspectRatio(imgElement) {
+    const width = imgElement.naturalWidth;
+    const height = imgElement.naturalHeight;
+    const aspectRatio = width / height;
+    
+    // 定义可用的分辨率选项及其宽高比
+    const ratioOptions = [
+        { value: '512x512', ratio: 1.0, label: '1:1' },
+        { value: '768x512', ratio: 1.5, label: '3:2 横屏' },
+        { value: '512x768', ratio: 0.667, label: '2:3 竖屏' },
+        { value: '1024x576', ratio: 1.778, label: '16:9 横屏' },
+        { value: '576x1024', ratio: 0.563, label: '9:16 竖屏' },
+        { value: '1024x1024', ratio: 1.0, label: '1:1' }
+    ];
+    
+    // 找出最接近的宽高比
+    let bestMatch = ratioOptions[0];
+    let minDifference = Math.abs(aspectRatio - bestMatch.ratio);
+    
+    for (let option of ratioOptions) {
+        const difference = Math.abs(aspectRatio - option.ratio);
+        if (difference < minDifference) {
+            minDifference = difference;
+            bestMatch = option;
+        }
     }
+    
+    // 自动选择最匹配的分辨率
+    const aspectRatioSelect = document.getElementById('aspect-ratio');
+    aspectRatioSelect.value = bestMatch.value;
+    localStorage.setItem(PREFERENCE_KEYS.ASPECT_RATIO, bestMatch.value);
+    
+    // 显示提示信息
+    const detectedRatio = (width > height ? width / height : height / width).toFixed(2);
+    showToast(`📐 检测到宽高比: ${detectedRatio} → 自动选择 ${bestMatch.label}`, 'info');
+    
+    // 显示裁剪工具提示
+    showCropToolHint();
 }
 
-// 填充提示词示例
-function fillPrompt(text) {
-    document.getElementById('creation-prompt').value = text;
-}
 
+// 移除上传的图片
 // 移除上传的图片
 function removeUploadedImage() {
     uploadedFile = null;
-    document.getElementById('uploaded-image-preview').style.display = 'none';
-    document.getElementById('reference-image').value = '';
+    const previewContainer = document.getElementById('uploaded-image-preview');
+    if (previewContainer) {
+        previewContainer.style.display = 'none';
+        // 同时移除任何纸张边界线SVG
+        const svg = previewContainer.querySelector('svg');
+        if (svg) {
+            svg.remove();
+        }
+    }
 }
 
 // 生成图片
@@ -247,16 +346,17 @@ async function generateImage() {
 
     const formData = new FormData();
     if (prompt) formData.append('prompt', prompt);
-    // 如果有新上传的图片，就上传它
+    // 如果有新上传的图片，就上传它（使用sketch字段以兼容后端API）
     if (uploadedFile) {
-        formData.append('image', uploadedFile);
+        formData.append('sketch', uploadedFile);
     }
     formData.append('style', style);
     formData.append('aspect_ratio', aspectRatio);
     if (sessionId) formData.append('session_id', sessionId);
 
     try {
-        const response = await fetch('/api/generate_image', {
+        // 使用通用的 /api/generate-image 端点（连字符），而不是松果课堂专用的 /api/generate_image（下划线）
+        const response = await fetch('/api/generate-image', {
             method: 'POST',
             body: formData
         });

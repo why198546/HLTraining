@@ -250,11 +250,23 @@ def api_generate_image():
                     generated_image_path = nano_banana.generate_image_from_sketch_and_text(
                         sketch_path, varied_prompt, style=style, aspect_ratio=aspect_ratio
                     )
+                    # 如果参考图不存在或生成失败，自动回退到纯文字模式
+                    if not generated_image_path:
+                        print(f"🔄 参考图模式失败，自动回退到纯文字模式")
+                        generated_image_path = nano_banana.generate_image_from_text(
+                            varied_prompt, style=style, aspect_ratio=aspect_ratio
+                        )
                 elif sketch_path:
                     # 纯图片模式
                     generated_image_path = nano_banana.generate_image_from_sketch(
                         sketch_path, style=style, aspect_ratio=aspect_ratio
                     )
+                    # 如果参考图不存在或生成失败，自动回退到纯文字模式
+                    if not generated_image_path:
+                        print(f"🔄 参考图模式失败，自动回退到纯文字模式")
+                        generated_image_path = nano_banana.generate_image_from_text(
+                            varied_prompt, style=style, aspect_ratio=aspect_ratio
+                        )
                 else:
                     # 纯文字模式
                     generated_image_path = nano_banana.generate_image_from_text(

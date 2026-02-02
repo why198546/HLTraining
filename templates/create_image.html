@@ -7,6 +7,8 @@
     
     <!-- 图片查看器样式 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/image-viewer.css') }}">
+    <!-- 摄像头模块样式 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/camera.css') }}?v={{ range(1, 9999999) | random }}">
     
     <style>
         body {
@@ -52,6 +54,57 @@
         .image-menu .menu-item i {
             width: 18px;
             text-align: center;
+        }
+        
+        /* 图片预览容器 - 支持canvas覆盖层 */
+        .image-preview {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            background: #f5f5f5;
+            max-height: 600px;
+        }
+        
+        .image-preview img {
+            display: block;
+            width: 100%;
+            max-height: calc(600px - 45px);
+            object-fit: contain;
+            background: white;
+            border-radius: 8px;
+        }
+        
+        .image-preview canvas {
+            display: block;
+            object-fit: contain;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .remove-image-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        
+        .remove-image-btn:hover {
+            color: #d32f2f;
         }
         
         /* 拖拽提示样式 */
@@ -327,66 +380,14 @@
             text-align: center;
         }
 
-        .camera-switch-btn {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            z-index: 10;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: none;
-            color: white;
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .camera-switch-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: rotate(180deg);
-        }
-        
-        .camera-switch-btn:active {
-            transform: rotate(180deg) scale(0.95);
-        }
-        
-        .camera-switch-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        /* 摄像头信息显示 */
+        /* 摄像头信息显示 - 特殊动画 */
         .camera-info-overlay {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            padding: 8px 16px;
-            border-radius: 20px;
             opacity: 0;
             transition: opacity 0.3s;
         }
         
         .camera-info-overlay:not(:empty) {
             opacity: 1;
-        }
-        
-        .camera-info-text {
-            color: white;
-            font-size: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
 
         /* 上传区域样式 */
@@ -647,11 +648,7 @@
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
-                    <div class="camera-options">
-                        <label>
-                            <input id="auto-crop-paper" type="checkbox" checked>
-                            自动识别纸张并裁切
-                        </label>
+                    <div class="camera-options" style="display:none;">
                         <a id="revert-original-link" href="#" onclick="revertOriginalPhoto();return false;">还原原图</a>
                     </div>
                     <div class="camera-controls">
@@ -713,6 +710,7 @@
     <script src="{{ url_for('static', filename='js/voice-input.js') }}"></script>
     <script src="{{ url_for('static', filename='js/camera-input.js') }}"></script>
     <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/crop-tool.js') }}"></script>
     <script src="{{ url_for('static', filename='js/create_image.js') }}"></script>
 </body>
 </html>

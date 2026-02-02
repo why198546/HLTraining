@@ -38,7 +38,7 @@ class NanoBananaAPI:
             print(f"❌ Google Gen AI 客户端初始化失败: {str(e)}")
             self.client = None
     
-    def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512", temperature=1, top_p=0.95, seed=None):
+    def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512", temperature=1, top_p=0.95, seed=None, require_skeleton=False):
         """参考图+文字描述生成图片 - 使用Gemini 2.5 Flash Image模型
         
         功能：
@@ -48,18 +48,25 @@ class NanoBananaAPI:
         4. style="none" 时不添加任何系统提示词（专家模式）
         5. temperature参数控制生成的创意程度（0.0-1.0）
         6. seed参数用于控制随机性（不同seed会产生不同结果）
+        7. require_skeleton参数：仅在特定课程（如松果课堂第2节课）时需要骨骼参考图
         """
         try:
             print("🎨 开始使用Gemini 2.5 Flash Image 进行参考图生成...")
-            print(f"🎨 风格: {style}, 高宽比: {aspect_ratio}")
+            print(f"🎨 风格: {style}, 高宽比: {aspect_ratio}, 需要骨骼图: {require_skeleton}")
             
             # 检查客户端
             if not self.client:
                 raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
             
-            # 要求必须提供骨架参考图
+            # 仅在特定课程时强制要求骨架参考图（如松果课堂第2节课）
+            if require_skeleton and (not sketch_path or not os.path.exists(sketch_path)):
+                raise Exception(f"该课程需要提供有效的骨架参考图: {sketch_path}")
+            
+            # 如果没有参考图且不要求骨骼图，则直接生成提示词图片
             if not sketch_path or not os.path.exists(sketch_path):
-                raise Exception(f"必须提供有效的骨架参考图: {sketch_path}")
+                # 不再抛出异常，改为纯文字生成
+                print(f"⚠️ 未提供参考图，将使用纯文字模式生成图片")
+                return None  # 返回None表示应该使用纯文字生成
             
             print(f"📁 图片路径: {sketch_path}")
             
@@ -644,8 +651,15 @@ class NanoBananaAPI:
         try:
             print(f"🎨 纯图片模式：为手绘图生成AI图片 - {sketch_path}")
             
+            # 检查sketch_path是否有效
+            if not sketch_path or not os.path.exists(sketch_path):
+                print(f"⚠️ 参考图不存在，转换为纯文字模式生成")
+                # 返回None表示应该使用纯文字生成
+                return None
+            
             # 使用参考图生成方法，传入风格参数
-            return self.generate_image_from_reference(sketch_path, "", style=style, aspect_ratio=aspect_ratio)
+            # require_skeleton=False 表示这不是需要骨骼图的课程
+            return self.generate_image_from_reference(sketch_path, "", style=style, aspect_ratio=aspect_ratio, require_skeleton=False)
             
         except Exception as e:
             print(f"❌ 纯图片模式生成失败: {str(e)}")
@@ -656,8 +670,15 @@ class NanoBananaAPI:
         try:
             print(f"🎨 图片+文字模式：为手绘图生成AI图片 - {sketch_path}")
             
+            # 检查sketch_path是否有效
+            if not sketch_path or not os.path.exists(sketch_path):
+                print(f"⚠️ 参考图不存在，转换为纯文字模式生成")
+                # 返回None表示应该使用纯文字生成
+                return None
+            
             # 使用参考图生成方法，传入文字描述
-            return self.generate_image_from_reference(sketch_path, text_prompt, style=style, aspect_ratio=aspect_ratio)
+            # require_skeleton=False 表示这不是需要骨骼图的课程
+            return self.generate_image_from_reference(sketch_path, text_prompt, style=style, aspect_ratio=aspect_ratio, require_skeleton=False)
             
         except Exception as e:
             print(f"❌ 图片+文字模式生成失败: {str(e)}")
