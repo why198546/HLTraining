@@ -632,6 +632,14 @@
         <div class="module-header">
           <div class="module-icon">🎨</div>
           <div class="module-title">模块一：图片生成</div>
+          <button 
+            class="btn btn-sm" 
+            onclick="openModuleTemplateEditor('module1')" 
+            style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-left: auto;"
+            title="修改模块一的生成提示词模板"
+          >
+            <i class="fas fa-pen-to-square"></i> 修改模板
+          </button>
         </div>
         
         <div class="feature-detector-section">
@@ -768,6 +776,14 @@
         <div class="module-header">
           <div class="module-icon">🎮</div>
           <div class="module-title">模块二：课后小游戏</div>
+          <button 
+            class="btn btn-sm" 
+            onclick="openModuleTemplateEditor('module2')" 
+            style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-left: auto;"
+            title="修改模块二的融合提示词模板"
+          >
+            <i class="fas fa-pen-to-square"></i> 修改模板
+          </button>
         </div>
         
         <div class="game-container">
@@ -842,6 +858,21 @@
                 </span>
               </label>
             </div>
+            
+            <!-- Vision提取模式开关 -->
+            <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none;">
+                <input type="checkbox" id="visionExtractionToggle" checked style="width: 20px; height: 20px; cursor: pointer;">
+                <div style="flex: 1;">
+                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">
+                    <i class="fas fa-robot"></i> AI智能提取模式（推荐）
+                  </div>
+                  <div style="font-size: 12px; opacity: 0.95; line-height: 1.4;">
+                    使用Vision AI自动提取人物和服饰特征，生成更精准的结果。关闭后使用传统模板模式。
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
           
           <!-- 多图片结果展示区域 -->
@@ -851,6 +882,14 @@
             </h4>
             <div id="resultImages" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
               <!-- 动态插入生成的图片 -->
+            </div>
+            
+            <!-- 提取特征信息展示 -->
+            <div id="extractedFeatures" style="display: none; margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 10px; border-left: 4px solid #4caf50;">
+              <h5 style="margin: 0 0 10px 0; color: #2e7d32;">
+                <i class="fas fa-microscope"></i> AI提取的特征信息
+              </h5>
+              <div id="featuresContent" style="font-size: 13px; color: #333; line-height: 1.6;"></div>
             </div>
           </div>
         </div>
@@ -863,9 +902,9 @@
           <div class="module-title">模块三：AI 点评作品</div>
           <button 
             class="btn btn-sm" 
-            onclick="openLessonTemplateEditor()" 
+            onclick="openModuleTemplateEditor('module3')" 
             style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-left: auto;"
-            title="修改本课程的AI点评模板"
+            title="修改模块三的AI点评模板"
           >
             <i class="fas fa-pen-to-square"></i> 修改模板
           </button>
@@ -1528,6 +1567,46 @@
       }
     }
     
+    // 压缩图片函数
+    async function compressImage(file, maxSizeMB = 1, maxWidth = 1024) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // 按比例缩放
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // 转换为Blob，压缩质量
+            canvas.toBlob((blob) => {
+              if (blob) {
+                console.log(`压缩: ${(file.size/1024/1024).toFixed(2)}MB → ${(blob.size/1024/1024).toFixed(2)}MB`);
+                resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+              } else {
+                reject(new Error('压缩失败'));
+              }
+            }, 'image/jpeg', 0.85); // 85%质量
+          };
+          img.onerror = () => reject(new Error('图片加载失败'));
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败'));
+        reader.readAsDataURL(file);
+      });
+    }
+    
     // 组合图片
     async function combineImages() {
       // 获取选中的风格
@@ -1574,14 +1653,26 @@
         console.log('开始组合图片...');
         console.log('照片文件:', photoFile.name, photoFile.size, `(#${selectedPhotoIndex + 1})`);
         console.log('画作文件:', artworkFile.name, artworkFile.size, `(#${selectedArtworkIndex + 1})`);
+        
+        // 压缩图片
+        console.log('📦 压缩图片中...');
+        const compressedPhoto = await compressImage(photoFile, 1, 1024);
+        const compressedArtwork = await compressImage(artworkFile, 1, 1024);
+        console.log('✅ 压缩完成');
+        
         console.log('课程key:', lessonKey);
         console.log('选中风格:', selectedStyles);
         
+        // 检查Vision提取模式
+        const useVisionExtraction = document.getElementById('visionExtractionToggle').checked;
+        console.log('Vision提取模式:', useVisionExtraction ? '已启用' : '已禁用');
+        
         const formData = new FormData();
-        formData.append('photo', photoFile);
-        formData.append('artwork', artworkFile);
+        formData.append('photo', compressedPhoto);
+        formData.append('artwork', compressedArtwork);
         formData.append('lesson_key', lessonKey);
         formData.append('styles', JSON.stringify(selectedStyles));
+        formData.append('use_vision_extraction', useVisionExtraction ? 'true' : 'false');
         
         console.log('发送请求到 /api/formal-lesson/combine-images...');
         
@@ -1617,6 +1708,69 @@
             resultImages.appendChild(card);
           });
           console.log('生成成功，共', data.results.length, '张图片');
+          
+          // 显示提取的特征信息（如果有）
+          if (data.results.length > 0 && data.results[0].features) {
+            const features = data.results[0].features;
+            const extractedFeaturesDiv = document.getElementById('extractedFeatures');
+            const featuresContent = document.getElementById('featuresContent');
+            
+            let html = '<div style="display: grid; gap: 15px;">';
+            
+            // 人物特征
+            if (features.person) {
+              html += '<div style="background: white; padding: 12px; border-radius: 8px;">';
+              html += '<h6 style="margin: 0 0 8px 0; color: #667eea;"><i class="fas fa-user"></i> 人物特征</h6>';
+              html += '<ul style="margin: 0; padding-left: 20px; font-size: 12px;">';
+              if (features.person.age_group) html += `<li>年龄段: ${features.person.age_group}</li>`;
+              if (features.person.gender) html += `<li>性别: ${features.person.gender}</li>`;
+              if (features.person.face) {
+                const face = features.person.face;
+                if (face.shape) html += `<li>脸型: ${face.shape}</li>`;
+                if (face.skin_tone) html += `<li>肤色: ${face.skin_tone}</li>`;
+              }
+              if (features.person.hair) {
+                const hair = features.person.hair;
+                if (hair.style) html += `<li>发型: ${hair.style}</li>`;
+              }
+              html += '</ul></div>';
+            }
+            
+            // 服饰特征
+            if (features.artwork) {
+              html += '<div style="background: white; padding: 12px; border-radius: 8px;">';
+              html += '<h6 style="margin: 0 0 8px 0; color: #764ba2;"><i class="fas fa-tshirt"></i> 服饰特征</h6>';
+              html += '<ul style="margin: 0; padding-left: 20px; font-size: 12px;">';
+              if (features.artwork.clothing) {
+                const clothing = features.artwork.clothing;
+                if (clothing.upper) html += `<li>上装: ${clothing.upper}</li>`;
+                if (clothing.lower) html += `<li>下装: ${clothing.lower}</li>`;
+                if (clothing.colors && clothing.colors.length > 0) {
+                  html += `<li>主要颜色: ${clothing.colors.join(', ')}</li>`;
+                }
+              }
+              if (features.artwork.body) {
+                const body = features.artwork.body;
+                if (body.proportions) html += `<li>身材比例: ${body.proportions}</li>`;
+              }
+              html += '</ul></div>';
+            }
+            
+            // 生成的Prompt
+            if (features.prompt) {
+              html += '<div style="background: white; padding: 12px; border-radius: 8px;">';
+              html += '<h6 style="margin: 0 0 8px 0; color: #4caf50;"><i class="fas fa-magic"></i> 生成的Prompt</h6>';
+              html += `<p style="margin: 0; font-size: 11px; color: #666; line-height: 1.5; max-height: 80px; overflow-y: auto;">${features.prompt}</p>`;
+              html += '</div>';
+            }
+            
+            html += '</div>';
+            featuresContent.innerHTML = html;
+            extractedFeaturesDiv.style.display = 'block';
+          } else {
+            document.getElementById('extractedFeatures').style.display = 'none';
+          }
+          
           // 初始化图片查看器
           setTimeout(() => {
             initFormalLessonImageViewer();
@@ -2127,29 +2281,83 @@ ${window.currentFeedbackText}
       }
     };
 
-    // ============ 课程级模板编辑功能 ============
+    // ============ 模块化模板编辑功能 ============
     
-    // 打开课程级模板编辑器
-    async function openLessonTemplateEditor() {
+    // 当前编辑的模块
+    let currentEditingModule = null;
+    
+    // 模块名称映射
+    const moduleNames = {
+      'module1': '模块一：图片生成',
+      'module2': '模块二：课后小游戏（图像融合）',
+      'module3': '模块三：AI点评作品'
+    };
+    
+    // 打开模块模板编辑器（统一入口）
+    async function openModuleTemplateEditor(moduleKey) {
+      currentEditingModule = moduleKey;
       try {
-        // 获取当前课程的模板
-        const response = await fetch(`/api/formal-lesson/lesson-template?lesson_key=${lessonKey}`);
+        // 获取当前课程和模块的模板
+        const response = await fetch(`/api/formal-lesson/module-template?lesson_key=${lessonKey}&module_key=${moduleKey}`);
         const data = await response.json();
 
         if (data.success) {
           const template = data.template;
           
-          // 填充模态框
-          document.getElementById('lessonTemplateHeaderTitle').textContent = `编辑“${getLessonName()}”的AI点评模板`;
-          document.getElementById('lessonEncouragement').value = template.encouragement || '';
-          document.getElementById('lessonAspect1').value = (template.aspects && template.aspects[0]) || '';
-          document.getElementById('lessonAspect2').value = (template.aspects && template.aspects[1]) || '';
-          document.getElementById('lessonAspect3').value = (template.aspects && template.aspects[2]) || '';
-          document.getElementById('lessonAspectList').value = (template.aspects || []).join('\n');
-          document.getElementById('lessonRawPrompt').value = template.raw_prompt || '';
+          // 填充模态框标题
+          const moduleName = moduleNames[moduleKey] || moduleKey;
+          document.getElementById('lessonTemplateHeaderTitle').textContent = `编辑"${getLessonName()}"的${moduleName}提示词模板`;
+          
+          // 根据模块类型显示不同的编辑区域
+          const module2Section = document.getElementById('module2DualTemplateSection');
+          const structuredSection = document.getElementById('templateStructuredSection');
+          const modeSwitcher = document.getElementById('templateModeSwitcher');
+          const textSection = document.getElementById('templateTextSection');
+          
+          if (moduleKey === 'module2') {
+            // 模块二：显示双模板编辑区域，隐藏模式切换器
+            module2Section.style.display = 'block';
+            structuredSection.style.display = 'none';
+            modeSwitcher.style.display = 'none';
+            textSection.style.display = 'none';
+            
+            document.getElementById('lessonTraditionalPrompt').value = template.traditional_prompt || '';
+            document.getElementById('lessonVisionPrompt').value = template.vision_extraction_prompt || '';
+          } else {
+            // 其他模块：显示传统的鼓励语和评价维度，显示模式切换器
+            module2Section.style.display = 'none';
+            modeSwitcher.style.display = 'flex';
+            
+            document.getElementById('lessonEncouragement').value = template.encouragement || '';
+            document.getElementById('lessonAspect1').value = (template.aspects && template.aspects[0]) || '';
+            document.getElementById('lessonAspect2').value = (template.aspects && template.aspects[1]) || '';
+            document.getElementById('lessonAspect3').value = (template.aspects && template.aspects[2]) || '';
+            document.getElementById('lessonAspectList').value = (template.aspects || []).join('\n');
+            document.getElementById('lessonRawPrompt').value = template.raw_prompt || '';
 
-          const mode = template.mode || 'structured';
-          setTemplateMode(mode);
+            const mode = template.mode || 'text'; // 默认使用纯文字模式
+            setTemplateMode(mode);
+          }
+          
+          // 显示最终提示词预览（仅模块二）
+          const previewSection = document.getElementById('finalPromptPreview');
+          if (moduleKey === 'module2' && data.final_prompt_examples) {
+            let previewHtml = '';
+            data.final_prompt_examples.forEach((example, index) => {
+              previewHtml += `
+                <div style="margin-bottom: 15px; padding: 12px; background: ${index % 2 === 0 ? '#f8f9fa' : '#fff'}; border-left: 3px solid #00704A; border-radius: 6px;">
+                  <div style="font-weight: 600; color: #00704A; margin-bottom: 8px; font-size: 13px;">
+                    <i class="fas fa-palette"></i> ${example.style_name}
+                  </div>
+                  <div style="font-family: 'Consolas', 'Menlo', monospace; font-size: 12px; color: #555; line-height: 1.6; white-space: pre-wrap;">${example.final_prompt}</div>
+                </div>
+              `;
+            });
+            previewSection.innerHTML = previewHtml;
+            previewSection.style.display = 'block';
+          } else {
+            previewSection.style.display = 'none';
+          }
           
           // 显示浮窗
           document.getElementById('lessonTemplateModal').style.display = 'flex';
@@ -2162,7 +2370,11 @@ ${window.currentFeedbackText}
         alert('加载模板失败：' + error.message);
       }
     }
-
+    
+    // 兼容旧的函数名（用于模块三）
+    async function openLessonTemplateEditor() {
+      await openModuleTemplateEditor('module3');
+    }
     // 关闭浮窗
     function closeLessonTemplateModal() {
       document.getElementById('lessonTemplateModal').style.display = 'none';
@@ -2213,54 +2425,89 @@ ${window.currentFeedbackText}
       return lessonNames[lessonKey] || lessonKey;
     }
 
-    // 保存课程级模板
+    // 保存模块模板
     async function saveLessonTemplate() {
       try {
-        const mode = document.getElementById('lessonTemplateMode').value || 'structured';
-        let aspects = [];
-        let rawPrompt = '';
-
-        if (mode === 'text') {
-          rawPrompt = document.getElementById('lessonRawPrompt').value;
-          aspects = document.getElementById('lessonAspectList').value
-            .split('\n')
-            .map(line => line.trim())
-            .filter(Boolean);
-        } else {
-          aspects = [
-            document.getElementById('lessonAspect1').value,
-            document.getElementById('lessonAspect2').value,
-            document.getElementById('lessonAspect3').value
-          ];
+        if (!currentEditingModule) {
+          alert('系统错误：未指定编辑模块');
+          return;
         }
-
-        const template = {
+        
+        const mode = document.getElementById('lessonTemplateMode').value || 'text';
+        let template = {
           lesson_key: lessonKey,
-          encouragement: document.getElementById('lessonEncouragement').value,
-          aspects: aspects,
-          mode: mode,
-          raw_prompt: rawPrompt
+          module_key: currentEditingModule,
+          mode: mode
         };
+        
+        // 根据模块类型收集不同的数据
+        if (currentEditingModule === 'module2') {
+          // 模块二：双模板模式
+          const traditionalPrompt = document.getElementById('lessonTraditionalPrompt').value;
+          const visionPrompt = document.getElementById('lessonVisionPrompt').value;
+          
+          if (!traditionalPrompt.trim()) {
+            alert('请填写通用提示词');
+            return;
+          }
+          if (!visionPrompt.trim()) {
+            alert('请填写AI提取特征提示词');
+            return;
+          }
+          
+          template.traditional_prompt = traditionalPrompt;
+          template.vision_extraction_prompt = visionPrompt;
+        } else {
+          // 其他模块：传统模式（鼓励语 + 评价维度）
+          let aspects = [];
+          let rawPrompt = '';
 
-        // 验证
-        if (!template.encouragement.trim()) {
-          alert('请填写鼓励语');
-          return;
-        }
-        if (!template.aspects.length) {
-          alert('请至少填写一个评价维度');
-          return;
-        }
-        if (mode === 'structured' && template.aspects.some(a => !a.trim())) {
-          alert('请填写所有评价维度');
-          return;
-        }
-        if (mode === 'text' && !template.raw_prompt.trim()) {
-          alert('请填写纯文字提示词');
-          return;
+          if (mode === 'text') {
+            rawPrompt = document.getElementById('lessonRawPrompt').value;
+            aspects = document.getElementById('lessonAspectList').value
+              .split('\n')
+              .map(line => line.trim())
+              .filter(Boolean);
+          } else {
+            aspects = [
+              document.getElementById('lessonAspect1').value,
+              document.getElementById('lessonAspect2').value,
+              document.getElementById('lessonAspect3').value
+            ];
+          }
+
+          template.encouragement = document.getElementById('lessonEncouragement').value;
+          template.aspects = aspects;
+          template.raw_prompt = rawPrompt;
+
+          // 验证
+          if (mode === 'structured') {
+            if (!template.encouragement.trim()) {
+              alert('请填写鼓励语');
+              return;
+            }
+            if (!template.aspects.length) {
+              alert('请至少填写一个评价维度');
+              return;
+            }
+          } else {
+            if (!template.aspects.length) {
+              alert('请至少填写一个评价维度');
+              return;
+            }
+            if (template.aspects.some(a => !a.trim())) {
+              alert('请填写所有评价维度');
+              return;
+            }
+          }
+          
+          if (mode === 'text' && !template.raw_prompt.trim()) {
+            alert('请填写纯文字提示词');
+            return;
+          }
         }
 
-        const response = await fetch('/api/formal-lesson/lesson-template', {
+        const response = await fetch('/api/formal-lesson/module-template', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -2279,6 +2526,45 @@ ${window.currentFeedbackText}
       } catch (error) {
         console.error('保存模板失败:', error);
         alert('❌ 保存失败：' + error.message);
+      }
+    }
+    
+    // 重置模块模板
+    async function resetLessonTemplate() {
+      if (!currentEditingModule) {
+        alert('系统错误：未指定编辑模块');
+        return;
+      }
+      
+      if (!confirm('确定要重置为默认模板吗？当前的自定义内容将被清除。')) {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/formal-lesson/module-template/reset', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            lesson_key: lessonKey,
+            module_key: currentEditingModule
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          alert('✅ 模板已重置为默认值！');
+          // 重新加载模板
+          closeLessonTemplateModal();
+          await openModuleTemplateEditor(currentEditingModule);
+        } else {
+          alert('❌ 重置失败：' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        console.error('重置模板失败:', error);
+        alert('❌ 重置失败：' + error.message);
       }
     }
     
@@ -2506,8 +2792,8 @@ ${window.currentFeedbackText}
         <!-- 主体内容 -->
         <div style="padding: 35px; background: #f8fafb;">
           <input type="hidden" id="lessonTemplateMode" value="structured">
-          <!-- 编辑模式切换 -->
-          <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+          <!-- 编辑模式切换（仅模块三显示） -->
+          <div id="templateModeSwitcher" style="display: flex; gap: 10px; margin-bottom: 22px;">
             <button id="templateModeStructured" type="button" onclick="setTemplateMode('structured')" style="flex: 1; border: none; border-radius: 12px; padding: 12px 14px; font-weight: 600; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 112, 74, 0.2);">
               <i class="fas fa-list-check"></i> 结构化模式
             </button>
@@ -2516,8 +2802,63 @@ ${window.currentFeedbackText}
             </button>
           </div>
 
-          <!-- 鼓励语区域 -->
-          <div class="mb-28" style="margin-bottom: 24px;">
+          <!-- 模块二专用：双模板编辑区域 -->
+          <div id="module2DualTemplateSection" style="display: none;">
+            <!-- 通用提示词 -->
+            <div class="mb-4" style="margin-bottom: 24px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+                <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                  <i class="fas fa-pen-fancy" style="color: #00704A; margin-right: 6px;"></i>通用提示词
+                </label>
+                <span style="color: #999; font-size: 12px; margin-left: auto;">
+                  <i class="fas fa-info-circle"></i> 适用于传统模式
+                </span>
+              </div>
+              <textarea 
+                id="lessonTraditionalPrompt" 
+                class="form-control" 
+                rows="6" 
+                placeholder="例如：将画作元素应用到照片人物上，保留人物照片的风格"
+                style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; font-family: 'Consolas', 'Menlo', monospace; line-height: 1.6;"
+                onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+                onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+              ></textarea>
+            </div>
+
+            <!-- AI提取特征提示词 -->
+            <div class="mb-0">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+                <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                  <i class="fas fa-robot" style="color: #00704A; margin-right: 6px;"></i>AI提取特征提示词
+                </label>
+                <span style="color: #999; font-size: 12px; margin-left: auto;">
+                  <i class="fas fa-info-circle"></i> 支持 {person_features} 和 {outfit_features} 占位符
+                </span>
+              </div>
+              <textarea 
+                id="lessonVisionPrompt" 
+                class="form-control" 
+                rows="8" 
+                placeholder="例如：基于以下特征生成图像：&#10;&#10;人物面部特征：{person_features}&#10;&#10;服装与风格特征：{outfit_features}"
+                style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; font-family: 'Consolas', 'Menlo', monospace; line-height: 1.6;"
+                onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+                onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+              ></textarea>
+              <div style="margin-top: 8px; padding: 10px; background: #f0f7f4; border-left: 3px solid #00704A; border-radius: 6px;">
+                <div style="font-size: 12px; color: #555; line-height: 1.6;">
+                  <i class="fas fa-lightbulb" style="color: #ff9800; margin-right: 4px;"></i>
+                  <strong>占位符说明：</strong><br>
+                  <code>{person_features}</code> - AI提取的人物面部特征<br>
+                  <code>{outfit_features}</code> - AI提取的服装和风格特征
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 模块三通用：结构化模式区域（保留原逻辑） -->
+          <div id="templateStructuredSection" style="padding-top: 8px; border-top: 1px dashed #e6e6e6;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
               <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
               <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
@@ -2529,21 +2870,17 @@ ${window.currentFeedbackText}
               class="form-control" 
               rows="3" 
               placeholder="例如：你对这个创意的把握很到位！"
-              style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; resize: none;"
+              style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; resize: none; margin-bottom: 20px;"
               onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
               onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
             ></textarea>
-          </div>
 
-          <!-- 结构化模式区域 -->
-          <div id="templateStructuredSection" style="padding-top: 8px; border-top: 1px dashed #e6e6e6;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
               <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
               <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
                 <i class="fas fa-list-check" style="color: #00704A; margin-right: 6px;"></i>评价维度（3个）
               </label>
             </div>
-            
 
             <!-- 维度1 -->
             <div class="mb-3" style="margin-bottom: 12px;">
@@ -2619,34 +2956,55 @@ ${window.currentFeedbackText}
             <div style="display: flex; align-items: center; gap: 8px; margin: 18px 0 12px;">
               <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
               <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
-                <i class="fas fa-terminal" style="color: #00704A; margin-right: 6px;"></i>发送给大模型的提示词
+                <i class="fas fa-terminal" style="color: #00704A; margin-right: 6px;"></i>最终提示词模板
               </label>
+              <span style="color: #999; font-size: 12px; margin-left: auto;">
+                <i class="fas fa-info-circle"></i> 可用变量：{composition_hint} {style_suffix}
+              </span>
             </div>
             <textarea
               id="lessonRawPrompt"
               class="form-control"
               rows="12"
-              placeholder="在这里编辑完整提示词..."
+              placeholder="在这里编辑完整提示词模板，使用 {composition_hint} 和 {style_suffix} 作为变量占位符..."
               style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 12.5px; padding: 12px 14px; background: white; transition: all 0.3s; resize: vertical; font-family: 'Consolas', 'Menlo', monospace; line-height: 1.6;"
               onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
               onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
             ></textarea>
             
+            <!-- 最终提示词预览区域 -->
+            <div id="finalPromptPreview" style="display: none; margin-top: 20px; padding: 15px; background: #f0f7f4; border-radius: 10px; border: 1px solid #b8dac9;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+                <label style="font-weight: 700; color: #00704A; margin: 0; font-size: 14px;">
+                  <i class="fas fa-eye"></i> 实际发送示例（变量已替换为实际内容）
+                </label>
+              </div>
+              <!-- 预览内容将通过JS动态填充 -->
+            </div>
+            
           </div>
         </div>
 
         <!-- 底部按钮区域 -->
-        <div style="border-top: 1px solid #e0e0e0; padding: 20px 30px; background: #f8fafb; display: flex; gap: 10px; justify-content: flex-end;">
-          <button type="button" onclick="closeLessonTemplateModal()" style="border-radius: 10px; padding: 10px 24px; color: #666; background: #f0f0f0; border: none; font-weight: 500; transition: all 0.3s; cursor: pointer;"
-            onmouseover="this.style.background='#e0e0e0';"
-            onmouseout="this.style.background='#f0f0f0';">
-            <i class="fas fa-times"></i> 取消
+        <div style="border-top: 1px solid #e0e0e0; padding: 20px 30px; background: #f8fafb; display: flex; gap: 10px; justify-content: space-between;">
+          <button type="button" onclick="resetLessonTemplate()" style="border-radius: 10px; padding: 10px 24px; color: #dc3545; background: #fff; border: 2px solid #dc3545; font-weight: 500; transition: all 0.3s; cursor: pointer;"
+            onmouseover="this.style.background='#dc3545'; this.style.color='#fff';"
+            onmouseout="this.style.background='#fff'; this.style.color='#dc3545';">
+            <i class="fas fa-undo"></i> 重置为默认
           </button>
-          <button type="button" onclick="saveLessonTemplate()" style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 10px; padding: 10px 28px; font-weight: 600; transition: all 0.3s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 112, 74, 0.25);"
-            onmouseover="this.style.boxShadow='0 6px 20px rgba(0, 112, 74, 0.35)'; this.style.transform='translateY(-2px)';"
-            onmouseout="this.style.boxShadow='0 4px 12px rgba(0, 112, 74, 0.25)'; this.style.transform='translateY(0)';">
-            <i class="fas fa-save"></i> 保存修改
-          </button>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="closeLessonTemplateModal()" style="border-radius: 10px; padding: 10px 24px; color: #666; background: #f0f0f0; border: none; font-weight: 500; transition: all 0.3s; cursor: pointer;"
+              onmouseover="this.style.background='#e0e0e0';"
+              onmouseout="this.style.background='#f0f0f0';">
+              <i class="fas fa-times"></i> 取消
+            </button>
+            <button type="button" onclick="saveLessonTemplate()" style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 10px; padding: 10px 28px; font-weight: 600; transition: all 0.3s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 112, 74, 0.25);"
+              onmouseover="this.style.boxShadow='0 6px 20px rgba(0, 112, 74, 0.35)'; this.style.transform='translateY(-2px)';"
+              onmouseout="this.style.boxShadow='0 4px 12px rgba(0, 112, 74, 0.25)'; this.style.transform='translateY(0)';">
+              <i class="fas fa-save"></i> 保存修改
+            </button>
+          </div>
         </div>
       </div>
     </div>
