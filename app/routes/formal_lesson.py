@@ -1056,9 +1056,10 @@ def get_lesson_template():
         teacher = None
         if current_user.role == 'student':
             # 获取学生所属的教师（假设在enrollment中有关系）
-            from auth.models import User
             # 从student_courses表中获取教师
             from sqlalchemy import text
+
+            from auth.models import User
             result = db.session.execute(
                 text('''
                     SELECT u.id FROM users u 

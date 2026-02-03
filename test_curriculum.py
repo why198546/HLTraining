@@ -5,10 +5,10 @@
 """
 
 import json
-from app.routes.formal_lesson import (
-    get_formal_curriculum_structure,
-    get_default_feedback_templates
-)
+
+from app.routes.formal_lesson import (get_default_feedback_templates,
+                                      get_formal_curriculum_structure)
+
 
 def test_curriculum():
     """测试课程结构的完整性"""
