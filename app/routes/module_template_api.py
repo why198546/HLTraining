@@ -30,6 +30,7 @@ def get_default_module_templates():
         'module2': {
             'name': '模块二：图像融合',
             'mode': 'dual',  # 双模板模式：传统 + Vision提取
+            'composition_hint': '构图完整，色彩协调',  # 默认构图提示
             'traditional_prompt': '''请将第二张图中的特征应用到第一张照片的人物上。
 
 {composition_hint}
@@ -203,6 +204,7 @@ def save_module_template():
             # 模块二：双模板模式
             traditional_prompt = data.get('traditional_prompt', '').strip()
             vision_extraction_prompt = data.get('vision_extraction_prompt', '').strip()
+            composition_hint = data.get('composition_hint', '').strip()
             
             if not traditional_prompt:
                 return jsonify({'success': False, 'error': '通用提示词不能为空'})
@@ -211,6 +213,7 @@ def save_module_template():
             
             template_data = {
                 'mode': 'dual',
+                'composition_hint': composition_hint,
                 'traditional_prompt': traditional_prompt,
                 'vision_extraction_prompt': vision_extraction_prompt
             }

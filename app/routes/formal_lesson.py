@@ -357,19 +357,33 @@ def combine_images():
                 lesson_templates = teacher.module_templates.get(lesson_key, {})
                 module2_template = lesson_templates.get('module2', {})
                 
+                # 读取自定义的 composition_hint
+                if 'composition_hint' in module2_template:
+                    composition_hint = module2_template['composition_hint']
+                    current_app.logger.info(f'✅ 使用自定义构图提示: {composition_hint}')
+                else:
+                    composition_hint = composition_hints.get(lesson_key, '')
+                
+                # 如果模板是dual模式，使用traditional_prompt或vision_extraction_prompt
+                if module2_template.get('mode') == 'dual':
+                    if module2_template.get('traditional_prompt'):
+                        base_description = module2_template['traditional_prompt']
+                        current_app.logger.info(f'✅ 使用双模板-通用提示词: {base_description[:50]}...')
+                    else:
+                        base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
                 # 如果模板是text模式且有raw_prompt，使用它替换base_description
-                if module2_template.get('mode') == 'text' and module2_template.get('raw_prompt'):
+                elif module2_template.get('mode') == 'text' and module2_template.get('raw_prompt'):
                     base_description = module2_template['raw_prompt']
                     current_app.logger.info(f'✅ 使用自定义模板: {base_description[:50]}...')
                 else:
                     base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
             else:
                 base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
+                composition_hint = composition_hints.get(lesson_key, '')
         except Exception as e:
             current_app.logger.warning(f'读取自定义模板失败，使用默认值: {str(e)}')
             base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
-        
-        composition_hint = composition_hints.get(lesson_key, '')
+            composition_hint = composition_hints.get(lesson_key, '')
         
         # 使用 Nano Banana API 进行图像融合
         current_app.logger.info('开始调用Gemini API进行图像融合...')
