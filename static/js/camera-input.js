@@ -580,22 +580,44 @@ function triggerFileInput() {
   document.getElementById('file-input').click();
 }
 
-// 处理文件上传
+// 处理文件上传（增强版：支持多文件）
 function handleFileUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
 
-  if (!file.type.startsWith('image/')) {
-    alert('请选择一个图片文件');
-    return;
+  // 检查是否在formal lesson页面（支持多图）
+  const isFormalLesson = typeof currentUploadType !== 'undefined' && (currentUploadType === 'photo' || currentUploadType === 'artwork');
+  
+  if (isFormalLesson) {
+    // 多图模式：逐个处理
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        console.warn('跳过非图片文件:', file.name);
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`文件 ${file.name} 大小超过 10MB，已跳过`);
+        return;
+      }
+      // 调用processPhoto添加到缩略图
+      if (typeof processPhoto === 'function') {
+        processPhoto(file);
+      }
+    });
+    // 不关闭模态框，允许继续添加
+  } else {
+    // 单图模式：只取第一个
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      alert('请选择一个图片文件');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('文件大小不能超过 10MB');
+      return;
+    }
+    showUploadPreview(file);
   }
-
-  if (file.size > 10 * 1024 * 1024) {
-    alert('文件大小不能超过 10MB');
-    return;
-  }
-
-  showUploadPreview(file);
 }
 
 // 显示上传预览
@@ -614,6 +636,122 @@ function showUploadPreview(file) {
     });
   };
   reader.readAsDataURL(file);
+}
+
+// 处理拖拽上传
+function handleDrop(event) {
+  event.preventDefault();
+  event.currentTarget.style.borderColor = '#ddd';
+  
+  const files = event.dataTransfer.files;
+  if (!files || files.length === 0) return;
+  
+  // 模拟file input的change事件
+  const fileInput = document.getElementById('file-input');
+  const dt = new DataTransfer();
+  Array.from(files).forEach(file => dt.items.add(file));
+  fileInput.files = dt.files;
+  handleFileUpload({ target: fileInput });
+}
+
+// 处理粘贴事件（图片或链接）
+function handlePaste(event) {
+  console.log('📋 检测到粘贴事件');
+  
+  const items = event.clipboardData?.items;
+  if (!items) return;
+  
+  let hasImage = false;
+  let hasText = false;
+  
+  // 优先处理图片
+  for (let item of items) {
+    if (item.type.indexOf('image') !== -1) {
+      hasImage = true;
+      const file = item.getAsFile();
+      console.log('🖼️ 粘贴的图片:', file);
+      
+      // 检查是否在formal lesson多图模式
+      const isFormalLesson = typeof currentUploadType !== 'undefined' && (currentUploadType === 'photo' || currentUploadType === 'artwork');
+      
+      if (isFormalLesson && typeof processPhoto === 'function') {
+        processPhoto(file);
+      } else {
+        showUploadPreview(file);
+      }
+      event.preventDefault();
+      return;
+    }
+  }
+  
+  // 如果没有图片，尝试处理文本（可能是链接）
+  if (!hasImage) {
+    for (let item of items) {
+      if (item.type === 'text/plain') {
+        item.getAsString(text => {
+          const trimmed = text.trim();
+          // 检查是否是图片链接
+          const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp)(\?.*)?$/i;
+          if (urlPattern.test(trimmed)) {
+            console.log('🔗 粘贴的图片链接:', trimmed);
+            loadImageFromUrl(trimmed);
+            event.preventDefault();
+          }
+        });
+        return;
+      }
+    }
+  }
+}
+
+// 从URL加载图片
+function loadImageFromUrl(url) {
+  console.log('📥 开始从链接加载图片:', url);
+  
+  // 显示加载提示
+  const uploadTab = document.getElementById('upload-tab');
+  if (!uploadTab) return;
+  
+  const loadingDiv = document.createElement('div');
+  loadingDiv.id = 'url-loading';
+  loadingDiv.style.cssText = 'text-align: center; padding: 20px; color: #666;';
+  loadingDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在加载图片...';
+  uploadTab.appendChild(loadingDiv);
+  
+  // 使用代理或CORS友好的方式加载
+  fetch(url)
+    .then(response => {
+      if (!response.ok) throw new Error('加载失败');
+      return response.blob();
+    })
+    .then(blob => {
+      // 确定文件扩展名
+      const urlExt = url.match(/\.(jpg|jpeg|png|gif|webp|bmp)/i);
+      const ext = urlExt ? urlExt[1] : 'jpg';
+      const fileName = `pasted-image-${Date.now()}.${ext}`;
+      
+      const file = new File([blob], fileName, { type: blob.type || 'image/jpeg' });
+      console.log('✅ 图片加载成功:', file);
+      
+      // 检查是否在formal lesson多图模式
+      const isFormalLesson = typeof currentUploadType !== 'undefined' && (currentUploadType === 'photo' || currentUploadType === 'artwork');
+      
+      if (isFormalLesson && typeof processPhoto === 'function') {
+        processPhoto(file);
+      } else {
+        showUploadPreview(file);
+      }
+      
+      // 移除加载提示
+      const loading = document.getElementById('url-loading');
+      if (loading) loading.remove();
+    })
+    .catch(error => {
+      console.error('❌ 加载图片失败:', error);
+      alert('无法加载图片链接，请检查链接是否正确或尝试下载后上传');
+      const loading = document.getElementById('url-loading');
+      if (loading) loading.remove();
+    });
 }
 
 // 清除上传预览
@@ -905,4 +1043,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (modal) {
     modal.querySelector('.camera-modal-overlay').addEventListener('click', closeCameraModal);
   }
+  
+  // 绑定全局粘贴事件监听器
+  document.addEventListener('paste', function(event) {
+    // 只在模态框打开时处理粘贴
+    const modal = document.getElementById('camera-modal');
+    if (modal && modal.style.display !== 'none') {
+      console.log('📋 模态框内粘贴事件');
+      handlePaste(event);
+    }
+  });
+  
+  console.log('✅ 图片上传增强功能已加载：支持多图、拖拽、粘贴图片和粘贴链接');
 });

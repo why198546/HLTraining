@@ -74,6 +74,7 @@ def create_app():
     from .routes.crop_api import crop_api_bp  # 裁剪API
     from .routes.formal_lesson import formal_lesson_bp  # 正式课程API
     from .routes.download import download_bp  # 图片下载打包API
+    from .routes.module_template_api import module_template_bp  # 模块级模板API
     
     app.register_blueprint(main_bp)
     app.register_blueprint(canvas_bp, url_prefix='/canvas')
@@ -86,6 +87,7 @@ def create_app():
     app.register_blueprint(crop_api_bp)  # 裁剪API
     app.register_blueprint(formal_lesson_bp)  # 正式课程API（已包含/api前缀）
     app.register_blueprint(download_bp)  # 图片下载打包API
+    app.register_blueprint(module_template_bp)  # 模块级模板API（已包含/api前缀）
     app.register_blueprint(static_files_bp)
     
     # 添加自动版本号到模板上下文

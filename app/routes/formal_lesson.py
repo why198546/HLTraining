@@ -81,27 +81,27 @@ def generate_image():
             'realistic': {
                 'name': '真实照片风格',
                 'icon': 'fa-camera-retro',
-                'suffix': '真实照片，高清细节，专业摄影'
+                'suffix': '真实照片风格'
             },
             'cartoon': {
                 'name': '卡通可爱风格',
                 'icon': 'fa-smile',
-                'suffix': '卡通风格，可爱风格，儿童插画，Q版，色彩明亮，简单背景'
+                'suffix': '卡通可爱Q版风格'
             },
             'sketch': {
                 'name': '素描线稿风格',
                 'icon': 'fa-pencil-alt',
-                'suffix': '黑白素描，线条勾勒，艺术感，手绘风格'
+                'suffix': '黑白素描线稿'
             },
             'anime': {
                 'name': '动漫风格',
                 'icon': 'fa-star',
-                'suffix': '日式动漫风格，大眼睛，流畅线条，鲜艳色彩，二次元'
+                'suffix': '日式动漫风格'
             },
             'watercolor': {
                 'name': '水彩风格',
                 'icon': 'fa-fill-drip',
-                'suffix': '水彩画风格，柔和渐变，艺术气息，色彩自然'
+                'suffix': '柔和水彩画风格'
             }
         }
         
@@ -281,7 +281,7 @@ def combine_images():
             }
         }
         
-        # 根据课程类型生成基础描述
+        # 根据课程类型生成基础描述（默认值 - 使用变量占位符格式）
         base_descriptions = {
             'formal_hairstyle': '''请仔细观察第二张图中的发型，包括：
 1. 发型的长度和层次
@@ -289,12 +289,41 @@ def combine_images():
 3. 头发的卷曲程度和纹理
 4. 发饰和装饰物（如花朵、发带等）
 5. 整体发型轮廓
-然后将这个完整的发型精确地应用到第一张照片中的人物头上，确保发型的所有细节都能体现。保持人物的面部特征、表情、肤色完全不变。''',
-            'formal_face': '请将第二张图中的脸型（脸部轮廓、下巴形状）应用到第一张照片中的人物上。保持五官特征不变。',
-            'formal_facial_features': '请将第二张图中的五官特征（眼睛、鼻子、嘴巴的形状和大小）应用到第一张照片中的人物上。保持脸型轮廓不变。',
-            'formal_skin_color': '请将第二张图中的肤色色调应用到第一张照片中的人物上。保持面部特征和轮廓不变。',
-            'formal_body_type': '请将第二张图中的体型（身材比例、高矮胖瘦）应用到第一张照片中的人物上。保持面部特征不变。',
-            'formal_clothing': '请将第二张图中的服装（款式、颜色、图案）应用到第一张照片中的人物上。保持人物姿态和面部特征不变。'
+然后将这个完整的发型精确地应用到第一张照片中的人物头上，确保发型的所有细节都能体现。保持人物的面部特征、表情、肤色完全不变。
+
+{composition_hint}
+
+风格要求：{style_suffix}''',
+            'formal_face': '''请将第二张图中的脸型（脸部轮廓、下巴形状）应用到第一张照片中的人物上。保持五官特征不变。
+
+{composition_hint}
+
+风格要求：{style_suffix}''',
+            'formal_facial_features': '''请将第二张图中的五官特征（眼睛、鼻子、嘴巴的形状和大小）应用到第一张照片中的人物上。保持脸型轮廓不变。
+
+{composition_hint}
+
+风格要求：{style_suffix}''',
+            'formal_skin_color': '''请将第二张图中的肤色色调应用到第一张照片中的人物上。保持面部特征和轮廓不变。
+
+{composition_hint}
+
+风格要求：{style_suffix}''',
+            'formal_body_type': '''请仔细观察第二张图中手绘作品的人物形体特征，包括：
+1. 身材比例（头身比、四肢长度比例）
+2. 体型特点（高矮胖瘦、身材轮廓）
+3. 姿态和站姿
+4. 整体形体风格
+然后将这个手绘作品中的形体特征应用到第一张照片中的真人上，采用第一张照片人物的面部特征（脸型、五官、表情），结合第二张图手绘作品的身体形态，生成一个完整的人物形象。保持第一张照片中人物的面部完全不变，只改变身体的体型和比例。
+
+{composition_hint}
+
+风格要求：{style_suffix}''',
+            'formal_clothing': '''请将第二张图中的服装（款式、颜色、图案）应用到第一张照片中的人物上。保持人物姿态和面部特征不变。
+
+{composition_hint}
+
+风格要求：{style_suffix}'''
         }
         
         # 课程针对性构图提示
@@ -306,10 +335,39 @@ def combine_images():
             'formal_clothing': '生成全身或半身照，突出服装细节。'
         }
         
-        base_description = base_descriptions.get(
-            lesson_key,
-            '将第二张图中的元素应用到第一张照片的人物上，保持人物特征。'
-        )
+        # 尝试从模板系统读取自定义的base_description（模块二）
+        try:
+            from sqlalchemy import text
+            from auth.models import User
+            
+            # 获取当前用户或其教师的模板
+            teacher = None
+            if current_user.role == 'student':
+                result = db.session.execute(
+                    text('SELECT teacher_id FROM student_courses WHERE student_id = :sid LIMIT 1'),
+                    {'sid': current_user.id}
+                ).fetchone()
+                if result and result[0]:
+                    teacher = User.query.get(result[0])
+            elif current_user.role in ['teacher', 'admin']:
+                teacher = current_user
+            
+            # 检查是否有自定义模板
+            if teacher and teacher.module_templates:
+                lesson_templates = teacher.module_templates.get(lesson_key, {})
+                module2_template = lesson_templates.get('module2', {})
+                
+                # 如果模板是text模式且有raw_prompt，使用它替换base_description
+                if module2_template.get('mode') == 'text' and module2_template.get('raw_prompt'):
+                    base_description = module2_template['raw_prompt']
+                    current_app.logger.info(f'✅ 使用自定义模板: {base_description[:50]}...')
+                else:
+                    base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
+            else:
+                base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
+        except Exception as e:
+            current_app.logger.warning(f'读取自定义模板失败，使用默认值: {str(e)}')
+            base_description = base_descriptions.get(lesson_key, '请将第二张图中的特征应用到第一张照片的人物上。\n\n{composition_hint}\n\n风格要求：{style_suffix}')
         
         composition_hint = composition_hints.get(lesson_key, '')
         
@@ -323,64 +381,138 @@ def combine_images():
             current_app.logger.error(error_msg)
             return jsonify({'success': False, 'error': error_msg})
         
-        # 为每种风格生成图片
+        # 检查是否启用Vision提取模式（从请求中获取，默认启用）
+        use_vision_extraction = request.form.get('use_vision_extraction', 'true').lower() == 'true'
+        current_app.logger.info(f"🔬 Vision提取模式: {'已启用' if use_vision_extraction else '已禁用'}")
+        
+        # 为每种风格生成图片（串行生成，确保稳定性）
         results = []
         errors = []
+        extracted_features = None  # 存储提取的特征（只需提取一次）
         
-        for style in selected_styles:
+        current_app.logger.info(f"📋 准备生成 {len(selected_styles)} 种风格的图片")
+        
+        for idx, style in enumerate(selected_styles, 1):
             style_config = style_configs.get(style, style_configs['realistic'])
             
-            # 组合完整描述：基础描述 + 构图提示 + 风格后缀
-            if composition_hint:
-                description = f"{base_description} {composition_hint} {style_config['suffix']}"
-            else:
-                description = f"{base_description} {style_config['suffix']}"
-            
             current_app.logger.info(f"========================================")
-            current_app.logger.info(f"开始生成 {style_config['name']}")
+            current_app.logger.info(f"🎨 [{idx}/{len(selected_styles)}] 开始生成 {style_config['name']}")
             current_app.logger.info(f"风格代码: {style}")
-            current_app.logger.info(f"完整提示词: {description}")
             current_app.logger.info(f"========================================")
             
             try:
-                result_path = nb_api.combine_two_images(
-                    image1_path=photo_path,
-                    image2_path=artwork_path,
-                    description=description,
-                    style="cute",
-                    aspect_ratio="512x512"
-                )
+                # 风格映射到API参数
+                api_style_map = {
+                    'realistic': 'realistic',
+                    'cartoon': 'cute',
+                    'sketch': 'realistic',  # 素描使用realistic，通过description控制
+                    'anime': 'anime',
+                    'watercolor': 'realistic'  # 水彩使用realistic，通过description控制
+                }
+                api_style = api_style_map.get(style, 'cute')
+                
+                current_app.logger.info(f"🔧 API风格参数: {api_style}")
+                current_app.logger.info(f"📸 照片路径: {photo_path}")
+                current_app.logger.info(f"🎨 画作路径: {artwork_path}")
+                current_app.logger.info(f"⏰ 准备调用API...")
+                
+                # 根据模式选择生成方法
+                result_path = None
+                features = None
+                
+                if use_vision_extraction:
+                    current_app.logger.info(f"🔬 使用Vision提取模式")
+                    try:
+                        result_path, features = nb_api.combine_with_vision_extraction(
+                            image1_path=photo_path,
+                            image2_path=artwork_path,
+                            lesson_type=lesson_key,
+                            style=api_style,
+                            aspect_ratio="512x512"
+                        )
+                        
+                        if result_path:
+                            current_app.logger.info(f"✅ Vision提取模式生成成功")
+                            # 第一次提取时保存特征信息
+                            if features and not extracted_features:
+                                extracted_features = features
+                                current_app.logger.info(f"💾 已保存提取的特征信息")
+                        else:
+                            current_app.logger.warning(f"⚠️ Vision提取模式返回None，回退到传统模式")
+                            
+                    except Exception as vision_error:
+                        current_app.logger.error(f"❌ Vision提取模式异常: {str(vision_error)}")
+                        current_app.logger.exception(vision_error)
+                        result_path = None
+                
+                # 如果Vision模式失败或未启用，使用传统模式
+                if not result_path:
+                    if use_vision_extraction:
+                        current_app.logger.info(f"🔄 自动回退到传统Prompt模式")
+                    else:
+                        current_app.logger.info(f"📝 使用传统Prompt模式")
+                    
+                    # 传统方法：使用模板变量
+                    description = base_description.replace('{composition_hint}', composition_hint)
+                    description = description.replace('{style_suffix}', style_config['suffix'])
+                    current_app.logger.info(f"完整提示词: {description[:200]}...")
+                    
+                    try:
+                        result_path = nb_api.combine_two_images(
+                            image1_path=photo_path,
+                            image2_path=artwork_path,
+                            description=description,
+                            style=api_style,
+                            aspect_ratio="512x512"
+                        )
+                    except Exception as trad_error:
+                        current_app.logger.error(f"❌ 传统模式也失败: {str(trad_error)}")
+                        current_app.logger.exception(trad_error)
+                        result_path = None
+                
+                current_app.logger.info(f"⏰ API调用完成，result_path: {result_path}")
                 
                 if result_path:
                     # 构建URL
                     if 'combined' in result_path:
-                        idx = result_path.find('combined')
-                        relative_path = result_path[idx:]
+                        idx_pos = result_path.find('combined')
+                        relative_path = result_path[idx_pos:]
                         image_url = f"/uploads/{relative_path}"
                     else:
                         image_url = f"/uploads/{os.path.basename(result_path)}"
                     
-                    results.append({
+                    result_item = {
                         'style': style,
                         'style_name': style_config['name'],
                         'style_icon': style_config['icon'],
                         'image_url': image_url
-                    })
-                    current_app.logger.info(f"✅ {style_config['name']}生成成功: {image_url}")
+                    }
+                    
+                    # 如果有提取的特征信息，附加到第一个结果
+                    if extracted_features and len(results) == 0:
+                        result_item['features'] = extracted_features
+                    
+                    results.append(result_item)
+                    current_app.logger.info(f"✅ [{idx}/{len(selected_styles)}] {style_config['name']}生成成功: {image_url}")
+                    current_app.logger.info(f"✅ 当前已成功生成 {len(results)} 张，失败 {len(errors)} 张")
                 else:
                     error_msg = f"{style_config['name']}生成失败: API返回None"
-                    current_app.logger.error(f"❌ {error_msg}")
+                    current_app.logger.error(f"❌ [{idx}/{len(selected_styles)}] {error_msg}")
                     errors.append(error_msg)
+                    current_app.logger.error(f"⚠️ 继续处理下一个风格...")
+                    # 即使失败也继续生成其他风格
                     
             except Exception as e:
                 error_msg = f"{style_config['name']}生成异常: {str(e)}"
-                current_app.logger.error(f"❌ {error_msg}")
+                current_app.logger.error(f"❌ [{idx}/{len(selected_styles)}] {error_msg}")
                 current_app.logger.exception(e)
                 errors.append(error_msg)
+                current_app.logger.error(f"⚠️ 捕获异常，继续处理下一个风格...")
+                # 即使异常也继续生成其他风格
                 continue
         
         current_app.logger.info(f"========================================")
-        current_app.logger.info(f"生成完成: 成功{len(results)}个, 失败{len(errors)}个")
+        current_app.logger.info(f"🏁 循环结束: 成功{len(results)}个, 失败{len(errors)}个")
         current_app.logger.info(f"========================================")
         
         if not results:
@@ -876,8 +1008,8 @@ def build_default_feedback_prompt(lesson_key, aspects):
 def get_feedback_templates():
     """获取当前教师的点评模板"""
     try:
-        if current_user.role != 'teacher':
-            return jsonify({'success': False, 'error': '仅教师可访问'})
+        if current_user.role not in ['teacher', 'admin']:
+            return jsonify({'success': False, 'error': '仅教师和管理员可访问'})
         
         # 如果教师还没有自定义模板，返回默认模板
         if not current_user.feedback_templates:
@@ -895,8 +1027,8 @@ def get_feedback_templates():
 def update_feedback_templates():
     """更新教师的点评模板"""
     try:
-        if current_user.role != 'teacher':
-            return jsonify({'success': False, 'error': '仅教师可修改模板'})
+        if current_user.role not in ['teacher', 'admin']:
+            return jsonify({'success': False, 'error': '仅教师和管理员可修改模板'})
         
         templates = request.json.get('templates')
         if not templates:
@@ -909,8 +1041,14 @@ def update_feedback_templates():
             if not isinstance(template['aspects'], list) or len(template['aspects']) != 3:
                 return jsonify({'success': False, 'error': f'模板 {lesson_key} 的aspects必须是包含3个元素的列表'})
         
-        # 保存到数据库
-        current_user.feedback_templates = templates
+        # 保存到数据库（深拷贝确保变化被检测）
+        import copy
+        current_user.feedback_templates = copy.deepcopy(templates)
+        
+        # 标记字段已修改
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(current_user, 'feedback_templates')
+        
         db.session.commit()
         
         return jsonify({'success': True, 'message': '模板更新成功'})
@@ -1072,7 +1210,7 @@ def get_lesson_template():
             if row:
                 from auth.models import User
                 teacher = User.query.get(row[0])
-        else:
+        elif current_user.role in ['teacher', 'admin']:
             teacher = current_user
         
         # 获取模板
@@ -1104,8 +1242,8 @@ def get_lesson_template():
 def save_lesson_template():
     """保存单个课程的AI点评模板（课程级覆盖）"""
     try:
-        if current_user.role != 'teacher':
-            return jsonify({'success': False, 'error': '仅教师可修改模板'})
+        if current_user.role not in ['teacher', 'admin']:
+            return jsonify({'success': False, 'error': '仅教师和管理员可修改模板'})
         
         data = request.json
         lesson_key = data.get('lesson_key')
@@ -1127,16 +1265,27 @@ def save_lesson_template():
             return jsonify({'success': False, 'error': '纯文字模式需要填写提示词'})
         
         # 初始化教师的模板字典（如果为空）
+        # 使用深拷贝确保SQLAlchemy能检测到变化
+        import copy
         if not current_user.feedback_templates:
-            current_user.feedback_templates = get_default_feedback_templates()
+            feedback_templates_copy = get_default_feedback_templates()
+        else:
+            feedback_templates_copy = copy.deepcopy(current_user.feedback_templates)
         
         # 更新该课程的模板
-        current_user.feedback_templates[lesson_key] = {
+        feedback_templates_copy[lesson_key] = {
             'encouragement': encouragement,
             'aspects': [a.strip() for a in aspects],
             'mode': mode,
             'raw_prompt': raw_prompt
         }
+        
+        # 重新赋值整个对象
+        current_user.feedback_templates = feedback_templates_copy
+        
+        # 标记字段已修改
+        from sqlalchemy.orm.attributes import flag_modified
+        flag_modified(current_user, 'feedback_templates')
         
         db.session.commit()
         

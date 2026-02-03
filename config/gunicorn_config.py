@@ -21,7 +21,8 @@ worker_class = 'sync'
 threads = 2
 
 # Worker超时时间（秒）
-timeout = 120
+# 对于AI图像生成等耗时操作，需要更长的超时时间
+timeout = 300  # 5分钟
 
 # 优雅关闭超时时间（秒）
 graceful_timeout = 30

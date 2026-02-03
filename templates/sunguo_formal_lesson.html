@@ -2480,27 +2480,30 @@ ${window.currentFeedbackText}
           template.aspects = aspects;
           template.raw_prompt = rawPrompt;
 
-          // 验证
-          if (mode === 'structured') {
-            if (!template.encouragement.trim()) {
-              alert('请填写鼓励语');
-              return;
-            }
-            if (!template.aspects.length) {
-              alert('请至少填写一个评价维度');
-              return;
-            }
-          } else {
-            if (!template.aspects.length) {
-              alert('请至少填写一个评价维度');
-              return;
-            }
-            if (template.aspects.some(a => !a.trim())) {
-              alert('请填写所有评价维度');
-              return;
+          // 验证（只有模块三才强制要求鼓励语和评价维度）
+          if (currentEditingModule === 'module3') {
+            if (mode === 'structured') {
+              if (!template.encouragement.trim()) {
+                alert('请填写鼓励语');
+                return;
+              }
+              if (!template.aspects.length) {
+                alert('请至少填写一个评价维度');
+                return;
+              }
+              if (template.aspects.some(a => !a.trim())) {
+                alert('请填写所有评价维度');
+                return;
+              }
+            } else {
+              if (!template.aspects.length) {
+                alert('请至少填写一个评价维度');
+                return;
+              }
             }
           }
           
+          // 模块一和模块三都需要验证raw_prompt（纯文字模式）
           if (mode === 'text' && !template.raw_prompt.trim()) {
             alert('请填写纯文字提示词');
             return;

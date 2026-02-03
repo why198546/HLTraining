@@ -142,6 +142,7 @@ else
     LOCAL_USERS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(users);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
     LOCAL_CANVAS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(canvas_projects);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
     LOCAL_ARTWORKS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(artworks);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
+    LOCAL_COURSES_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(courses);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
     
     echo "   ✓ 本地数据库字段已读取"
     echo ""
@@ -149,7 +150,7 @@ else
     # 检查服务器数据库
     if eval "$SSH_CMD $SERVER_USER@$SERVER_HOST 'if [ -f /var/www/hltraining/instance/hltraining.db ]; then echo yes; else echo no; fi'" | grep -q yes; then
         # 将本地字段列表传递给服务器端脚本进行比对
-        $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" "$LOCAL_USERS_FIELDS" "$LOCAL_CANVAS_FIELDS" "$LOCAL_ARTWORKS_FIELDS" << 'ENDSSH'
+        $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" "$LOCAL_USERS_FIELDS" "$LOCAL_CANVAS_FIELDS" "$LOCAL_ARTWORKS_FIELDS" "$LOCAL_COURSES_FIELDS" << 'ENDSSH'
             set -e
             cd /var/www/hltraining
 
@@ -157,6 +158,7 @@ else
             LOCAL_USERS_FIELDS="$1"
             LOCAL_CANVAS_FIELDS="$2"
             LOCAL_ARTWORKS_FIELDS="$3"
+            LOCAL_COURSES_FIELDS="$4"
 
             if [ -f instance/hltraining.db ]; then
                 echo "🔍 比对数据库结构..."
@@ -200,7 +202,20 @@ else
                             missing_fields+=("artworks.$field")
                             migration_needed=1
                         fi
+                  
+                
+                # 检查 courses 表
+                if [ -n "$LOCAL_COURSES_FIELDS" ]; then
+                    echo "   检查 courses 表..."
+                    IFS=',' read -ra FIELDS <<< "$LOCAL_COURSES_FIELDS"
+                    for field in "${FIELDS[@]}"; do
+                        if ! sqlite3 instance/hltraining.db "PRAGMA table_info(courses);" | awk -F'|' '{print $2}' | grep -qx "$field"; then
+                            echo "      ❌ 缺少字段: courses.$field"
+                            missing_fields+=("courses.$field")
+                            migration_needed=1
+                        fi
                     done
+                fi  done
                 fi
 
                 if [ $migration_needed -eq 1 ]; then
@@ -233,6 +248,16 @@ else
                             *"feedback_templates"*)
                                 if [ -f migrations/add_feedback_templates_column.py ]; then
                                     migration_scripts="${migration_scripts} migrations/add_feedback_templates_column.py"
+                                fi
+                                ;;
+                            *"module_templates"*)
+                                if [ -f migrations/add_module_templates_column.py ]; then
+                                    migration_scripts="${migration_scripts} migrations/add_module_templates_column.py"
+                                fi
+                                ;;
+                            *"tokens_reward"*)
+                                if [ -f migrations/add_tokens_reward_to_courses.py ]; then
+                                    migration_scripts="${migration_scripts} migrations/add_tokens_reward_to_courses.py"
                                 fi
                                 ;;
                             *"project_type"*|*"width"*|*"height"*)
@@ -270,14 +295,15 @@ else
                 echo "⚠️ 数据库文件不存在"
             fi
 ENDSSH
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ 远端数据库迁移失败，已中止后续操作${NC}"
-        exit 1
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}❌ 远端数据库迁移失败，已中止后续操作${NC}"
+            exit 1
+        else
+            echo -e "${GREEN}✅ 远端数据库迁移检测完成${NC}"
+        fi
     else
-        echo -e "${GREEN}✅ 远端数据库迁移检测完成${NC}"
+        echo -e "${YELLOW}⚠️  远端没有检测到 SQLite 数据库文件，跳过数据库迁移检测${NC}"
     fi
-else
-    echo -e "${YELLOW}⚠️  远端没有检测到 SQLite 数据库文件，跳过数据库迁移检测${NC}"
 fi
 echo ""
 

@@ -56,6 +56,7 @@ class User(UserMixin, db.Model):
     
     # 教师专用字段
     feedback_templates = db.Column(db.JSON, nullable=True)  # 老师自定义的AI点评模板
+    module_templates = db.Column(db.JSON, nullable=True)  # 老师自定义的模块级提示词模板
     
     # 关联关系
     artworks = db.relationship('Artwork', backref='author', lazy=True, cascade='all, delete-orphan')

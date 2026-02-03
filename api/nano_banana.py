@@ -1259,4 +1259,394 @@ CRITICAL: All 4 views must show the EXACT SAME character, just from different an
             
         except Exception as e:
             print(f"❌ Vision分析错误: {str(e)}")
+            return None    
+    def extract_person_features(self, image_path):
+        """第一步：提取人物特征（面部、发型、年龄等）
+        
+        Args:
+            image_path: 人物照片路径
+        
+        Returns:
+            dict: 结构化的人物特征信息
+        """
+        try:
+            print("👤 开始提取人物特征...")
+            
+            if not self.client:
+                raise Exception("Vision API未初始化")
+            
+            # 读取图片
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # Vision提取提示词 - 只提取面部相貌特征（自然语言描述）
+            prompt = """Describe this person's facial appearance in natural language, focusing ONLY on:
+- Face shape and skin tone
+- Eyes: size, shape, color if visible
+- Eyebrows: shape and thickness
+- Nose: size and shape
+- Mouth and smile
+- Facial expression
+- Hair: style, length, color, texture, bangs if any
+- Approximate age range and gender appearance
+
+IMPORTANT:
+- Be ACCURATE and SPECIFIC about what you see
+- Focus ONLY on the face and hair
+- Do NOT describe: clothing, body, background, or pose
+
+Example format:
+"A young East Asian girl with long, straight dark brown hair, round eyes, a small nose, and a cheerful smile. She appears to be around 8-12 years old."
+
+Your description:"""
+            
+            # 调用 Gemini Vision
+            contents = [
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type='image/jpeg')
+            ]
+            
+            # 配置安全设置 - 允许处理人物照片
+            config = types.GenerateContentConfig(
+                safety_settings=[
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_HARASSMENT',
+                        threshold='BLOCK_NONE'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_HATE_SPEECH',
+                        threshold='BLOCK_NONE'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                        threshold='BLOCK_ONLY_HIGH'
+                    ),
+                    types.SafetySetting(
+                        category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                        threshold='BLOCK_NONE'
+                    ),
+                ]
+            )
+            
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash',  # 使用2.0版本，对人物照片限制更少
+                contents=contents,
+                config=config
+            )
+            
+            # 检查响应
+            if not response or not hasattr(response, 'text') or response.text is None:
+                print(f"⚠️ Vision API返回空响应或无text属性")
+                print(f"📋 Response对象: {response}")
+                if hasattr(response, 'candidates'):
+                    print(f"📋 Candidates: {response.candidates}")
+                if hasattr(response, 'prompt_feedback'):
+                    print(f"📋 Prompt Feedback: {response.prompt_feedback}")
+                raise Exception("Vision API返回空响应")
+            
+            response_text = response.text.strip()
+            print(f"📥 Vision返回原始文本: {response_text[:200]}...")
+            
+            # 直接返回自然语言描述（清理引号）
+            description = response_text.strip().strip('"').strip("'")
+            print(f"✅ 成功提取人物描述")
+            print(f"📝 完整描述内容: {description}")
+            print(f"📏 描述长度: {len(description)} 字符")
+            return description
+            
+        except Exception as e:
+            print(f"❌ 提取人物特征失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # 返回基础描述
+            return "A person with natural features and a gentle appearance"
+    
+    def extract_artwork_features(self, image_path):
+        """第一步：提取手绘作品特征（服饰、形体、姿势等）
+        
+        Args:
+            image_path: 手绘作品路径
+        
+        Returns:
+            dict: 结构化的作品特征信息
+        """
+        try:
+            print("🎨 开始提取手绘作品特征...")
+            
+            if not self.client:
+                raise Exception("Vision API未初始化")
+            
+            # 读取图片
+            with open(image_path, 'rb') as f:
+                image_bytes = f.read()
+            
+            # Vision提取提示词 - 只提取体态、动作、衣着特征（自然语言描述）
+            prompt = """Analyze the art style and the character's outfit in this hand-drawn image. Provide a natural language description focusing on:
+- Clothing items: Describe each piece ACCURATELY (top, bottom, outerwear)
+- Colors: Be PRECISE about colors - look carefully at what you see (e.g., "blue skirt", "black t-shirt", "red shoes")
+- Specific details: text on clothing, patterns, textures
+- Accessories: bags, shoes, socks, jewelry, hats, etc.
+- Body proportions and pose if distinctive
+- Artistic rendering style: color blocks, textures, line work, painting technique
+
+IMPORTANT: 
+- Pay close attention to the ACTUAL COLORS in the image
+- Describe clothing items accurately as you see them
+- Avoid mentioning facial features
+
+Example format:
+"wearing a black t-shirt and a blue pleated skirt, white socks with yellow stripes, and brown chunky shoes, holding a tote bag. The art style features bold color blocks with a flat, graphic aesthetic. The fashion style is casual and youthful."
+
+Your description:"""
+            
+            # 调用 Gemini Vision
+            contents = [
+                prompt,
+                types.Part.from_bytes(data=image_bytes, mime_type='image/jpeg')
+            ]
+            
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash',  # 与人物提取使用相同版本
+                contents=contents
+            )
+            
+            response_text = response.text.strip()
+            print(f"📥 Vision返回原始文本: {response_text[:200]}...")
+            
+            # 直接返回自然语言描述（清理引号）
+            description = response_text.strip().strip('"').strip("'")
+            print(f"✅ 成功提取服饰和风格描述")
+            print(f"📝 完整描述内容: {description}")
+            print(f"📏 描述长度: {len(description)} 字符")
+            print(f"🔍 关键词检查: 是否包含颜色词汇")
+            return description
+            
+        except Exception as e:
+            print(f"❌ 提取手绘作品特征失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # 返回基础描述
+            return "wearing casual clothing in a simple style"
+    
+    def build_structured_prompt(self, person_description, outfit_description, lesson_type, style="realistic"):
+        """使用固定模板+变量插入构建Prompt
+        
+        核心策略：固定模板保证风格一致性，变量插入保证灵活性
+        
+        Args:
+            person_description: 人物描述（自然语言）
+            outfit_description: 服饰描述（自然语言）
+            lesson_type: 课程类型
+            style: 输出风格（realistic/cute/anime等）
+        
+        Returns:
+            str: 构建好的完整Prompt
+        """
+        try:
+            print("🔨 开始构建Prompt（固定模板+变量插入）...")
+            
+            # 如果描述为空，使用默认值
+            if not person_description:
+                person_description = "A person with natural features"
+            if not outfit_description:
+                outfit_description = "wearing casual clothing"
+            
+            # 风格映射：固定的风格控制模板
+            style_templates = {
+                "realistic": {
+                    "composition": "full-body studio portrait",
+                    "photography_style": "high-quality fashion photography style",
+                    "lighting": "soft studio lighting",
+                    "background": "clean solid light grey background",
+                    "quality": "realistic textures and details, 8k resolution, highly detailed"
+                },
+                "cute": {
+                    "composition": "full-body character illustration",
+                    "photography_style": "cute cartoon style with bright colors and simple lines",
+                    "lighting": "soft diffused lighting",
+                    "background": "clean pastel background",
+                    "quality": "child-friendly, smooth rendering, high quality"
+                },
+                "anime": {
+                    "composition": "full-body anime character",
+                    "photography_style": "anime art style with vibrant colors and expressive features",
+                    "lighting": "dramatic anime lighting",
+                    "background": "clean gradient background",
+                    "quality": "detailed line art, professional anime quality"
+                }
+            }
+            
+            # 获取风格模板（默认realistic）
+            template = style_templates.get(style, style_templates["realistic"])
+            
+            # 构建最终Prompt：明确指示如何使用两张参考图
+            final_prompt = f"""Create a character image using the following reference images and descriptions:
+
+REFERENCE IMAGE 1 (Person's face and features to preserve):
+{person_description}
+→ Keep the facial features, skin tone, hair style, and overall appearance from the first reference image.
+
+REFERENCE IMAGE 2 (Outfit and style to preserve):
+{outfit_description}
+→ Keep the clothing style, colors, body proportions, pose, and artistic rendering from the second reference image.
+
+Generate a {template['composition']}, in a {template['photography_style']}, with {template['lighting']}. 
+The background should be a {template['background']}. 
+Focus on {template['quality']}.
+
+IMPORTANT: Combine the person's facial appearance from Image 1 with the outfit and body styling from Image 2."""
+            
+            print(f"✅ Prompt构建完成")
+            print(f"📝 完整Prompt (前300字): {final_prompt[:300]}...")
+            print(f"📝 完整Prompt (全文): {final_prompt}")
+            
+            return final_prompt
+            
+        except Exception as e:
+            print(f"❌ 构建Prompt失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
+    
+    def combine_with_vision_extraction(self, image1_path, image2_path, lesson_type, style="realistic", aspect_ratio="512x512"):
+        """三步自动化流程：Vision提取 + 结构化Prompt + 图像生成
+        
+        Args:
+            image1_path: 人物照片路径
+            image2_path: 手绘作品路径
+            lesson_type: 课程类型
+            style: 输出风格
+            aspect_ratio: 输出尺寸
+        
+        Returns:
+            tuple: (生成图片路径, 提取的特征信息)
+        """
+        try:
+            print("="*60)
+            print("🚀 开始三步自动化流程：Vision提取 + 结构化Prompt + 图像生成")
+            print("="*60)
+            
+            # 第一步：Vision提取特征（自然语言描述）
+            print("\n【第一步】Vision提取特征...")
+            person_description = self.extract_person_features(image1_path)
+            outfit_description = self.extract_artwork_features(image2_path)
+            
+            print(f"✅ 特征提取完成")
+            print(f"📝 人物描述: {person_description[:100]}...")
+            print(f"📝 服饰描述: {outfit_description[:100]}...")
+            
+            # 第二步：构建Prompt（固定模板+变量插入）
+            print("\n【第二步】构建Prompt（固定模板+变量插入）...")
+            
+            structured_prompt = self.build_structured_prompt(
+                person_description,
+                outfit_description,
+                lesson_type,
+                style
+            )
+            
+            if not structured_prompt:
+                print("❌ Prompt构建失败，返回None")
+                return None, None
+            
+            # 第三步：生成图像
+            print("\n【第三步】生成图像...")
+            
+            # 读取并压缩图片
+            from io import BytesIO
+            img1 = Image.open(image1_path)
+            if img1.width > 1024 or img1.height > 1024:
+                ratio = min(1024 / img1.width, 1024 / img1.height)
+                new_size = (int(img1.width * ratio), int(img1.height * ratio))
+                img1 = img1.resize(new_size, Image.Resampling.LANCZOS)
+            
+            buffer1 = BytesIO()
+            img1.save(buffer1, format='PNG', optimize=True)
+            image1_bytes = buffer1.getvalue()
+            
+            img2 = Image.open(image2_path)
+            if img2.width > 1024 or img2.height > 1024:
+                ratio = min(1024 / img2.width, 1024 / img2.height)
+                new_size = (int(img2.width * ratio), int(img2.height * ratio))
+                img2 = img2.resize(new_size, Image.Resampling.LANCZOS)
+            
+            buffer2 = BytesIO()
+            img2.save(buffer2, format='PNG', optimize=True)
+            image2_bytes = buffer2.getvalue()
+            
+            # 配置
+            config = types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                temperature=0.9,
+                top_p=0.95
+            )
+            
+            # 构建内容（提示词 + 两张图片）
+            contents = [
+                structured_prompt,
+                types.Part.from_bytes(data=image1_bytes, mime_type='image/png'),
+                types.Part.from_bytes(data=image2_bytes, mime_type='image/png')
+            ]
+            
+            print(f"🔥 调用Gemini 2.5 Flash Image生成...")
+            print(f"📋 使用的完整提示词：")
+            print(f"{structured_prompt}")
+            print(f"📋 提示词长度: {len(structured_prompt)} 字符")
+            
+            # 调用API
+            response = self.client.models.generate_content(
+                model='models/gemini-2.5-flash-image',
+                contents=contents,
+                config=config
+            )
+            
+            # 提取生成的图像
+            if not response or not hasattr(response, 'candidates') or not response.candidates:
+                print("❌ API返回无效响应")
+                return None, None
+            
+            candidate = response.candidates[0]
+            if not hasattr(candidate, 'content') or not candidate.content:
+                print("❌ 响应中没有content")
+                return None, None
+            
+            # 提取图片数据
+            image_parts = [
+                part.inline_data.data
+                for part in candidate.content.parts
+                if hasattr(part, 'inline_data') and part.inline_data
+            ]
+            
+            if not image_parts:
+                print("❌ 响应中没有生成图片")
+                return None, None
+            
+            print("✅ 成功生成图片")
+            
+            # 保存图片
+            image = Image.open(BytesIO(image_parts[0]))
+            
+            import uuid
+            output_filename = f"combined_{uuid.uuid4().hex}.jpg"
+            output_path = os.path.join(self.upload_folder, 'combined', output_filename)
+            
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            image.save(output_path, 'JPEG', quality=95)
+            
+            print(f"✅ 图片已保存: {output_path}")
+            print("="*60)
+            print("🎉 三步自动化流程完成")
+            print("="*60)
+            
+            # 返回结果和提取的特征
+            return output_path, {
+                'person_description': person_description,
+                'outfit_description': outfit_description,
+                'prompt': structured_prompt
+            }
+            
+        except Exception as e:
+            print(f"❌ 三步自动化流程失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None, None
