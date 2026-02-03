@@ -130,44 +130,145 @@ echo ""
 
 # 步骤3.5: 远端数据库迁移检测（如果使用 SQLite）
 echo -e "${YELLOW}🗄️ 步骤3.5: 远端数据库迁移检测...${NC}"
-if eval "$SSH_CMD $SERVER_USER@$SERVER_HOST 'if [ -f /var/www/hltraining/instance/hltraining.db ]; then echo yes; else echo no; fi'" | grep -q yes; then
-    # 执行远端迁移检测脚本
-    $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" << 'ENDSSH'
-        set -e
-        cd /var/www/hltraining
 
-        if [ -f instance/hltraining.db ]; then
-            # 检查 canvas_projects 表中是否存在需要的列
-            missing=0
-            for col in project_type width height last_opened_at; do
-                if ! sqlite3 instance/hltraining.db "PRAGMA table_info(canvas_projects);" | awk -F'|' '{print $2}' | grep -qx "${col}"; then
-                    missing=1
-                fi
-            done
+# 首先读取本地数据库结构
+echo "   📖 读取本地数据库结构..."
+LOCAL_DB_PATH="instance/hltraining.db"
 
-            if [ "${missing}" -eq 1 ]; then
-                echo "🔍 检测到数据库需要迁移，先进行备份..."
-                timestamp=$(date +%F_%H%M%S)
-                backup_path="instance/hltraining_backup_${timestamp}.db"
-                cp instance/hltraining.db "${backup_path}"
-                echo "✅ 备份完成: ${backup_path}"
+if [ ! -f "$LOCAL_DB_PATH" ]; then
+    echo -e "${YELLOW}   ⚠️  本地数据库不存在，跳过迁移检测${NC}"
+else
+    # 读取本地关键表的字段
+    LOCAL_USERS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(users);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
+    LOCAL_CANVAS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(canvas_projects);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
+    LOCAL_ARTWORKS_FIELDS=$(sqlite3 "$LOCAL_DB_PATH" "PRAGMA table_info(artworks);" 2>/dev/null | awk -F'|' '{print $2}' | tr '\n' ',' | sed 's/,$//')
+    
+    echo "   ✓ 本地数据库字段已读取"
+    echo ""
+    
+    # 检查服务器数据库
+    if eval "$SSH_CMD $SERVER_USER@$SERVER_HOST 'if [ -f /var/www/hltraining/instance/hltraining.db ]; then echo yes; else echo no; fi'" | grep -q yes; then
+        # 将本地字段列表传递给服务器端脚本进行比对
+        $SSH_CMD $SERVER_USER@$SERVER_HOST "bash -s" "$LOCAL_USERS_FIELDS" "$LOCAL_CANVAS_FIELDS" "$LOCAL_ARTWORKS_FIELDS" << 'ENDSSH'
+            set -e
+            cd /var/www/hltraining
+
+            # 接收本地字段列表
+            LOCAL_USERS_FIELDS="$1"
+            LOCAL_CANVAS_FIELDS="$2"
+            LOCAL_ARTWORKS_FIELDS="$3"
+
+            if [ -f instance/hltraining.db ]; then
+                echo "🔍 比对数据库结构..."
                 
-                echo "🔧 开始执行数据库迁移..."
-                # 激活虚拟环境（若存在）并运行迁移脚本
-                if [ -f venv/bin/activate ]; then
-                    source venv/bin/activate
+                missing_fields=()
+                migration_needed=0
+                
+                # 检查 users 表
+                if [ -n "$LOCAL_USERS_FIELDS" ]; then
+                    echo "   检查 users 表..."
+                    IFS=',' read -ra FIELDS <<< "$LOCAL_USERS_FIELDS"
+                    for field in "${FIELDS[@]}"; do
+                        if ! sqlite3 instance/hltraining.db "PRAGMA table_info(users);" | awk -F'|' '{print $2}' | grep -qx "$field"; then
+                            echo "      ❌ 缺少字段: users.$field"
+                            missing_fields+=("users.$field")
+                            migration_needed=1
+                        fi
+                    done
                 fi
-                python3 scripts/add_project_type_column.py || {
-                    echo "❌ 迁移失败" >&2
-                    exit 1
-                }
-                echo "✅ 数据库迁移完成"
+                
+                # 检查 canvas_projects 表
+                if [ -n "$LOCAL_CANVAS_FIELDS" ]; then
+                    echo "   检查 canvas_projects 表..."
+                    IFS=',' read -ra FIELDS <<< "$LOCAL_CANVAS_FIELDS"
+                    for field in "${FIELDS[@]}"; do
+                        if ! sqlite3 instance/hltraining.db "PRAGMA table_info(canvas_projects);" | awk -F'|' '{print $2}' | grep -qx "$field"; then
+                            echo "      ❌ 缺少字段: canvas_projects.$field"
+                            missing_fields+=("canvas_projects.$field")
+                            migration_needed=1
+                        fi
+                    done
+                fi
+                
+                # 检查 artworks 表
+                if [ -n "$LOCAL_ARTWORKS_FIELDS" ]; then
+                    echo "   检查 artworks 表..."
+                    IFS=',' read -ra FIELDS <<< "$LOCAL_ARTWORKS_FIELDS"
+                    for field in "${FIELDS[@]}"; do
+                        if ! sqlite3 instance/hltraining.db "PRAGMA table_info(artworks);" | awk -F'|' '{print $2}' | grep -qx "$field"; then
+                            echo "      ❌ 缺少字段: artworks.$field"
+                            missing_fields+=("artworks.$field")
+                            migration_needed=1
+                        fi
+                    done
+                fi
+
+                if [ $migration_needed -eq 1 ]; then
+                    echo ""
+                    echo "⚠️  发现 ${#missing_fields[@]} 个缺失字段"
+                    echo "🔍 检测到数据库需要迁移，先进行备份..."
+                    timestamp=$(date +%F_%H%M%S)
+                    backup_path="instance/hltraining_backup_${timestamp}.db"
+                    cp instance/hltraining.db "${backup_path}"
+                    echo "✅ 备份完成: ${backup_path}"
+                    
+                    echo "🔧 开始执行数据库迁移..."
+                    # 激活虚拟环境（若存在）
+                    if [ -f venv/bin/activate ]; then
+                        source venv/bin/activate
+                    fi
+                    
+                    # 运行完整的数据库验证和迁移工具
+                    if [ -f migrations/verify_database.py ]; then
+                        echo "   使用 verify_database.py 验证结构..."
+                        python3 migrations/verify_database.py || true
+                    fi
+                    
+                    # 查找并执行迁移脚本
+                    migration_scripts=""
+                    
+                    # 检查是否需要执行特定的迁移脚本
+                    for missing in "${missing_fields[@]}"; do
+                        case "$missing" in
+                            *"feedback_templates"*)
+                                if [ -f migrations/add_feedback_templates_column.py ]; then
+                                    migration_scripts="${migration_scripts} migrations/add_feedback_templates_column.py"
+                                fi
+                                ;;
+                            *"project_type"*|*"width"*|*"height"*)
+                                if [ -f scripts/add_project_type_column.py ]; then
+                                    migration_scripts="${migration_scripts} scripts/add_project_type_column.py"
+                                fi
+                                ;;
+                        esac
+                    done
+                    
+                    # 去重迁移脚本
+                    migration_scripts=$(echo "$migration_scripts" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+                    
+                    if [ -n "$migration_scripts" ]; then
+                        # 执行迁移脚本
+                        for script in ${migration_scripts}; do
+                            if [ -f "${script}" ]; then
+                                echo "   执行: ${script}"
+                                python3 "${script}" || {
+                                    echo "❌ 迁移失败: ${script}" >&2
+                                    exit 1
+                                }
+                            fi
+                        done
+                    else
+                        echo "   ⚠️  未找到对应的迁移脚本，可能需要手动处理"
+                        echo "   建议运行: python3 migrations/verify_database.py"
+                    fi
+                    
+                    echo "✅ 数据库迁移完成"
+                else
+                    echo "✓ 数据库结构一致，无需迁移"
+                fi
             else
-                echo "✓ 数据库结构正常，无需迁移"
+                echo "⚠️ 数据库文件不存在"
             fi
-        else
-            echo "⚠️ 数据库文件不存在"
-        fi
 ENDSSH
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ 远端数据库迁移失败，已中止后续操作${NC}"
