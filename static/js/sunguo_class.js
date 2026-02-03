@@ -873,19 +873,29 @@ const ImageViewer = {
     if (this.prevBtn) {
       this.prevBtn.addEventListener('click', (e) => {
         console.log('⬅️ 点击上一张按钮', e);
+        console.log('📌 按钮元素:', this.prevBtn);
+        console.log('📌 ImageViewer对象:', this);
         e.stopPropagation();
         e.preventDefault();
         this.navigate(-1);
       });
+      console.log('✅ 上一张按钮事件已绑定');
+    } else {
+      console.log('❌ 未找到上一张按钮');
     }
     
     if (this.nextBtn) {
       this.nextBtn.addEventListener('click', (e) => {
         console.log('➡️ 点击下一张按钮', e);
+        console.log('📌 按钮元素:', this.nextBtn);
+        console.log('📌 ImageViewer对象:', this);
         e.stopPropagation();
         e.preventDefault();
         this.navigate(1);
       });
+      console.log('✅ 下一张按钮事件已绑定');
+    } else {
+      console.log('❌ 未找到下一张按钮');
     }
 
     // 键盘导航
@@ -982,8 +992,16 @@ const ImageViewer = {
   },
 
   navigate(direction) {
+    console.log('🎯 navigate 被调用, direction:', direction);
+    console.log('📊 当前状态 - images:', this.images ? this.images.length : 'null', 'currentIndex:', this.currentIndex);
+    
     if (!this.images || this.images.length === 0) {
       console.log('❌ navigate: 没有图片');
+      return;
+    }
+    
+    if (this.images.length === 1) {
+      console.log('⚠️ 只有一张图片，无法切换');
       return;
     }
     
@@ -991,10 +1009,13 @@ const ImageViewer = {
     this.currentIndex = (this.currentIndex + direction + this.images.length) % this.images.length;
     
     console.log(`🔄 导航: ${prevIndex} → ${this.currentIndex} (共 ${this.images.length} 张)`);
+    console.log('🔗 images数组:', this.images);
     
     // 只在确实改变时更新
     if (prevIndex !== this.currentIndex) {
       this.updateImage();
+    } else {
+      console.log('⚠️ 索引未改变，不更新图片');
     }
   },
 
@@ -1046,7 +1067,7 @@ const ImageViewer = {
   },
 
   print() {
-    printImage(this.images[this.currentIndex]);
+    printImage(this.images[this.currentIndex], window.currentLessonKey);
   }
 };
 
@@ -1056,7 +1077,26 @@ function isMobileDevice() {
 }
 
 // 打印单张图片的辅助函数
-async function printImage(imageSrc) {
+async function printImage(imageSrc, lessonKey) {
+  // 标记图片为已打印（如果提供了lessonKey）
+  if (lessonKey) {
+    try {
+      await fetch('/api/download/mark-printed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          lesson_key: lessonKey,
+          image_url: imageSrc
+        })
+      });
+      console.log('✅ 图片已标记为打印');
+    } catch (error) {
+      console.warn('⚠️ 标记打印失败:', error);
+    }
+  }
+  
   const isMobile = isMobileDevice();
   
   if (isMobile) {
