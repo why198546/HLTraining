@@ -54,6 +54,9 @@ class User(UserMixin, db.Model):
     last_token_grant_date = db.Column(db.Date, nullable=True)  # 上次赠送token日期
     course_type = db.Column(db.String(50), nullable=True)  # 课程类型（trial_course/formal_course）
     
+    # 教师专用字段
+    feedback_templates = db.Column(db.JSON, nullable=True)  # 老师自定义的AI点评模板
+    
     # 关联关系
     artworks = db.relationship('Artwork', backref='author', lazy=True, cascade='all, delete-orphan')
     sessions = db.relationship('CreationSession', backref='user', lazy=True, cascade='all, delete-orphan')

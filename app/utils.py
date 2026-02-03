@@ -50,6 +50,50 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def compress_image(image, max_size=1024, quality=85):
+    """压缩图片到指定最大尺寸
+    
+    Args:
+        image: PIL Image对象或图片路径
+        max_size: 最大边长（像素），默认1024
+        quality: JPEG质量（1-100），默认85
+    
+    Returns:
+        PIL Image对象: 压缩后的图片
+    
+    Examples:
+        >>> from PIL import Image
+        >>> img = Image.open('large.jpg')
+        >>> compressed = compress_image(img, max_size=1024, quality=85)
+        >>> compressed.save('compressed.jpg', 'JPEG', quality=85)
+    """
+    from PIL import Image
+
+    # 如果传入的是路径，先加载
+    if isinstance(image, str):
+        image = Image.open(image)
+    
+    # 转换为RGB（去除透明通道，适合JPEG）
+    if image.mode in ('RGBA', 'LA', 'P'):
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        if image.mode == 'P':
+            image = image.convert('RGBA')
+        background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+        image = background
+    elif image.mode != 'RGB':
+        image = image.convert('RGB')
+    
+    # 按比例缩放
+    if image.width > max_size or image.height > max_size:
+        ratio = min(max_size / image.width, max_size / image.height)
+        new_width = int(image.width * ratio)
+        new_height = int(image.height * ratio)
+        image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        print(f"📏 图片已压缩: 原{image.width}x{image.height} -> {new_width}x{new_height}")
+    
+    return image
+
+
 def preprocess_sketch(image_path, force_process=False):
     """智能预处理图片
     

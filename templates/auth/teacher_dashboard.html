@@ -142,6 +142,9 @@
                         <a href="{{ url_for('auth.teacher_students') }}" class="btn btn-primary me-2">
                             <i class="fas fa-users"></i> 学生管理
                         </a>
+                        <button class="btn btn-warning me-2" onclick="openFeedbackTemplates()">
+                            <i class="fas fa-comments"></i> AI点评模板设置
+                        </button>
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">
                             <i class="fas fa-home"></i> 返回首页
                         </a>
@@ -199,7 +202,161 @@
         </div>
     </div>
 
+    <!-- AI点评模板编辑模态框 -->
+    <div class="modal fade" id="feedbackTemplatesModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white;">
+                    <h5 class="modal-title"><i class="fas fa-comments"></i> AI点评模板设置</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i> 为每个课程模块设置专属的点评维度和鼓励语。AI将根据这些模板分析学生作品并生成个性化点评。
+                    </p>
+                    <div id="templatesContainer"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTemplates()">
+                        <i class="fas fa-save"></i> 保存模板
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentTemplates = {};
+        let feedbackModal = null;
+
+        // 课程名称映射
+        const lessonNames = {
+            'formal_hairstyle': '发型设计',
+            'formal_face': '脸型绘制',
+            'formal_facial_features': '五官刻画',
+            'formal_skin_color': '肤色表现',
+            'formal_body_type': '体型塑造',
+            'formal_clothing': '服装设计',
+            'formal_accessories': '饰品装饰',
+            'formal_perspective': '透视表现',
+            'formal_weather': '天气氛围',
+            'formal_location': '场景设计',
+            'formal_composition1': '构图基础',
+            'formal_composition2': '构图进阶',
+            'formal_composition3': '构图综合',
+            'formal_ai_animation': 'AI动画',
+            'formal_final_work': '期末作品'
+        };
+
+        // 打开模板编辑器
+        async function openFeedbackTemplates() {
+            try {
+                const response = await fetch('/api/formal-lesson/feedback-templates');
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentTemplates = data.templates;
+                    renderTemplates();
+                    
+                    if (!feedbackModal) {
+                        feedbackModal = new bootstrap.Modal(document.getElementById('feedbackTemplatesModal'));
+                    }
+                    feedbackModal.show();
+                } else {
+                    alert('加载模板失败：' + data.error);
+                }
+            } catch (error) {
+                alert('加载模板失败：' + error.message);
+            }
+        }
+
+        // 渲染模板编辑器
+        function renderTemplates() {
+            const container = document.getElementById('templatesContainer');
+            let html = '';
+
+            for (const [key, template] of Object.entries(currentTemplates)) {
+                const lessonName = lessonNames[key] || key;
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-header" style="background: #e8f5f0; color: #00704A;">
+                            <strong>${lessonName}</strong> (${key})
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label"><i class="fas fa-heart"></i> 鼓励语：</label>
+                                <input type="text" class="form-control" 
+                                    value="${template.encouragement}" 
+                                    onchange="updateTemplate('${key}', 'encouragement', this.value)"
+                                    placeholder="例如：你的作品很有创意！">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label"><i class="fas fa-list"></i> 评价维度（3个）：</label>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" class="form-control" 
+                                        value="${template.aspects[0]}" 
+                                        onchange="updateAspect('${key}', 0, this.value)"
+                                        placeholder="维度1">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" class="form-control" 
+                                        value="${template.aspects[1]}" 
+                                        onchange="updateAspect('${key}', 1, this.value)"
+                                        placeholder="维度2">
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" class="form-control" 
+                                        value="${template.aspects[2]}" 
+                                        onchange="updateAspect('${key}', 2, this.value)"
+                                        placeholder="维度3">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // 更新模板字段
+        function updateTemplate(key, field, value) {
+            currentTemplates[key][field] = value;
+        }
+
+        // 更新评价维度
+        function updateAspect(key, index, value) {
+            currentTemplates[key].aspects[index] = value;
+        }
+
+        // 保存模板
+        async function saveTemplates() {
+            try {
+                const response = await fetch('/api/formal-lesson/feedback-templates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ templates: currentTemplates })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ 模板保存成功！');
+                    feedbackModal.hide();
+                } else {
+                    alert('❌ 保存失败：' + data.error);
+                }
+            } catch (error) {
+                alert('❌ 保存失败：' + error.message);
+            }
+        }
+    </script>
 </body>
 
 </html>

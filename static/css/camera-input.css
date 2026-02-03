@@ -1,0 +1,290 @@
+/* 摄像头模态窗口样式 - 复用自 create_image.html */
+.camera-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  margin: 0;
+  padding: 0;
+}
+
+.camera-modal[style*="display: block"],
+.camera-modal.active {
+  display: flex;
+}
+
+.camera-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 99998;
+}
+
+.camera-modal-content {
+  position: relative;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 99999;
+  margin: 0 auto;
+}
+
+.camera-modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.camera-modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+}
+
+.camera-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-modal-close:hover {
+  color: #333;
+}
+
+.camera-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.camera-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0;
+  padding: 0 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.camera-tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #999;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  position: relative;
+  bottom: -2px;
+  display: inline-block;
+}
+
+.camera-tab-btn.active {
+  color: #00704A;
+  border-bottom-color: #00704A;
+  font-weight: 600;
+}
+
+.camera-tab-btn:hover {
+  color: #333;
+}
+
+.camera-tab-content {
+  display: none;
+}
+
+.camera-tab-content.active {
+  display: block;
+}
+
+#camera-tab .camera-controls,
+#camera-tab .camera-hint {
+  padding: 0 20px;
+}
+
+#camera-tab .camera-options {
+  padding: 10px 20px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+#camera-tab .camera-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+#camera-tab .camera-options a {
+  color: #00704A;
+  text-decoration: none;
+  display: none;
+}
+
+#camera-tab .camera-options a:hover {
+  text-decoration: underline;
+}
+
+#upload-tab {
+  padding: 20px;
+}
+
+.camera-preview-area {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 0;
+  overflow: hidden;
+  margin-bottom: 15px;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+#camera-canvas {
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+
+.camera-status {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.camera-controls {
+  display: flex;
+  gap: 10px;
+  margin-top: 0;
+  padding-top: 15px;
+  padding-bottom: 10px;
+}
+
+.camera-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.camera-btn-primary {
+  background: #00704A;
+  color: white;
+}
+
+.camera-btn-primary:hover {
+  background: #005a3c;
+}
+
+.camera-btn-secondary {
+  background: #f0ad4e;
+  color: white;
+}
+
+.camera-btn-secondary:hover {
+  background: #ec971f;
+}
+
+.camera-btn-success {
+  background: #5cb85c;
+  color: white;
+}
+
+.camera-btn-success:hover {
+  background: #449d44;
+}
+
+.camera-hint {
+  margin-top: 15px;
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+}
+
+.camera-info-overlay {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.camera-info-overlay:not(:empty) {
+  opacity: 1;
+}
+
+.upload-area {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.upload-area:hover {
+  border-color: #00704A;
+  background: rgba(0, 112, 74, 0.05);
+}
+
+.upload-area p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+#upload-preview {
+  display: none;
+  margin-bottom: 15px;
+}
+
+#upload-preview-img {
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+}

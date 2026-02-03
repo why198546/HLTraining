@@ -4,9 +4,12 @@ AI提示词翻译服务
 """
 
 import os
-import google.genai as genai
-from typing import Optional
 import re
+from typing import Optional
+
+import google.genai as genai
+from dotenv import load_dotenv
+
 
 class PromptTranslator:
     """提示词翻译器"""
@@ -174,31 +177,73 @@ class PromptTranslator:
                 print(f"   ✅ [DEBUG] 对话处理完成，最终结果: '{result.strip()}'")
                 return result.strip()
             else:
-                print(f"   ℹ️ [DEBUG] 没有对话内容，直接翻译整个文本")
-                # 没有对话，正常翻译
-                return self._translate_text_with_gemini(chinese_prompt)
+                print(f"   ℹ️ [DEBUG] 没有对话内容，开始翻译")
+                # 没有对话，尝试翻译
+                try:
+                    print(f"   🤖 [DEBUG] 准备调用Gemini API")
+                    print(f"       输入文本: '{chinese_prompt}'")
+                    
+                    # 构建翻译提示词 - 强调忠实翻译
+                    translation_prompt = f"""
+请将以下中文文本翻译成英文，要求：
+1. 必须忠实翻译所有人物特征，包括：年龄、性别、发型、发色、服装等
+2. "男孩"必须翻译为"boy"，"女孩"必须翻译为"girl"
+3. 只翻译给定的文本内容，不要添加任何额外内容
+4. 使用适合AI图像生成的专业术语
+5. 保持描述的准确性和清晰性
+6. 只返回翻译结果，不要解释
+
+需要翻译的中文文本：{chinese_prompt}
+
+英文翻译："""
+
+                    print(f"   🌐 [DEBUG] 正在调用Gemini API...")
+                    response = self.client.models.generate_content(
+                        model='gemini-2.5-flash-lite',
+                        contents=translation_prompt
+                    )
+                    
+                    if response and response.text:
+                        english_prompt = response.text.strip()
+                        # 清理翻译结果
+                        english_prompt = english_prompt.strip('"\'')
+                        english_prompt = english_prompt.replace('\n', ' ').replace('\r', ' ')
+                        english_prompt = ' '.join(english_prompt.split())
+                        
+                        # 移除常见的前缀
+                        for prefix in ["英文翻译：", "Translation:", "English:", "英文："]:
+                            if english_prompt.startswith(prefix):
+                                english_prompt = english_prompt[len(prefix):].strip()
+                        
+                        print(f"   ✅ [DEBUG] 翻译成功: '{english_prompt}'")
+                        return english_prompt
+                    else:
+                        print(f"   ⚠️ [DEBUG] Gemini未返回翻译结果，使用中文原文")
+                        return chinese_prompt
+                        
+                except Exception as e:
+                    print(f"   ⚠️ [DEBUG] 翻译失败: {str(e)}")
+                    print(f"   ℹ️ [DEBUG] 使用中文原文（Gemini 2.5支持中文）")
+                    return chinese_prompt
                 
         except Exception as e:
             print(f"   ❌ [DEBUG] 翻译异常: {str(e)}")
             import traceback
             traceback.print_exc()
-            return self._simple_translation_fallback(chinese_prompt)
-    
-    def _translate_text_with_gemini(self, text: str) -> str:
-        """使用Gemini API翻译文本"""
+            print(f"   ℹ️ [DEBUG] 返回中文原文（Gemini 2.5 Flash Image支持中文）")
+            return chinese_prompt
         print(f"   🤖 [DEBUG] 准备调用Gemini API")
         print(f"       输入文本: '{text}'")
         
-        # 构建翻译提示词
+        # 构建翻译提示词 - 强调忠实翻译，特别是人物特征
         translation_prompt = f"""
 请将以下中文文本翻译成英文，要求：
-1. 只翻译给定的文本内容，不要添加任何额外内容
-2. 不要补充或推测任何未提供的信息
-3. 使用适合AI视频生成的专业术语
-4. 保持动作描述的准确性和流畅性
-5. 避免可能触发内容安全过滤器的词汇
-6. 使用积极正面的表达方式
-7. 只返回翻译结果，不要解释
+1. 必须忠实翻译所有人物特征，包括：年龄、性别、发型、发色、服装等
+2. "男孩"必须翻译为"boy"，"女孩"必须翻译为"girl"
+3. 只翻译给定的文本内容，不要添加任何额外内容
+4. 使用适合AI图像生成的专业术语
+5. 保持描述的准确性和清晰性
+6. 只返回翻译结果，不要解释
 
 需要翻译的中文文本：{text}
 
@@ -211,7 +256,7 @@ class PromptTranslator:
         try:
             print(f"   🌐 [DEBUG] 正在调用Gemini API...")
             response = self.client.models.generate_content(
-                model='gemini-2.0-flash-exp',  # 使用正确的模型名称
+                model='gemini-2.5-flash-lite',  # 使用轻量级模型进行翻译
                 contents=translation_prompt
             )
             
@@ -234,6 +279,7 @@ class PromptTranslator:
                 return text
         except Exception as e:
             print(f"   ❌ [DEBUG] Gemini API调用异常: {str(e)}")
+            print(f"   ℹ️ [DEBUG] 翻译失败，返回中文原文（Gemini 2.5 Flash Image支持中文）")
             import traceback
             traceback.print_exc()
             return text
@@ -263,33 +309,28 @@ class PromptTranslator:
         
         return text
     
-    def translate_with_fallback(self, prompt: str, max_retries: int = 2) -> str:
+    def translate_with_fallback(self, prompt: str, max_retries: int = 1) -> str:
         """
-        带重试机制的翻译
+        翻译（仅尝试一次，失败直接返回中文）
         
         Args:
             prompt: 原始提示词
-            max_retries: 最大重试次数
+            max_retries: 保留参数兼容性，实际只尝试1次
             
         Returns:
-            翻译后的英文提示词
+            翻译后的提示词或中文原文
         """
         if not self.is_chinese_text(prompt):
             return prompt
         
-        for attempt in range(max_retries + 1):
-            try:
-                result = self.translate_to_english(prompt)
-                if result and result != prompt:  # 翻译成功且有变化
-                    return result
-            except Exception as e:
-                print(f"   翻译尝试 {attempt + 1} 失败: {e}")
-                if attempt == max_retries:
-                    break
-        
-        # 如果翻译失败，返回简化的英文描述
-        print("   🔄 使用备用翻译策略")
-        return self._simple_translation_fallback(prompt)
+        # 只尝试一次翻译，失败直接返回中文
+        try:
+            result = self.translate_to_english(prompt)
+            return result
+        except Exception as e:
+            print(f"   ⚠️ 翻译失败: {e}")
+            print(f"   ℹ️ 使用中文原文（Gemini 2.5支持中文）")
+            return prompt
     
     def _simple_translation_fallback(self, chinese_prompt: str) -> str:
         """简单的备用翻译策略"""
@@ -588,6 +629,8 @@ def get_translator():
     global _translator
     if _translator is None:
         try:
+            # 确保环境变量已加载
+            load_dotenv(override=True)
             _translator = PromptTranslator()
         except Exception as e:
             print(f"❌ 翻译器初始化失败: {e}")
@@ -600,14 +643,6 @@ def translate_prompt(prompt: str) -> str:
     if translator:
         return translator.translate_with_fallback(prompt)
     else:
-        # 翻译器不可用时的备用策略
-        print("⚠️ 翻译器不可用，使用备用翻译策略")
-        
-        # 创建一个没有API的翻译器实例，只用于备用翻译
-        fallback_translator = PromptTranslator.__new__(PromptTranslator)
-        
-        # 检查是否是中文
-        if fallback_translator.is_chinese_text(prompt):
-            return fallback_translator._simple_translation_fallback(prompt)
-        else:
-            return prompt
+        # 翻译器不可用时直接返回原文（中文也可以）
+        print("⚠️ 翻译器不可用，直接使用原文（Gemini 2.5 Flash Image支持中文）")
+        return prompt

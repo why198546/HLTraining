@@ -4,7 +4,8 @@ import os
 from flask import Blueprint, render_template, send_from_directory
 from flask_login import login_required
 
-from app.course_config.courses import get_all_courses, get_course, get_formal_courses
+from app.course_config.courses import (get_all_courses, get_course,
+                                       get_formal_courses)
 
 main_bp = Blueprint('main', __name__)
 

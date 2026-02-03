@@ -872,14 +872,18 @@ const ImageViewer = {
     // 切换按钮
     if (this.prevBtn) {
       this.prevBtn.addEventListener('click', (e) => {
+        console.log('⬅️ 点击上一张按钮', e);
         e.stopPropagation();
+        e.preventDefault();
         this.navigate(-1);
       });
     }
     
     if (this.nextBtn) {
       this.nextBtn.addEventListener('click', (e) => {
+        console.log('➡️ 点击下一张按钮', e);
         e.stopPropagation();
+        e.preventDefault();
         this.navigate(1);
       });
     }
@@ -979,11 +983,14 @@ const ImageViewer = {
 
   navigate(direction) {
     if (!this.images || this.images.length === 0) {
+      console.log('❌ navigate: 没有图片');
       return;
     }
     
     const prevIndex = this.currentIndex;
     this.currentIndex = (this.currentIndex + direction + this.images.length) % this.images.length;
+    
+    console.log(`🔄 导航: ${prevIndex} → ${this.currentIndex} (共 ${this.images.length} 张)`);
     
     // 只在确实改变时更新
     if (prevIndex !== this.currentIndex) {
@@ -1005,9 +1012,14 @@ const ImageViewer = {
       
       // 第一层RAF：准备URL
       requestAnimationFrame(() => {
-        const urlWithCache = currentSrc.includes('?') 
-          ? currentSrc + '&t=' + Date.now()
-          : currentSrc + '?t=' + Date.now();
+        // 只对 HTTP/HTTPS URL 添加缓存参数，不要改 Data URL
+        let urlWithCache = currentSrc;
+        if (!currentSrc.startsWith('data:') && !currentSrc.startsWith('blob:')) {
+          // 这是一个 HTTP URL，添加缓存破坏参数
+          urlWithCache = currentSrc.includes('?') 
+            ? currentSrc + '&t=' + Date.now()
+            : currentSrc + '?t=' + Date.now();
+        }
         
         // 第二层RAF：实际赋值，确保不阻塞渲染
         requestAnimationFrame(() => {

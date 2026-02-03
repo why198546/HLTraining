@@ -15,6 +15,10 @@ class Config:
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
     
+    # JSON编码配置 - 确保中文正常显示
+    JSON_AS_ASCII = False
+    JSONIFY_MIMETYPE = 'application/json; charset=utf-8'
+    
     # 数据库配置
     SQLALCHEMY_DATABASE_URI = os.getenv(
         'DATABASE_URL',

@@ -8,12 +8,13 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/page-classroom.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/modules/image-viewer.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/camera-input.css') }}">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     .formal-lesson-container {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 30px 20px;
+      padding: 80px 20px 30px 20px;
     }
     
     .lesson-modules {
@@ -42,7 +43,7 @@
       width: 48px;
       height: 48px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #6b5b95 0%, #8b7baa 100%);
+      background: linear-gradient(135deg, #00704A 0%, #008556 100%);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -89,20 +90,20 @@
     }
     
     .feature-btn:hover {
-      border-color: #6b5b95;
-      background: #f8f7fc;
+      border-color: #00704A;
+      background: #e8f5f0;
     }
     
     .feature-btn.active {
-      border-color: #6b5b95;
-      background: #6b5b95;
+      border-color: #00704A;
+      background: #00704A;
       color: white;
     }
     
     .generate-btn {
       margin-top: 20px;
       padding: 15px 40px;
-      background: linear-gradient(135deg, #6b5b95 0%, #8b7baa 100%);
+      background: linear-gradient(135deg, #00704A 0%, #008556 100%);
       color: white;
       border: none;
       border-radius: 12px;
@@ -114,7 +115,7 @@
     
     .generate-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(107, 91, 149, 0.3);
+      box-shadow: 0 6px 20px rgba(0, 112, 74, 0.4);
     }
     
     .game-container {
@@ -129,25 +130,129 @@
       flex-wrap: wrap;
     }
     
-    .upload-box {
+    .upload-area {
       flex: 1;
       min-width: 250px;
-      border: 2px dashed #6b5b95;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .thumbnail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .thumbnail-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+    
+    .thumbnail-item:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .thumbnail-item.selected {
+      border-color: #00704A;
+      box-shadow: 0 0 0 2px rgba(0, 112, 74, 0.2);
+    }
+    
+    .thumbnail-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .thumbnail-delete {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #ff5252 0%, #f44336 100%);
+      color: white;
+      border: 2px solid white;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      z-index: 2;
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.4);
+      opacity: 0.9;
+    }
+    
+    .thumbnail-delete:hover {
+      background: linear-gradient(135deg, #ff1744 0%, #d32f2f 100%);
+      transform: scale(1.15) rotate(90deg);
+      box-shadow: 0 4px 12px rgba(244, 67, 54, 0.6);
+      opacity: 1;
+    }
+    
+    .thumbnail-delete i {
+      pointer-events: none;
+    }
+    
+    .thumbnail-selected-badge {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: linear-gradient(135deg, #00704A 0%, #008556 100%);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0, 112, 74, 0.4);
+      border: 1.5px solid rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(4px);
+    }
+    
+    .thumbnail-selected-badge i {
+      font-size: 10px;
+      margin-right: 3px;
+    }
+    
+    .thumbnail-item.selected .thumbnail-selected-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .upload-box {
+      position: relative;
+      min-height: 180px;
+      border: 2px dashed #00704A;
       border-radius: 12px;
       padding: 30px;
       text-align: center;
       cursor: pointer;
       transition: all 0.3s;
+      overflow: hidden;
     }
     
     .upload-box:hover {
-      background: #f8f7fc;
-      border-color: #8b7baa;
+      background: #e8f5f0;
+      border-color: #008556;
     }
     
     .upload-icon {
       font-size: 48px;
-      color: #6b5b95;
+      color: #00704A;
       margin-bottom: 10px;
     }
     
@@ -207,7 +312,7 @@
     
     .upload-artwork-btn {
       padding: 12px 30px;
-      background: linear-gradient(135deg, #6b5b95 0%, #8b7baa 100%);
+      background: linear-gradient(135deg, #00704A 0%, #008556 100%);
       color: white;
       border: none;
       border-radius: 10px;
@@ -218,21 +323,21 @@
     
     .upload-artwork-btn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(107, 91, 149, 0.3);
+      box-shadow: 0 4px 16px rgba(0, 112, 74, 0.4);
     }
     
     .feedback-display {
       margin-top: 20px;
       padding: 25px;
-      background: linear-gradient(135deg, #f8f7fc 0%, #fff 100%);
+      background: linear-gradient(135deg, #e8f5f0 0%, #fff 100%);
       border-radius: 12px;
-      border-left: 4px solid #6b5b95;
+      border-left: 4px solid #00704A;
     }
     
     .feedback-title {
       font-size: 18px;
       font-weight: 600;
-      color: #6b5b95;
+      color: #00704A;
       margin-bottom: 15px;
       display: flex;
       align-items: center;
@@ -244,6 +349,64 @@
       color: #555;
       line-height: 1.8;
       white-space: pre-wrap;
+    }
+    
+    /* 音频播放按钮样式 */
+    .audio-play-btn {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #FFD700 0%, #FFC700 100%);
+      color: #00704A;
+      border: 2px solid #FFD700;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+    }
+    
+    .audio-play-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 215, 0, 0.5);
+      background: linear-gradient(135deg, #FFC700 0%, #FFB700 100%);
+    }
+    
+    .audio-play-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(255, 215, 0, 0.3);
+    }
+    
+    .audio-play-btn i {
+      font-size: 16px;
+    }
+    
+    .audio-play-btn.playing i {
+      animation: volume-pulse 1s ease-in-out infinite;
+    }
+    
+    @keyframes volume-pulse {
+      0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% { 
+        transform: scale(1.2);
+        opacity: 0.8;
+      }
+    }
+    
+    /* 自定义提示词输入框样式 */
+    #customPrompt:focus {
+      outline: none;
+      border-color: #00704A;
+      box-shadow: 0 0 0 3px rgba(0, 112, 74, 0.1);
+    }
+    
+    #customPrompt::placeholder {
+      color: #aaa;
     }
     
     .result-image {
@@ -262,18 +425,22 @@
     
     .breadcrumb {
       padding: 20px 0;
-      font-size: 14px;
-      color: #7f8c8d;
+      font-size: 16px;
+      color: #5a6c7d;
+      font-weight: 500;
+      letter-spacing: 0.3px;
     }
     
     .breadcrumb a {
-      color: #6b5b95;
+      color: #00704A;
       text-decoration: none;
-      transition: color 0.3s;
+      transition: all 0.3s ease;
+      font-weight: 600;
     }
     
     .breadcrumb a:hover {
-      color: #8b7baa;
+      color: #008556;
+      text-decoration: underline;
     }
     
     .loading-spinner {
@@ -282,7 +449,7 @@
       width: 50px;
       height: 50px;
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #6b5b95;
+      border-top: 4px solid #00704A;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -304,6 +471,116 @@
       .preview-container {
         flex-direction: column;
       }
+    }
+    
+    /* 风格选择样式 */
+    .style-option {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .style-option:hover {
+      border-color: #00704A;
+      box-shadow: 0 2px 8px rgba(0, 112, 74, 0.2);
+    }
+    
+    .style-option input[type="checkbox"] {
+      display: none;
+    }
+    
+    .style-option input[type="checkbox"]:checked + .style-label {
+      color: #00704A;
+      font-weight: 600;
+    }
+    
+    .style-option input[type="checkbox"]:checked ~ .style-label::before {
+      content: '✓ ';
+      color: #00704A;
+    }
+    
+    .style-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #666;
+      transition: all 0.3s;
+    }
+    
+    .style-label i {
+      font-size: 18px;
+    }
+    
+    /* 结果展示卡片样式 */
+    .result-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    
+    .result-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    
+    .result-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .result-card-title {
+      padding: 12px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      background: #f8f9fa;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    /* 输入框容器动画 */
+    .input-with-voice-formal {
+      position: relative;
+    }
+    
+    .input-with-voice-formal textarea {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .input-with-voice-formal textarea:focus {
+      transform: translateY(-2px);
+    }
+    
+    /* 占位符动画 */
+    @keyframes placeholder-shimmer {
+      0% { opacity: 0.6; }
+      50% { opacity: 1; }
+      100% { opacity: 0.6; }
+    }
+    
+    #customPrompt:empty::before {
+      animation: placeholder-shimmer 2s ease-in-out infinite;
+    }
+
+    /* 图片点击放大提示 */
+    #originalImageForComparison,
+    #improvedImage {
+      cursor: zoom-in;
+      transition: transform 0.2s ease;
+    }
+    
+    #originalImageForComparison:hover,
+    #improvedImage:hover {
+      transform: scale(1.02);
+      filter: brightness(1.05);
     }
   </style>
 </head>
@@ -329,21 +606,130 @@
         </div>
         
         <div class="feature-detector-section">
-          <p style="color: #666; margin-bottom: 15px;">选择关键特征，AI 将根据你的选择生成图片：</p>
+          <!-- 提示词输入框 - 改进样式 -->
+          <div style="margin-bottom: 25px;">
+            <div style="background: linear-gradient(135deg, #e8f5f0 0%, #f0f9f5 100%); border-radius: 16px; padding: 20px; border: 2px solid #00704A;">
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #00704A; font-weight: 600; font-size: 16px;">
+                <i class="fas fa-pen-fancy"></i> 
+                <span>直接输入你的想法</span>
+              </label>
+              <div class="input-with-voice-formal">
+                <textarea 
+                  id="customPrompt" 
+                  placeholder="💡 在这里自由描述你的创意想法...&#10;&#10;例如：长发女孩、卷发、戴花朵发卡、笑容甜美、穿白色连衣裙..."
+                  style="
+                    width: 100%;
+                    min-height: 100px;
+                    padding: 15px;
+                    border: 2px solid #c4e5d7;
+                    border-radius: 12px;
+                    font-size: 15px;
+                    font-family: inherit;
+                    line-height: 1.6;
+                    resize: vertical;
+                    transition: all 0.3s ease;
+                    background: white;
+                    box-shadow: 0 2px 8px rgba(0, 112, 74, 0.08);
+                  "
+                  onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 4px 12px rgba(0, 112, 74, 0.15)';"
+                  onblur="this.style.borderColor='#c4e5d7'; this.style.boxShadow='0 2px 8px rgba(0, 112, 74, 0.08)';"
+                  onchange="updateFromCustomPrompt()"
+                ></textarea>
+              </div>
+            </div>
+          </div>
           
-          <div class="feature-selector-grid" id="featureSelector">
+          <div style="text-align: center; margin: 20px 0;">
+            <button 
+              id="toggleFeaturesBtn"
+              onclick="toggleFeatureSelector()"
+              style="
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 20px;
+                background: linear-gradient(135deg, #f0f9f5 0%, #e8f5f0 100%);
+                border: 2px solid #00704A;
+                border-radius: 20px;
+                color: #00704A;
+                font-weight: 600;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 6px rgba(0, 112, 74, 0.15);
+              "
+              onmouseover="this.style.background='linear-gradient(135deg, #e8f5f0 0%, #d4ede3 100%)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 112, 74, 0.25)'"
+              onmouseout="this.style.background='linear-gradient(135deg, #f0f9f5 0%, #e8f5f0 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0, 112, 74, 0.15)'"
+            >
+              <i class="fas fa-sliders-h"></i>
+              <span id="toggleFeaturesBtnText">展开特征选择</span>
+              <i class="fas fa-chevron-down" id="toggleFeaturesIcon"></i>
+            </button>
+          </div>
+          
+          <div class="feature-selector-grid" id="featureSelector" style="display: none;">
             <!-- 特征选项将由 JavaScript 动态生成 -->
           </div>
           
-          <div style="text-align: center;">
+          <div style="text-align: center; margin-top: 20px;">
             <button class="generate-btn" id="generateBtn" onclick="generateImage()">
               <i class="fas fa-magic"></i> 生成图片
             </button>
             <div class="loading-spinner" id="generateLoading"></div>
           </div>
           
-          <div class="result-image" id="generatedImageContainer" style="display: none;">
-            <img id="generatedImage" alt="生成的图片">
+          <!-- 风格选择 - 放在按钮下方 -->
+          <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; margin-top: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #333; font-size: 15px; text-align: center;">
+              <i class="fas fa-palette"></i> 生成风格
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+              <label class="style-option">
+                <input type="checkbox" name="generate_style" value="realistic" checked>
+                <span class="style-label">
+                  <i class="fas fa-camera-retro"></i>
+                  真实照片风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="generate_style" value="cartoon">
+                <span class="style-label">
+                  <i class="fas fa-smile"></i>
+                  卡通可爱风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="generate_style" value="sketch">
+                <span class="style-label">
+                  <i class="fas fa-pencil-alt"></i>
+                  素描线稿风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="generate_style" value="anime">
+                <span class="style-label">
+                  <i class="fas fa-star"></i>
+                  动漫风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="generate_style" value="watercolor">
+                <span class="style-label">
+                  <i class="fas fa-fill-drip"></i>
+                  水彩风格
+                </span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 多图片结果展示 -->
+          <div class="results-container" id="generatedResultsContainer" style="display: none; margin-top: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #333; text-align: center;">
+              <i class="fas fa-images"></i> 生成结果
+            </h4>
+            <div id="generatedResultImages" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+              <!-- 动态插入生成的图片 -->
+            </div>
           </div>
         </div>
       </div>
@@ -356,38 +742,87 @@
         </div>
         
         <div class="game-container">
-          <p style="color: #666; margin-bottom: 15px;">上传你的照片和画作，AI 会帮你组合成有趣的效果：</p>
-          
           <div class="upload-section">
-            <div class="upload-box" onclick="document.getElementById('photoInput').click()">
-              <div class="upload-icon"><i class="fas fa-camera"></i></div>
-              <div class="upload-text">上传你的照片</div>
-              <div class="upload-hint">点击上传</div>
-              <input type="file" id="photoInput" accept="image/*" style="display: none;" onchange="previewImage(this, 'photoPreview')">
+            <div class="upload-area">
+              <div class="upload-box" onclick="openCameraModal(event, 'photo')">
+                <div class="upload-icon"><i class="fas fa-camera"></i></div>
+                <div class="upload-text">拍照或上传照片</div>
+                <div class="upload-hint">支持多张，点击添加</div>
+              </div>
+              <!-- 照片缩略图容器 -->
+              <div class="thumbnail-grid" id="photoThumbnails" style="display: none;"></div>
             </div>
             
-            <div class="upload-box" onclick="document.getElementById('artworkInput').click()">
-              <div class="upload-icon"><i class="fas fa-palette"></i></div>
-              <div class="upload-text">上传你的画作</div>
-              <div class="upload-hint">点击上传</div>
-              <input type="file" id="artworkInput" accept="image/*" style="display: none;" onchange="previewImage(this, 'artworkPreview')">
+            <div class="upload-area">
+              <div class="upload-box" onclick="openCameraModal(event, 'artwork')">
+                <div class="upload-icon"><i class="fas fa-palette"></i></div>
+                <div class="upload-text">上传画作</div>
+                <div class="upload-hint">支持多张，点击添加</div>
+              </div>
+              <!-- 画作缩略图容器 -->
+              <div class="thumbnail-grid" id="artworkThumbnails" style="display: none;"></div>
             </div>
-          </div>
-          
-          <div class="preview-container" id="previewContainer" style="display: none;">
-            <div class="preview-box" id="photoPreview"></div>
-            <div class="preview-box" id="artworkPreview"></div>
           </div>
           
           <div style="text-align: center;">
             <button class="combine-btn" id="combineBtn" onclick="combineImages()" style="display: none;">
-              <i class="fas fa-layer-group"></i> 组合图片
+              <i class="fas fa-layer-group"></i> 生成图片
             </button>
             <div class="loading-spinner" id="combineLoading"></div>
           </div>
           
-          <div class="result-image" id="combinedImageContainer" style="display: none;">
-            <img id="combinedImage" alt="组合后的图片">
+          <!-- 风格选择区域 - 放在按钮下方 -->
+          <div class="style-selector" id="styleSelector" style="margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 12px;">
+            <h4 style="margin: 0 0 15px 0; color: #333; font-size: 15px; text-align: center;">
+              <i class="fas fa-paint-brush"></i> 生成风格
+            </h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+              <label class="style-option">
+                <input type="checkbox" name="style" value="realistic" checked>
+                <span class="style-label">
+                  <i class="fas fa-camera-retro"></i>
+                  真实照片风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="style" value="cartoon">
+                <span class="style-label">
+                  <i class="fas fa-smile"></i>
+                  卡通可爱风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="style" value="sketch">
+                <span class="style-label">
+                  <i class="fas fa-pencil-alt"></i>
+                  素描线稿风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="style" value="anime">
+                <span class="style-label">
+                  <i class="fas fa-star"></i>
+                  动漫风格
+                </span>
+              </label>
+              <label class="style-option">
+                <input type="checkbox" name="style" value="watercolor">
+                <span class="style-label">
+                  <i class="fas fa-fill-drip"></i>
+                  水彩风格
+                </span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- 多图片结果展示区域 -->
+          <div class="results-container" id="resultsContainer" style="display: none; margin-top: 20px;">
+            <h4 style="margin: 0 0 15px 0; color: #333; text-align: center;">
+              <i class="fas fa-images"></i> 生成结果
+            </h4>
+            <div id="resultImages" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+              <!-- 动态插入生成的图片 -->
+            </div>
           </div>
         </div>
       </div>
@@ -397,11 +832,17 @@
         <div class="module-header">
           <div class="module-icon">⭐</div>
           <div class="module-title">模块三：AI 点评作品</div>
+          <button 
+            class="btn btn-sm" 
+            onclick="openLessonTemplateEditor()" 
+            style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 20px; padding: 6px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-left: auto;"
+            title="修改本课程的AI点评模板"
+          >
+            <i class="fas fa-pen-to-square"></i> 修改模板
+          </button>
         </div>
         
         <div class="feedback-section">
-          <p style="color: #666; margin-bottom: 15px;">上传你的作品，AI 老师会给你专业的点评和建议：</p>
-          
           <input type="file" id="feedbackInput" accept="image/*" style="display: none;" onchange="getFeedback(this)">
           <button class="upload-artwork-btn" onclick="document.getElementById('feedbackInput').click()">
             <i class="fas fa-upload"></i> 上传作品
@@ -413,18 +854,132 @@
             <div class="feedback-title">
               <i class="fas fa-comments"></i>
               AI 老师的点评
+              <button class="audio-play-btn" id="audioPlayBtn" style="display: none; margin-left: 1rem;" onclick="toggleAudio()">
+                <i class="fas fa-volume-up"></i> 播放语音
+              </button>
             </div>
             <div class="feedback-content" id="feedbackContent"></div>
+            <audio id="feedbackAudio" style="display: none;"></audio>
+            
+            <!-- 生成改良版按钮 -->
+            <div style="text-align: center; margin-top: 25px; padding-top: 25px; border-top: 2px solid #f0f0f0;">
+              <button 
+                id="improveBtn"
+                onclick="generateImprovedVersion()"
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 12px 28px;
+                  background: linear-gradient(135deg, #00704A 0%, #008556 100%);
+                  border: none;
+                  border-radius: 24px;
+                  color: white;
+                  font-weight: 700;
+                  font-size: 16px;
+                  cursor: pointer;
+                  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                  box-shadow: 0 4px 16px rgba(0, 112, 74, 0.35);
+                "
+                onmouseover="this.style.background='linear-gradient(135deg, #006940 0%, #00764a 100%)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 112, 74, 0.45)'"
+                onmouseout="this.style.background='linear-gradient(135deg, #00704A 0%, #008556 100%)'; this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(0, 112, 74, 0.35)'"
+              >
+                <i class="fas fa-wand-magic-sparkles"></i>
+                <span>根据点评生成改良版</span>
+              </button>
+              <div class="loading-spinner" id="improveLoading"></div>
+            </div>
+            
+            <!-- 改良版结果显示（并排对比） -->
+            <div id="improvedResultContainer" style="display: none; margin-top: 30px; padding: 30px; background: linear-gradient(135deg, #f8f9fa 0%, #f0f1f3 100%); border-radius: 16px;">
+              <h3 style="margin: 0 0 25px 0; color: #333; font-size: 20px; text-align: center; font-weight: 600;">
+                <i class="fas fa-sparkles"></i> 改良版对比
+              </h3>
+              
+              <!-- 并排对比容器（1:1显示） -->
+              <div style="display: flex; gap: 30px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                
+                <!-- 原作品 -->
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 380px;">
+                  <h4 style="margin: 0 0 12px 0; color: #555; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+                    📸 原作品
+                  </h4>
+                  <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 12px; border: 3px solid #ddd; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); background: white; display: flex; align-items: center; justify-content: center;">
+                    <img id="originalImageForComparison" src="" alt="原作品" style="width: 100%; height: 100%; object-fit: contain;">
+                  </div>
+                </div>
+                
+                <!-- 改良版 -->
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 380px;">
+                  <h4 style="margin: 0 0 12px 0; color: #27ae60; font-size: 14px; font-weight: 600; letter-spacing: 0.5px;">
+                    ✨ 改良版
+                  </h4>
+                  <div style="width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 12px; border: 3px solid #27ae60; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.15); background: white; display: flex; align-items: center; justify-content: center;">
+                    <img id="improvedImage" src="" alt="改良版图片" style="width: 100%; height: 100%; object-fit: contain;">
+                  </div>
+                </div>
+                
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </main>
 
+  <!-- 图片查看器 -->
+  <div id="image-viewer" class="image-viewer">
+    <div class="image-viewer-overlay"></div>
+    <button class="image-viewer-close">×</button>
+    <button class="image-viewer-print" title="打印图片">🖨️</button>
+    <button class="image-viewer-prev">‹</button>
+    <button class="image-viewer-next">›</button>
+    <div class="image-viewer-counter"></div>
+    <img class="image-viewer-img" src="" alt="" />
+  </div>
+
+  <!-- 引入摄像头模块 -->
+  <script src="{{ url_for('static', filename='js/camera-input.js') }}"></script>
+  
+  <!-- 引入图片查看器（包含imageViewer） -->
+  <script src="{{ url_for('static', filename='js/sunguo_class.js') }}"></script>
+
   <script>
     // 课程信息
     const lessonKey = "{{ lesson_key }}";
     const lessonTitle = "{{ lesson.title }}";
+    
+    // 课程默认提示词配置
+    const lessonDefaultPrompts = {
+      'formal_hairstyle': '长发、黑色、自然卷，发型清晰可见',
+      'formal_face': '圆脸、五官端正、自然表情',
+      'formal_facial_features': '大眼睛、高鼻梁、微笑',
+      'formal_body_type': '体型正常、姿态自然',
+      'formal_clothing': '休闲服装、蓝色上衣、舒适自然',
+      'formal_weather': '晴天、阳光明媚、光线柔和',
+      'formal_location': '室外场景、公园背景、环境清新',
+      'formal_perspective': '天气多变、光影变化、气象丰富',
+      'formal_composition1': '多个人物、生活场景、故事完整',
+      'formal_accessories': '科幻与奇幻元素、创意想象、视觉冲击',
+      'formal_ai_animation': '卡通风格、色彩鲜艳、充满活力',
+      'formal_final_work': '自由主题、快乐情感、想象力丰富'
+    };
+    
+    // 课程针对性构图配置（用于优化生成效果）
+    const lessonCompositionHints = {
+      'formal_hairstyle': '头部特写，上半身，重点展示发型细节，面部特征简化，干净背景，专业摄影',
+      'formal_face': '面部特写，清晰展示脸型轮廓，正面视角，柔和光线',
+      'formal_facial_features': '面部特写，突出五官细节，表情自然，清晰可见',
+      'formal_body_type': '全身照，展示身材比例，姿态自然',
+      'formal_clothing': '全身或半身，突出服装细节和搭配',
+      'formal_weather': '展示自然场景，植物、山水、环境',
+      'formal_location': '展示生活场景环境，人物与环境和谐',
+      'formal_perspective': '展示天气光影效果，氛围营造',
+      'formal_composition1': '多人物生活场景，整体构图完整',
+      'formal_accessories': '科幻奇幻元素融合，创意十足',
+      'formal_ai_animation': '动画效果，创意表现',
+      'formal_final_work': '综合创作，表达完整'
+    };
     
     // 特征配置（根据不同课程定制）
     const featureConfigs = {
@@ -467,13 +1022,6 @@
           { text: '小嘴巴', value: '小嘴巴' }
         ]}
       ],
-      'formal_skin_color': [
-        { label: '肤色', feature: 'skin', options: [
-          { text: '深色', value: '深色皮肤' },
-          { text: '中等', value: '中等肤色' },
-          { text: '浅色', value: '浅色皮肤' }
-        ]}
-      ],
       'formal_body_type': [
         { label: '体型', feature: 'body', options: [
           { text: '偏瘦', value: '体型偏瘦' },
@@ -491,27 +1039,6 @@
           { text: '红色', value: '红色衣服' },
           { text: '蓝色', value: '蓝色衣服' },
           { text: '白色', value: '白色衣服' }
-        ]}
-      ],
-      'formal_accessories': [
-        { label: '饰品', feature: 'accessory', options: [
-          { text: '眼镜', value: '戴眼镜' },
-          { text: '帽子', value: '戴帽子' },
-          { text: '围巾', value: '戴围巾' },
-          { text: '首饰', value: '戴首饰' }
-        ]}
-      ],
-      'formal_perspective': [
-        { label: '视角', feature: 'perspective', options: [
-          { text: '正面', value: '正面视角' },
-          { text: '侧面', value: '侧面视角' },
-          { text: '俯视', value: '俯视视角' },
-          { text: '仰视', value: '仰视视角' }
-        ]},
-        { label: '距离', feature: 'distance', options: [
-          { text: '特写', value: '特写镜头' },
-          { text: '中景', value: '中景镜头' },
-          { text: '远景', value: '远景镜头' }
         ]}
       ],
       'formal_weather': [
@@ -567,20 +1094,67 @@
           { text: '阴天', value: '阴天' }
         ]}
       ],
-      'formal_composition3': [
-        { label: '人物数量', feature: 'count', options: [
-          { text: '1人', value: '一个人' },
-          { text: '2人', value: '两个人' },
-          { text: '多人', value: '多人' }
+      'formal_location': [
+        { label: '场景类型', feature: 'scene_type', options: [
+          { text: '公园', value: '公园' },
+          { text: '教室', value: '教室' },
+          { text: '家里', value: '家里' },
+          { text: '街道', value: '街道' }
         ]},
-        { label: '动作', feature: 'action', options: [
-          { text: '站立', value: '站立' },
-          { text: '坐着', value: '坐着' },
-          { text: '运动', value: '运动' }
+        { label: '环境特点', feature: 'environment', options: [
+          { text: '清洁整洁', value: '清洁整洁' },
+          { text: '自然温馨', value: '自然温馨' },
+          { text: '繁华热闹', value: '繁华热闹' }
+        ]}
+      ],
+      'formal_weather': [
+        { label: '自然元素', feature: 'nature', options: [
+          { text: '山水', value: '山水' },
+          { text: '树木', value: '树木' },
+          { text: '花草', value: '花草' },
+          { text: '动物', value: '动物' }
         ]},
-        { label: '环境', feature: 'environment', options: [
-          { text: '室内', value: '室内' },
-          { text: '室外', value: '室外' }
+        { label: '整体风格', feature: 'style', options: [
+          { text: '宁静', value: '宁静' },
+          { text: '壮观', value: '壮观' },
+          { text: '生机', value: '生机' }
+        ]}
+      ],
+      'formal_perspective': [
+        { label: '天气类型', feature: 'weather_type', options: [
+          { text: '晴天', value: '晴天' },
+          { text: '雨天', value: '雨天' },
+          { text: '雪天', value: '雪天' },
+          { text: '黄昏', value: '黄昏' }
+        ]},
+        { label: '光影效果', feature: 'lighting', options: [
+          { text: '阳光直射', value: '阳光直射' },
+          { text: '柔和散光', value: '柔和散光' },
+          { text: '戏剧光影', value: '戏剧光影' }
+        ]}
+      ],
+      'formal_composition1': [
+        { label: '人物关系', feature: 'relationship', options: [
+          { text: '家庭', value: '家庭场景' },
+          { text: '朋友', value: '朋友聚会' },
+          { text: '学校', value: '学校场景' }
+        ]},
+        { label: '活动类型', feature: 'activity', options: [
+          { text: '休闲', value: '休闲活动' },
+          { text: '运动', value: '运动活动' },
+          { text: '学习', value: '学习活动' }
+        ]}
+      ],
+      'formal_accessories': [
+        { label: '科幻元素', feature: 'scifi', options: [
+          { text: '机器人', value: '机器人' },
+          { text: '太空舱', value: '太空舱' },
+          { text: '飞行器', value: '飞行器' }
+        ]},
+        { label: '奇幻元素', feature: 'fantasy', options: [
+          { text: '魔法', value: '魔法' },
+          { text: '精灵', value: '精灵' },
+          { text: '龙', value: '龙' }
         ]}
       ],
       'formal_ai_animation': [
@@ -603,6 +1177,49 @@
         ]}
       ]
     };
+    
+    // 处理自定义提示词输入 - 智能匹配特征
+    function updateFromCustomPrompt() {
+      const customPrompt = document.getElementById('customPrompt').value.trim();
+      
+      if (!customPrompt) {
+        return; // 如果输入为空，不做任何操作
+      }
+      
+      // 不再清空特征选择，而是智能匹配
+      // 遍历所有特征按钮，如果提示词中包含特征值，则自动选中
+      const config = featureConfigs[lessonKey] || [];
+      config.forEach(group => {
+        group.options.forEach(option => {
+          const btn = document.querySelector(`[data-feature="${group.feature}"][data-value="${option.value}"]`);
+          if (btn && customPrompt.includes(option.value)) {
+            // 先取消同组其他按钮
+            document.querySelectorAll(`[data-feature="${group.feature}"]`).forEach(b => {
+              b.classList.remove('active');
+            });
+            // 激活匹配的按钮
+            btn.classList.add('active');
+          }
+        });
+      });
+    }
+    
+    // 切换特征选择器显示/隐藏
+    function toggleFeatureSelector() {
+      const featureSelector = document.getElementById('featureSelector');
+      const btnText = document.getElementById('toggleFeaturesBtnText');
+      const icon = document.getElementById('toggleFeaturesIcon');
+      
+      if (featureSelector.style.display === 'none') {
+        featureSelector.style.display = 'grid';
+        btnText.textContent = '收起特征选择';
+        icon.className = 'fas fa-chevron-up';
+      } else {
+        featureSelector.style.display = 'none';
+        btnText.textContent = '展开特征选择';
+        icon.className = 'fas fa-chevron-down';
+      }
+    }
     
     // 初始化特征选择器
     function initFeatureSelector() {
@@ -637,6 +1254,23 @@
               b.classList.remove('active');
             });
             this.classList.add('active');
+            
+            // 不清空自定义提示词，而是将选中的特征添加进去
+            const promptInput = document.getElementById('customPrompt');
+            const currentPrompt = promptInput.value.trim();
+            const featureValue = this.dataset.value;
+            
+            // 如果输入框为空，直接设置
+            if (!currentPrompt) {
+              promptInput.value = featureValue;
+            } else {
+              // 如果已有内容，用逗号连接（避免重复添加）
+              const features = currentPrompt.split(/[，、,]/).map(f => f.trim()).filter(f => f);
+              // 检查是否已包含该特征
+              if (!features.includes(featureValue)) {
+                promptInput.value = currentPrompt + '，' + featureValue;
+              }
+            }
           };
           groupDiv.appendChild(btn);
         });
@@ -647,46 +1281,190 @@
     
     // 生成图片
     async function generateImage() {
+      // 收集自定义提示词
+      const customPrompt = document.getElementById('customPrompt').value.trim();
+      
+      // 收集选中的特征
       const selected = {};
       document.querySelectorAll('.feature-btn.active').forEach(btn => {
         selected[btn.dataset.feature] = btn.dataset.value;
       });
       
-      if (Object.keys(selected).length === 0) {
-        alert('请先选择至少一个特征');
+      console.log('自定义提示词:', customPrompt);
+      console.log('选中的特征:', selected);
+      
+      // 组合提示词：自定义提示词 + 选中的特征
+      let basePrompt = '';
+      
+      if (customPrompt) {
+        basePrompt = customPrompt;
+      }
+      
+      // 将选中的特征添加到提示词中（避免重复）
+      if (Object.keys(selected).length > 0) {
+        const featurePrompt = Object.values(selected).join('，');
+        if (basePrompt) {
+          // 合并时检查是否有重复
+          const existingFeatures = basePrompt.split(/[，、,]/).map(f => f.trim()).filter(f => f);
+          const newFeatures = featurePrompt.split(/[，、,]/).map(f => f.trim()).filter(f => f);
+          const uniqueFeatures = [...new Set([...existingFeatures, ...newFeatures])];
+          basePrompt = uniqueFeatures.join('，');
+        } else {
+          basePrompt = featurePrompt;
+        }
+      }
+      
+      console.log('最终提示词:', basePrompt);
+      
+      // 验证提示词
+      if (!basePrompt || basePrompt.trim() === '') {
+        alert('请输入描述或选择至少一个特征');
         return;
       }
+      
+      // 收集选中的风格
+      const selectedStyles = Array.from(document.querySelectorAll('input[name="generate_style"]:checked'))
+        .map(cb => cb.value);
+      
+      if (selectedStyles.length === 0) {
+        alert('请至少选择一种生成风格');
+        return;
+      }
+      
+      console.log('选中的风格:', selectedStyles);
       
       const loading = document.getElementById('generateLoading');
       const btn = document.getElementById('generateBtn');
       btn.disabled = true;
       loading.classList.add('active');
       
-      try {
-        // 构建提示词
-        const prompt = Object.values(selected).join('，') + '，卡通风格，儿童友好';
+      // 显示加载容器
+      const resultsContainer = document.getElementById('generatedResultsContainer');
+      const resultImages = document.getElementById('generatedResultImages');
+      resultImages.innerHTML = '';
+      resultsContainer.style.display = 'block';
+      
+      // 风格名称映射
+      const styleNames = {
+        'realistic': { name: '真实照片风格', icon: 'fa-camera-retro' },
+        'cartoon': { name: '卡通可爱风格', icon: 'fa-smile' },
+        'sketch': { name: '素描线稿风格', icon: 'fa-pencil-alt' },
+        'anime': { name: '动漫风格', icon: 'fa-star' },
+        'watercolor': { name: '水彩风格', icon: 'fa-palette' }
+      };
+      
+      // 逐一生成每种风格
+      let successCount = 0;
+      for (let i = 0; i < selectedStyles.length; i++) {
+        const style = selectedStyles[i];
+        const styleInfo = styleNames[style] || { name: style, icon: 'fa-image' };
         
-        const response = await fetch('/api/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, lesson_key: lessonKey })
-        });
+        // 添加生成中的占位卡片
+        const placeholderCard = document.createElement('div');
+        placeholderCard.className = 'result-card';
+        placeholderCard.id = `style-${style}-placeholder`;
+        placeholderCard.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px; color: #666; background: #f5f5f5; border-radius: 8px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 15px; color: #00704A;"></i>
+            <p style="margin: 0; font-size: 16px; font-weight: 500;">正在生成 ${i + 1}/${selectedStyles.length}</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #999;">${styleInfo.name}</p>
+          </div>
+        `;
+        resultImages.appendChild(placeholderCard);
         
-        const data = await response.json();
-        
-        if (data.success) {
-          const container = document.getElementById('generatedImageContainer');
-          const img = document.getElementById('generatedImage');
-          img.src = data.image_url;
-          container.style.display = 'block';
-        } else {
-          alert('生成失败：' + data.error);
+        try {
+          console.log(`生成风格 ${i + 1}/${selectedStyles.length}:`, style);
+          
+          // 为每个风格单独发送请求
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60000); // 单个风格60秒超时
+          
+          const response = await fetch('/api/formal-lesson/generate-image', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+              prompt: basePrompt, 
+              lesson_key: lessonKey,
+              styles: [style]  // 只请求一种风格
+            })
+          });
+          
+          clearTimeout(timeout);
+          const data = await response.json();
+          
+          // 移除占位卡片
+          const placeholder = document.getElementById(`style-${style}-placeholder`);
+          if (placeholder) placeholder.remove();
+          
+          if (response.ok && data.success && data.results && data.results.length > 0) {
+            // 添加成功生成的图片卡片
+            const result = data.results[0];
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+              <img src="${result.image_url}" alt="${result.style_name}">
+              <div class="result-card-title">
+                <i class="fas ${result.style_icon}"></i>
+                ${result.style_name}
+              </div>
+            `;
+            resultImages.appendChild(card);
+            successCount++;
+            console.log(`✅ ${result.style_name} 生成成功 (${i + 1}/${selectedStyles.length})`);
+          } else {
+            // 生成失败，显示错误卡片
+            const errorCard = document.createElement('div');
+            errorCard.className = 'result-card';
+            errorCard.innerHTML = `
+              <div style="text-align: center; padding: 60px 20px; color: #f44336; background: #ffebee; border-radius: 8px;">
+                <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 15px;"></i>
+                <p style="margin: 0; font-size: 14px; font-weight: 500;">${styleInfo.name}</p>
+                <p style="margin: 8px 0 0 0; font-size: 13px; color: #d32f2f;">生成失败</p>
+              </div>
+            `;
+            resultImages.appendChild(errorCard);
+            console.error(`❌ ${styleInfo.name} 生成失败:`, data.error);
+          }
+          
+        } catch (error) {
+          // 移除占位卡片
+          const placeholder = document.getElementById(`style-${style}-placeholder`);
+          if (placeholder) placeholder.remove();
+          
+          // 显示错误卡片
+          const errorCard = document.createElement('div');
+          errorCard.className = 'result-card';
+          let errorMsg = '生成失败';
+          if (error.name === 'AbortError') {
+            errorMsg = '生成超时';
+          } else if (error.message.includes('Failed to fetch')) {
+            errorMsg = '网络错误';
+          }
+          errorCard.innerHTML = `
+            <div style="text-align: center; padding: 60px 20px; color: #f44336; background: #ffebee; border-radius: 8px;">
+              <i class="fas fa-exclamation-circle" style="font-size: 32px; margin-bottom: 15px;"></i>
+              <p style="margin: 0; font-size: 14px; font-weight: 500;">${styleInfo.name}</p>
+              <p style="margin: 8px 0 0 0; font-size: 13px; color: #d32f2f;">${errorMsg}</p>
+            </div>
+          `;
+          resultImages.appendChild(errorCard);
+          console.error(`❌ ${styleInfo.name} 请求异常:`, error);
         }
-      } catch (error) {
-        alert('生成失败：' + error.message);
-      } finally {
-        loading.classList.remove('active');
-        btn.disabled = false;
+      }
+      
+      // 所有风格生成完成
+      loading.classList.remove('active');
+      btn.disabled = false;
+      
+      if (successCount > 0) {
+        console.log(`✅ 生成完成: ${successCount}/${selectedStyles.length} 成功`);
+      } else {
+        alert('所有风格生成均失败，请检查网络连接或稍后重试');
+        resultsContainer.style.display = 'none';
       }
     }
     
@@ -704,6 +1482,8 @@
           const photo = document.getElementById('photoInput').files[0];
           const artwork = document.getElementById('artworkInput').files[0];
           if (photo && artwork) {
+            // 显示风格选择器和组合按钮
+            document.getElementById('styleSelector').style.display = 'block';
             document.getElementById('combineBtn').style.display = 'inline-block';
           }
         };
@@ -713,11 +1493,26 @@
     
     // 组合图片
     async function combineImages() {
-      const photoFile = document.getElementById('photoInput').files[0];
-      const artworkFile = document.getElementById('artworkInput').files[0];
+      // 获取选中的风格
+      const selectedStyles = Array.from(document.querySelectorAll('input[name="style"]:checked'))
+        .map(cb => cb.value);
+      
+      if (selectedStyles.length === 0) {
+        alert('请至少选择一种生成风格');
+        return;
+      }
+      
+      // 检查是否有选中的图片
+      if (selectedPhotoIndex === null || selectedArtworkIndex === null) {
+        alert('请先上传并选择照片和画作');
+        return;
+      }
+      
+      const photoFile = photoFiles[selectedPhotoIndex];
+      const artworkFile = artworkFiles[selectedArtworkIndex];
       
       if (!photoFile || !artworkFile) {
-        alert('请先上传照片和画作');
+        alert('所选图片无效，请重新选择');
         return;
       }
       
@@ -726,29 +1521,77 @@
       btn.disabled = true;
       loading.classList.add('active');
       
+      // 显示加载消息
+      const resultsContainer = document.getElementById('resultsContainer');
+      const resultImages = document.getElementById('resultImages');
+      resultImages.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+          <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 15px;"></i>
+          <p>正在生成 ${selectedStyles.length} 张不同风格的图片，请稍候...</p>
+          <p style="font-size: 14px; color: #999; margin-top: 10px;">使用照片 #${selectedPhotoIndex + 1} + 画作 #${selectedArtworkIndex + 1}</p>
+        </div>
+      `;
+      resultsContainer.style.display = 'block';
+      
       try {
+        console.log('开始组合图片...');
+        console.log('照片文件:', photoFile.name, photoFile.size, `(#${selectedPhotoIndex + 1})`);
+        console.log('画作文件:', artworkFile.name, artworkFile.size, `(#${selectedArtworkIndex + 1})`);
+        console.log('课程key:', lessonKey);
+        console.log('选中风格:', selectedStyles);
+        
         const formData = new FormData();
         formData.append('photo', photoFile);
         formData.append('artwork', artworkFile);
         formData.append('lesson_key', lessonKey);
+        formData.append('styles', JSON.stringify(selectedStyles));
         
-        const response = await fetch('/api/combine-images', {
+        console.log('发送请求到 /api/formal-lesson/combine-images...');
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 200000); // 200秒超时
+        
+        const response = await fetch('/api/formal-lesson/combine-images', {
           method: 'POST',
-          body: formData
+          body: formData,
+          signal: controller.signal
         });
         
+        clearTimeout(timeoutId);
+        
+        console.log('响应状态:', response.status, response.statusText);
+        
         const data = await response.json();
+        console.log('API返回数据:', data);
         
         if (data.success) {
-          const container = document.getElementById('combinedImageContainer');
-          const img = document.getElementById('combinedImage');
-          img.src = data.image_url;
-          container.style.display = 'block';
+          // 显示所有生成的图片
+          resultImages.innerHTML = '';
+          data.results.forEach(result => {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.innerHTML = `
+              <img src="${result.image_url}" alt="${result.style_name}">
+              <div class="result-card-title">
+                <i class="fas ${result.style_icon}"></i>
+                ${result.style_name}
+              </div>
+            `;
+            resultImages.appendChild(card);
+          });
+          console.log('生成成功，共', data.results.length, '张图片');
         } else {
           alert('组合失败：' + data.error);
+          resultsContainer.style.display = 'none';
         }
       } catch (error) {
-        alert('组合失败：' + error.message);
+        console.error('组合图片失败:', error);
+        if (error.name === 'AbortError') {
+          alert('请求超时，请稍后重试');
+        } else {
+          alert('组合失败：' + error.message);
+        }
+        resultsContainer.style.display = 'none';
       } finally {
         loading.classList.remove('active');
         btn.disabled = false;
@@ -760,39 +1603,873 @@
       if (!input.files || !input.files[0]) return;
       
       const loading = document.getElementById('feedbackLoading');
+      const audioPlayBtn = document.getElementById('audioPlayBtn');
+      const audioElement = document.getElementById('feedbackAudio');
+      
+      console.log('🎯 开始获取AI点评');
+      console.log('  audioPlayBtn:', audioPlayBtn);
+      console.log('  audioElement:', audioElement);
+      
       loading.classList.add('active');
+      
+      // 隐藏之前的音频按钮
+      if (audioPlayBtn) audioPlayBtn.style.display = 'none';
+      if (audioElement) audioElement.pause();
       
       try {
         const formData = new FormData();
         formData.append('image', input.files[0]);
         formData.append('lesson_key', lessonKey);
+        // 不预先生成TTS，点击播放时再生成
         
-        const response = await fetch('/api/artwork-feedback', {
+        const response = await fetch('/api/formal-lesson/artwork-feedback', {
           method: 'POST',
           body: formData
         });
         
         const data = await response.json();
+        console.log('📥 收到反馈数据:', data);
         
         if (data.success) {
           const display = document.getElementById('feedbackDisplay');
           const content = document.getElementById('feedbackContent');
           content.textContent = data.feedback;
           display.style.display = 'block';
+          
+          // 保存点评文本和原始图片，用于后续生成改良版
+          window.currentFeedbackText = data.feedback;
+          window.currentFeedbackImageFile = input.files[0];
+          
+          // 隐藏改良版结果
+          document.getElementById('improvedResultContainer').style.display = 'none';
+          document.getElementById('improveBtn').style.display = 'inline-flex';
+          
+          // 显示生成语音按钮（初始状态）
+          console.log('🎤 准备显示生成语音按钮');
+          if (audioPlayBtn) {
+            audioPlayBtn.innerHTML = '<i class="fas fa-microphone"></i> 生成语音';
+            audioPlayBtn.style.display = 'inline-block';
+            audioPlayBtn.onclick = generateAndPlayAudio;
+            console.log('✅ 按钮已设置为可见');
+          } else {
+            console.error('❌ audioPlayBtn 元素不存在！');
+          }
+          
+          // 清空之前的音频
+          if (audioElement) audioElement.src = '';
+          isPlaying = false;
+          
+          // 显示分析状态
+          if (data.analyzed_by_vision) {
+            console.log('✅ 使用AI Vision分析');
+          } else {
+            console.log('⚠️ 使用默认模板');
+          }
         } else {
           alert('获取点评失败：' + data.error);
         }
       } catch (error) {
+        console.error('❌ 获取点评失败:', error);
         alert('获取点评失败：' + error.message);
       } finally {
         loading.classList.remove('active');
       }
     }
     
+    // 按需生成并播放语音
+    let isGeneratingAudio = false;
+    async function generateAndPlayAudio() {
+      if (isGeneratingAudio) return;
+      
+      const audioElement = document.getElementById('feedbackAudio');
+      const audioPlayBtn = document.getElementById('audioPlayBtn');
+      
+      if (!window.currentFeedbackText) {
+        alert('没有点评文本');
+        return;
+      }
+      
+      // 如果已经有音频，直接播放
+      if (audioElement.src && audioElement.src.startsWith('data:')) {
+        toggleAudio();
+        return;
+      }
+      
+      // 生成语音
+      isGeneratingAudio = true;
+      audioPlayBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+      audioPlayBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/api/formal-lesson/generate-tts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: window.currentFeedbackText,
+            voice_name: 'Puck',
+            use_pro_model: false
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          const mimeType = data.audio_mime_type || 'audio/wav';
+          const audioSrc = `data:${mimeType};base64,${data.audio}`;
+          
+          console.log(`🎵 音频数据信息:`);
+          console.log(`  MIME类型: ${mimeType}`);
+          console.log(`  Base64长度: ${data.audio.length} 字符`);
+          console.log(`  Data URL长度: ${audioSrc.length} 字符`);
+          console.log(`  Base64前50字符: ${data.audio.substring(0, 50)}...`);
+          
+          audioElement.src = audioSrc;
+          
+          console.log(`🔊 TTS: ${data.tts_model} (${data.tts_voice})`);
+          console.log(`📦 音频格式: ${mimeType}`);
+          
+          // 更新按钮为播放状态
+          audioPlayBtn.innerHTML = '<i class="fas fa-volume-up"></i> 播放语音';
+          audioPlayBtn.onclick = toggleAudio;
+          audioPlayBtn.disabled = false;
+          
+          // 自动播放
+          audioElement.play().then(() => {
+            audioPlayBtn.innerHTML = '<i class="fas fa-pause"></i> 正在播放';
+            audioPlayBtn.classList.add('playing');
+            isPlaying = true;
+          }).catch(e => {
+            console.log('播放失败:', e);
+            alert('音频播放失败，可能浏览器不支持该格式');
+          });
+        } else {
+          alert('语音生成失败：' + data.error);
+          audioPlayBtn.innerHTML = '<i class="fas fa-microphone"></i> 重新生成';
+          audioPlayBtn.disabled = false;
+        }
+      } catch (error) {
+        alert('语音生成失败：' + error.message);
+        audioPlayBtn.innerHTML = '<i class="fas fa-microphone"></i> 重新生成';
+        audioPlayBtn.disabled = false;
+      } finally {
+        isGeneratingAudio = false;
+      }
+    }
+    
+    // 音频播放控制
+    let isPlaying = false;
+    function toggleAudio() {
+      const audioElement = document.getElementById('feedbackAudio');
+      const audioPlayBtn = document.getElementById('audioPlayBtn');
+      
+      if (!audioElement || !audioElement.src) return;
+      
+      if (isPlaying) {
+        audioElement.pause();
+        audioPlayBtn.innerHTML = '<i class="fas fa-volume-up"></i> 播放语音';
+        audioPlayBtn.classList.remove('playing');
+        isPlaying = false;
+      } else {
+        audioElement.play();
+        audioPlayBtn.innerHTML = '<i class="fas fa-pause"></i> 正在播放';
+        audioPlayBtn.classList.add('playing');
+        isPlaying = true;
+      }
+    }
+    
+    // 生成改良版图片
+    async function generateImprovedVersion() {
+      if (!window.currentFeedbackImageFile || !window.currentFeedbackText) {
+        alert('请先上传作品并获取AI点评');
+        return;
+      }
+      
+      const improveBtn = document.getElementById('improveBtn');
+      const improveLoading = document.getElementById('improveLoading');
+      const improvedResultContainer = document.getElementById('improvedResultContainer');
+      
+      improveBtn.disabled = true;
+      improveLoading.classList.add('active');
+      
+      try {
+        console.log('🎨 开始生成改良版...');
+        console.log('  原始点评:', window.currentFeedbackText.substring(0, 50) + '...');
+        
+        // 构造改良提示词：基于点评内容优化
+        const improvementPrompt = `
+根据以下AI点评意见，对原作品进行改良优化，生成一张更好的版本：
+
+📝 AI 点评意见：
+${window.currentFeedbackText}
+
+请根据点评中提到的改进建议，生成一张改良版作品。需要：
+1. 保留原作品的核心要素
+2. 重点改进点评中提到的不足之处
+3. 根据鼓励和建议进行优化
+4. 保持风格一致但质量更高
+        `;
+        
+        const formData = new FormData();
+        formData.append('image', window.currentFeedbackImageFile);
+        formData.append('lesson_key', lessonKey);
+        formData.append('improvement_prompt', improvementPrompt.trim());
+        
+        console.log('📤 发送改良请求...');
+        
+        const response = await fetch('/api/formal-lesson/generate-improved', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          console.log('✅ 改良版生成成功!');
+          
+          // 显示改良版图片
+          const improvedImage = document.getElementById('improvedImage');
+          improvedImage.src = data.image_url;
+          improvedResultContainer.style.display = 'block';
+
+          // 获取原始上传图片的URL（使用Blob URL，避免data URL问题）
+          const originalImageForComparison = document.getElementById('originalImageForComparison');
+          if (window.originalCompareUrl) {
+            URL.revokeObjectURL(window.originalCompareUrl);
+          }
+          window.originalCompareUrl = URL.createObjectURL(window.currentFeedbackImageFile);
+          originalImageForComparison.src = window.originalCompareUrl;
+
+          // 构建对比图片列表（用于查看器导航）
+          window.compareImageList = [];
+          if (originalImageForComparison.src) window.compareImageList.push(originalImageForComparison.src);
+          if (improvedImage.src) window.compareImageList.push(improvedImage.src);
+
+          // 绑定图片查看器（直接绑定到图片元素，避免全局点击冲突）
+          if (typeof ImageViewer !== 'undefined') {
+            const openCompareViewer = (index) => {
+              if (!window.compareImageList || window.compareImageList.length === 0) return;
+              ImageViewer.images = window.compareImageList.slice();
+              ImageViewer.open(index);
+            };
+
+            originalImageForComparison.onclick = (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              openCompareViewer(0);
+            };
+
+            const improvedIndex = window.compareImageList.length === 2 ? 1 : 0;
+            improvedImage.onclick = (ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              openCompareViewer(improvedIndex);
+            };
+          }
+          
+          // 平滑滚动到改良版对比区域
+          setTimeout(() => {
+            improvedResultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 100);
+        } else {
+          console.error('❌ 生成失败:', data.error);
+          alert('生成改良版失败：' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        console.error('❌ 请求异常:', error);
+        alert('生成改良版失败：' + error.message);
+      } finally {
+        improveBtn.disabled = false;
+        improveLoading.classList.remove('active');
+      }
+    }
+    
+    // 监听音频播放结束
+    document.getElementById('feedbackAudio')?.addEventListener('ended', function() {
+      const audioPlayBtn = document.getElementById('audioPlayBtn');
+      if (audioPlayBtn) {
+        audioPlayBtn.innerHTML = '<i class="fas fa-volume-up"></i> 播放语音';
+        audioPlayBtn.classList.remove('playing');
+        isPlaying = false;
+      }
+    });
+    
+    // 监听音频加载错误
+    document.getElementById('feedbackAudio')?.addEventListener('error', function(e) {
+      // 只在有src的情况下才处理错误（避免空src触发error事件隐藏按钮）
+      const audioElement = document.getElementById('feedbackAudio');
+      if (!audioElement || !audioElement.src || audioElement.src === window.location.href) {
+        console.log('⚠️ 音频元素无src，忽略error事件');
+        return;
+      }
+      
+      console.error('音频加载失败:', e);
+      console.error('  src:', audioElement.src);
+      const audioPlayBtn = document.getElementById('audioPlayBtn');
+      if (audioPlayBtn) {
+        // 不隐藏按钮，改为显示重新生成
+        audioPlayBtn.innerHTML = '<i class="fas fa-microphone"></i> 重新生成';
+        audioPlayBtn.onclick = generateAndPlayAudio;
+        audioPlayBtn.disabled = false;
+        audioPlayBtn.classList.remove('playing');
+      }
+    });
+    
+    // 存储当前上传的图片类型和多图数组
+    let currentUploadType = null;
+    let photoFiles = [];  // 照片数组
+    let artworkFiles = []; // 画作数组
+    let selectedPhotoIndex = null;  // 选中的照片索引
+    let selectedArtworkIndex = null; // 选中的画作索引
+    
+    const cameraModalTitleEl = document.querySelector('#camera-modal .camera-modal-header h2');
+    const defaultCameraModalTitle = cameraModalTitleEl ? cameraModalTitleEl.textContent : '';
+
+    function updateCameraModalTitle(uploadType) {
+      if (!cameraModalTitleEl) return;
+      if (uploadType === 'photo') {
+        cameraModalTitleEl.textContent = '拍照或上传照片（可多次上传）';
+      } else if (uploadType === 'artwork') {
+        cameraModalTitleEl.textContent = '拍照或上传画作（可多次上传）';
+      } else {
+        cameraModalTitleEl.textContent = defaultCameraModalTitle;
+      }
+    }
+    
+    // 添加缩略图
+    function addThumbnail(file, type) {
+      const container = type === 'photo' ? document.getElementById('photoThumbnails') : document.getElementById('artworkThumbnails');
+      const filesArray = type === 'photo' ? photoFiles : artworkFiles;
+      
+      // 添加文件到数组
+      filesArray.push(file);
+      const index = filesArray.length - 1;
+      
+      // 显示缩略图容器
+      container.style.display = 'grid';
+      
+      // 创建缩略图元素
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const thumbnail = document.createElement('div');
+        thumbnail.className = 'thumbnail-item';
+        thumbnail.dataset.index = index;
+        thumbnail.dataset.type = type;
+        
+        // 默认选中第一张
+        if (index === 0) {
+          thumbnail.classList.add('selected');
+          if (type === 'photo') selectedPhotoIndex = 0;
+          else selectedArtworkIndex = 0;
+        }
+        
+        thumbnail.innerHTML = `
+          <img src="${e.target.result}" alt="预览">
+          <button class="thumbnail-delete" onclick="event.stopPropagation(); deleteThumbnail(${index}, '${type}')">
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="thumbnail-selected-badge">
+            <i class="fas fa-check"></i> 已选
+          </div>
+        `;
+        
+        // 点击切换选中状态
+        thumbnail.onclick = function(e) {
+          if (e.target.closest('.thumbnail-delete')) return;
+          selectThumbnail(index, type);
+        };
+        
+        container.appendChild(thumbnail);
+        
+        // 更新组合按钮状态
+        updateCombineButton();
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // 选择缩略图
+    function selectThumbnail(index, type) {
+      const container = type === 'photo' ? document.getElementById('photoThumbnails') : document.getElementById('artworkThumbnails');
+      
+      // 取消同类型其他缩略图的选中状态
+      container.querySelectorAll('.thumbnail-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      
+      // 选中当前缩略图
+      const thumbnail = container.querySelector(`[data-index="${index}"]`);
+      if (thumbnail) {
+        thumbnail.classList.add('selected');
+        if (type === 'photo') selectedPhotoIndex = index;
+        else selectedArtworkIndex = index;
+        
+        console.log(`✅ 选中${type === 'photo' ? '照片' : '画作'} #${index + 1}`);
+        updateCombineButton();
+      }
+    }
+    
+    // 删除缩略图
+    function deleteThumbnail(index, type) {
+      const container = type === 'photo' ? document.getElementById('photoThumbnails') : document.getElementById('artworkThumbnails');
+      const filesArray = type === 'photo' ? photoFiles : artworkFiles;
+      
+      // 删除文件
+      filesArray.splice(index, 1);
+      
+      // 重新渲染缩略图
+      container.innerHTML = '';
+      
+      if (filesArray.length === 0) {
+        container.style.display = 'none';
+        if (type === 'photo') selectedPhotoIndex = null;
+        else selectedArtworkIndex = null;
+      } else {
+        // 重新添加所有缩略图
+        filesArray.forEach((file, i) => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const thumbnail = document.createElement('div');
+            thumbnail.className = 'thumbnail-item';
+            thumbnail.dataset.index = i;
+            thumbnail.dataset.type = type;
+            
+            // 自动选中第一张
+            if (i === 0) {
+              thumbnail.classList.add('selected');
+              if (type === 'photo') selectedPhotoIndex = 0;
+              else selectedArtworkIndex = 0;
+            }
+            
+            thumbnail.innerHTML = `
+              <img src="${e.target.result}" alt="预览">
+              <button class="thumbnail-delete" onclick="event.stopPropagation(); deleteThumbnail(${i}, '${type}')">
+                <i class="fas fa-times"></i>
+              </button>
+              <div class="thumbnail-selected-badge">
+                <i class="fas fa-check"></i> 已选
+              </div>
+            `;
+            
+            thumbnail.onclick = function(e) {
+              if (e.target.closest('.thumbnail-delete')) return;
+              selectThumbnail(i, type);
+            };
+            
+            container.appendChild(thumbnail);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      // 更新组合按钮状态
+      updateCombineButton();
+    }
+    
+    // 更新组合按钮状态
+    function updateCombineButton() {
+      const combineBtn = document.getElementById('combineBtn');
+      if (photoFiles.length > 0 && artworkFiles.length > 0) {
+        combineBtn.style.display = 'inline-block';
+        combineBtn.innerHTML = `<i class="fas fa-layer-group"></i> 生成图片 (照片 #${selectedPhotoIndex + 1} + 画作 #${selectedArtworkIndex + 1})`;
+      } else {
+        combineBtn.style.display = 'none';
+      }
+    }
+    
+    // 重写processPhoto函数以支持多图上传
+    const originalProcessPhoto = window.processPhoto;
+    window.processPhoto = function(file) {
+      // 根据上下文决定处理方式
+      if (currentUploadType === 'photo' || currentUploadType === 'artwork') {
+        // 在formal lesson中，添加到缩略图
+        addThumbnail(file, currentUploadType);
+      } else if (originalProcessPhoto) {
+        // 在普通课程中，使用原始处理逻辑
+        originalProcessPhoto(file);
+      }
+    };
+    
+    // 重写openCameraModal以支持两种类型
+    const originalOpenCameraModal = window.openCameraModal;
+    window.openCameraModal = function(event, uploadType) {
+      currentUploadType = uploadType || null;
+      updateCameraModalTitle(currentUploadType);
+      if (originalOpenCameraModal) {
+        originalOpenCameraModal(event);
+      }
+    };
+
+    // ============ 课程级模板编辑功能 ============
+    
+    // 打开课程级模板编辑器
+    async function openLessonTemplateEditor() {
+      try {
+        // 获取当前课程的模板
+        const response = await fetch(`/api/formal-lesson/lesson-template?lesson_key=${lessonKey}`);
+        const data = await response.json();
+
+        if (data.success) {
+          const template = data.template;
+          
+          // 填充模态框
+          document.getElementById('lessonTemplateHeaderTitle').textContent = `编辑“${getLessonName()}”的AI点评模板`;
+          document.getElementById('lessonEncouragement').value = template.encouragement || '';
+          document.getElementById('lessonAspect1').value = (template.aspects && template.aspects[0]) || '';
+          document.getElementById('lessonAspect2').value = (template.aspects && template.aspects[1]) || '';
+          document.getElementById('lessonAspect3').value = (template.aspects && template.aspects[2]) || '';
+          document.getElementById('lessonAspectList').value = (template.aspects || []).join('\n');
+          document.getElementById('lessonRawPrompt').value = template.raw_prompt || '';
+
+          const mode = template.mode || 'structured';
+          setTemplateMode(mode);
+          
+          // 显示浮窗
+          document.getElementById('lessonTemplateModal').style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        } else {
+          alert('加载模板失败：' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        console.error('加载模板失败:', error);
+        alert('加载模板失败：' + error.message);
+      }
+    }
+
+    // 关闭浮窗
+    function closeLessonTemplateModal() {
+      document.getElementById('lessonTemplateModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    // 切换模板编辑模式
+    function setTemplateMode(mode) {
+      document.getElementById('lessonTemplateMode').value = mode;
+      const structuredBtn = document.getElementById('templateModeStructured');
+      const textBtn = document.getElementById('templateModeText');
+      const structuredSection = document.getElementById('templateStructuredSection');
+      const textSection = document.getElementById('templateTextSection');
+
+      if (mode === 'text') {
+        structuredSection.style.display = 'none';
+        textSection.style.display = 'block';
+        textBtn.style.background = 'linear-gradient(135deg, #00704A 0%, #008C54 100%)';
+        textBtn.style.color = '#fff';
+        structuredBtn.style.background = '#f0f0f0';
+        structuredBtn.style.color = '#666';
+      } else {
+        structuredSection.style.display = 'block';
+        textSection.style.display = 'none';
+        structuredBtn.style.background = 'linear-gradient(135deg, #00704A 0%, #008C54 100%)';
+        structuredBtn.style.color = '#fff';
+        textBtn.style.background = '#f0f0f0';
+        textBtn.style.color = '#666';
+      }
+    }
+
+    // 获取课程名称
+    function getLessonName() {
+      const lessonNames = {
+        'formal_facial_features': '五官/比例',
+        'formal_face': '表情',
+        'formal_hairstyle': '发型',
+        'formal_body_type': '体型',
+        'formal_ai_animation': '动作',
+        'formal_clothing': '服装',
+        'formal_location': '生活场景',
+        'formal_weather': '自然场景',
+        'formal_perspective': '气候与光影',
+        'formal_composition1': '生活组合',
+        'formal_accessories': '科幻 x 玄幻主题',
+        'formal_final_work': '自由创意'
+      };
+      return lessonNames[lessonKey] || lessonKey;
+    }
+
+    // 保存课程级模板
+    async function saveLessonTemplate() {
+      try {
+        const mode = document.getElementById('lessonTemplateMode').value || 'structured';
+        let aspects = [];
+        let rawPrompt = '';
+
+        if (mode === 'text') {
+          rawPrompt = document.getElementById('lessonRawPrompt').value;
+          aspects = document.getElementById('lessonAspectList').value
+            .split('\n')
+            .map(line => line.trim())
+            .filter(Boolean);
+        } else {
+          aspects = [
+            document.getElementById('lessonAspect1').value,
+            document.getElementById('lessonAspect2').value,
+            document.getElementById('lessonAspect3').value
+          ];
+        }
+
+        const template = {
+          lesson_key: lessonKey,
+          encouragement: document.getElementById('lessonEncouragement').value,
+          aspects: aspects,
+          mode: mode,
+          raw_prompt: rawPrompt
+        };
+
+        // 验证
+        if (!template.encouragement.trim()) {
+          alert('请填写鼓励语');
+          return;
+        }
+        if (!template.aspects.length) {
+          alert('请至少填写一个评价维度');
+          return;
+        }
+        if (mode === 'structured' && template.aspects.some(a => !a.trim())) {
+          alert('请填写所有评价维度');
+          return;
+        }
+        if (mode === 'text' && !template.raw_prompt.trim()) {
+          alert('请填写纯文字提示词');
+          return;
+        }
+
+        const response = await fetch('/api/formal-lesson/lesson-template', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(template)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alert('✅ 模板保存成功！新的点评将使用此模板。');
+          closeLessonTemplateModal();
+        } else {
+          alert('❌ 保存失败：' + (data.error || '未知错误'));
+        }
+      } catch (error) {
+        console.error('保存模板失败:', error);
+        alert('❌ 保存失败：' + error.message);
+      }
+    }
+    
     // 页面加载时初始化
     document.addEventListener('DOMContentLoaded', function() {
       initFeatureSelector();
+      
+      // 初始化图片查看器（延迟初始化，确保脚本已加载）
+      setTimeout(function() {
+        if (typeof ImageViewer !== 'undefined') {
+          ImageViewer.init();
+          console.log('✅ 图片查看器已初始化');
+        } else {
+          console.warn('⚠️ ImageViewer 未加载，请检查 sunguo_class.js');
+        }
+      }, 100);
+      
+      // 改良版图片的点击放大在生成成功后绑定
+      
+      // 设置默认提示词
+      const defaultPrompt = lessonDefaultPrompts[lessonKey] || '';
+      if (defaultPrompt) {
+        const promptInput = document.getElementById('customPrompt');
+        if (promptInput) {
+          promptInput.placeholder = `💡 在这里自由描述你的创意想法...\n\n默认示例：${defaultPrompt}`;
+        }
+      }
     });
   </script>
+  
+  <!-- 摄像头模态框 (复用自sunguo_lesson.html) -->
+  {% include 'components/camera_modal.html' %}
+  
+  <!-- 课程级AI点评模板编辑模态框 - 浮动窗口 -->
+  <div id="lessonTemplateModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); z-index: 1050; align-items: flex-start; justify-content: center; padding-top: 60px; overflow-y: auto;">
+    <div style="max-width: 760px; width: 88%; margin: 0 16px; animation: slideDown 0.3s ease-out;">
+      <div style="border: none; border-radius: 16px; box-shadow: 0 20px 60px rgba(0, 112, 74, 0.15); overflow: hidden; background: white;">
+        <!-- 顶部渐变头部 -->
+        <div style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; padding: 25px 30px; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -50%; right: -50%; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; opacity: 0.3;"></div>
+          <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+            <h5 id="lessonTemplateHeaderTitle" style="font-weight: 700; font-size: 18px; margin: 0; color: white;">
+              <i class="fas fa-pen-to-square"></i> 编辑AI点评模板
+            </h5>
+            <button onclick="closeLessonTemplateModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 主体内容 -->
+        <div style="padding: 35px; background: #f8fafb;">
+          <input type="hidden" id="lessonTemplateMode" value="structured">
+          <!-- 编辑模式切换 -->
+          <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+            <button id="templateModeStructured" type="button" onclick="setTemplateMode('structured')" style="flex: 1; border: none; border-radius: 12px; padding: 12px 14px; font-weight: 600; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: #fff; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 112, 74, 0.2);">
+              <i class="fas fa-list-check"></i> 结构化模式
+            </button>
+            <button id="templateModeText" type="button" onclick="setTemplateMode('text')" style="flex: 1; border: none; border-radius: 12px; padding: 12px 14px; font-weight: 600; background: #f0f0f0; color: #666; cursor: pointer;">
+              <i class="fas fa-font"></i> 纯文字模式
+            </button>
+          </div>
+
+          <!-- 鼓励语区域 -->
+          <div class="mb-28" style="margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+              <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                <i class="fas fa-heart" style="color: #ff6b6b; margin-right: 6px;"></i>鼓励语
+              </label>
+            </div>
+            <textarea 
+              id="lessonEncouragement" 
+              class="form-control" 
+              rows="3" 
+              placeholder="例如：你对这个创意的把握很到位！"
+              style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; resize: none;"
+              onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+              onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+            ></textarea>
+          </div>
+
+          <!-- 结构化模式区域 -->
+          <div id="templateStructuredSection" style="padding-top: 8px; border-top: 1px dashed #e6e6e6;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+              <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                <i class="fas fa-list-check" style="color: #00704A; margin-right: 6px;"></i>评价维度（3个）
+              </label>
+            </div>
+            
+
+            <!-- 维度1 -->
+            <div class="mb-3" style="margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">1</span>
+                <span style="color: #666; font-size: 13px; font-weight: 500;">技法维度</span>
+              </div>
+              <input 
+                type="text" 
+                id="lessonAspect1" 
+                class="form-control" 
+                placeholder="例如：线条流畅度"
+                style="border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 10px 12px; background: white; transition: all 0.3s;"
+                onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+                onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+              >
+            </div>
+
+            <!-- 维度2 -->
+            <div class="mb-3" style="margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">2</span>
+                <span style="color: #666; font-size: 13px; font-weight: 500;">审美维度</span>
+              </div>
+              <input 
+                type="text" 
+                id="lessonAspect2" 
+                class="form-control" 
+                placeholder="例如：色彩运用"
+                style="border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 10px 12px; background: white; transition: all 0.3s;"
+                onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+                onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+              >
+            </div>
+
+            <!-- 维度3 -->
+            <div class="mb-0">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="width: 24px; height: 24px; background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">3</span>
+                <span style="color: #666; font-size: 13px; font-weight: 500;">创意维度</span>
+              </div>
+              <input 
+                type="text" 
+                id="lessonAspect3" 
+                class="form-control" 
+                placeholder="例如：创意表现"
+                style="border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 10px 12px; background: white; transition: all 0.3s;"
+                onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+                onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+              >
+            </div>
+          </div>
+
+          <!-- 纯文字模式区域 -->
+          <div id="templateTextSection" style="display: none; padding-top: 8px; border-top: 1px dashed #e6e6e6;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+              <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                <i class="fas fa-layer-group" style="color: #00704A; margin-right: 6px;"></i>评价维度（每行一个）
+              </label>
+            </div>
+            <textarea
+              id="lessonAspectList"
+              class="form-control"
+              rows="5"
+              placeholder="例如：\n线条流畅度\n色彩运用\n创意表现"
+              style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 14px; padding: 12px 14px; background: white; transition: all 0.3s; resize: vertical; line-height: 1.5;"
+              onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+              onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+            ></textarea>
+            
+
+            <div style="display: flex; align-items: center; gap: 8px; margin: 18px 0 12px;">
+              <span style="width: 4px; height: 20px; background: linear-gradient(180deg, #00704A 0%, #008C54 100%); border-radius: 2px;"></span>
+              <label class="form-label" style="font-weight: 700; color: #222; margin: 0; font-size: 15px;">
+                <i class="fas fa-terminal" style="color: #00704A; margin-right: 6px;"></i>发送给大模型的提示词
+              </label>
+            </div>
+            <textarea
+              id="lessonRawPrompt"
+              class="form-control"
+              rows="12"
+              placeholder="在这里编辑完整提示词..."
+              style="width: 100%; border-radius: 10px; border: 2px solid #e0e0e0; font-size: 12.5px; padding: 12px 14px; background: white; transition: all 0.3s; resize: vertical; font-family: 'Consolas', 'Menlo', monospace; line-height: 1.6;"
+              onfocus="this.style.borderColor='#00704A'; this.style.boxShadow='0 0 0 3px rgba(0, 112, 74, 0.1)';"
+              onblur="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';"
+            ></textarea>
+            
+          </div>
+        </div>
+
+        <!-- 底部按钮区域 -->
+        <div style="border-top: 1px solid #e0e0e0; padding: 20px 30px; background: #f8fafb; display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" onclick="closeLessonTemplateModal()" style="border-radius: 10px; padding: 10px 24px; color: #666; background: #f0f0f0; border: none; font-weight: 500; transition: all 0.3s; cursor: pointer;"
+            onmouseover="this.style.background='#e0e0e0';"
+            onmouseout="this.style.background='#f0f0f0';">
+            <i class="fas fa-times"></i> 取消
+          </button>
+          <button type="button" onclick="saveLessonTemplate()" style="background: linear-gradient(135deg, #00704A 0%, #008C54 100%); color: white; border: none; border-radius: 10px; padding: 10px 28px; font-weight: 600; transition: all 0.3s; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 112, 74, 0.25);"
+            onmouseover="this.style.boxShadow='0 6px 20px rgba(0, 112, 74, 0.35)'; this.style.transform='translateY(-2px)';"
+            onmouseout="this.style.boxShadow='0 4px 12px rgba(0, 112, 74, 0.25)'; this.style.transform='translateY(0)';">
+            <i class="fas fa-save"></i> 保存修改
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 模态框动画样式 -->
+  <style>
+    @keyframes slideDown {
+      from {
+        transform: translateX(-50%) translateY(-30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    }
+    
+    #lessonTemplateModal > div {
+      animation: slideDown 0.3s ease-out;
+    }
+  </style>
+
+  <!-- Bootstrap 5 JavaScript Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

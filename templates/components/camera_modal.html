@@ -1,0 +1,77 @@
+<!-- 摄像头模态框组件 - 可在多个页面复用 -->
+<div id="camera-modal" class="camera-modal" style="display: none;">
+  <div class="camera-modal-overlay"></div>
+  <div class="camera-modal-content">
+    <div class="camera-modal-header">
+      <h2>拍照或上传参考图片</h2>
+      <button class="camera-modal-close" onclick="closeCameraModal()" type="button">×</button>
+    </div>
+    
+    <div class="camera-modal-body">
+      <div class="camera-tabs">
+        <button class="camera-tab-btn" data-tab="upload" onclick="switchCameraTab('upload')">📁 上传图片</button>
+        <button class="camera-tab-btn" data-tab="camera" onclick="switchCameraTab('camera')">📷 拍照</button>
+      </div>
+      
+      <div class="camera-tab-content" id="camera-tab">
+        <div class="camera-preview-area" style="position: relative;">
+          <video id="camera-video" class="camera-video" autoplay playsinline></video>
+          <canvas id="camera-canvas" style="display: none;"></canvas>
+          <div id="camera-status" class="camera-status" style="display: none;"></div>
+          
+          <!-- 摄像头信息显示 -->
+          <div class="camera-info-overlay">
+            <span id="camera-info" class="camera-info-text"></span>
+          </div>
+          
+          <!-- 摄像头切换按钮 -->
+          <button class="camera-switch-btn" onclick="switchCameraDevice(event)" type="button" title="切换前后摄像头">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <div class="camera-options" style="padding: 10px 20px 0 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: #666;">
+          <label style="display:flex; align-items:center; gap:6px; user-select:none;">
+            <input id="auto-crop-paper" type="checkbox" checked>
+            自动识别纸张并裁切
+          </label>
+          <a id="revert-original-link" href="#" onclick="revertOriginalPhoto();return false;" style="color:#00704A; text-decoration:none; display:none;">还原原图</a>
+        </div>
+        <div class="camera-controls">
+          <button id="camera-start-btn" class="camera-btn camera-btn-primary" onclick="startCamera()" type="button">
+            <i class="fas fa-play"></i> 启动摄像头
+          </button>
+          <button id="camera-capture-btn" class="camera-btn camera-btn-primary" onclick="capturePhoto()" type="button" style="display: none;">
+            <i class="fas fa-camera"></i> 拍照
+          </button>
+          <button id="camera-retake-btn" class="camera-btn camera-btn-secondary" onclick="retakePhoto()" type="button" style="display: none;">
+            <i class="fas fa-redo"></i> 重新拍照
+          </button>
+          <button id="camera-use-btn" class="camera-btn camera-btn-success" onclick="usePhoto()" type="button" style="display: none;">
+            <i class="fas fa-check"></i> 使用这张照片
+          </button>
+        </div>
+        <p class="camera-hint">💡 拍照时请把人物或场景放在画面正中间，光线要充足</p>
+      </div>
+      
+      <div class="camera-tab-content" id="upload-tab">
+        <div class="upload-area" onclick="triggerFileInput()">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <p>点击或拖拽上传图片</p>
+          <small>支持 JPG, PNG 等常见格式</small>
+        </div>
+        <input id="file-input" type="file" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+        <div id="upload-preview" class="upload-preview" style="display: none;">
+          <img id="upload-preview-img" src="" alt="">
+          <div class="upload-preview-buttons">
+            <button class="camera-btn camera-btn-secondary" onclick="clearUploadPreview()" type="button">
+              <i class="fas fa-times"></i> 清除
+            </button>
+            <button class="camera-btn camera-btn-success" onclick="useUploadedPhoto()" type="button">
+              <i class="fas fa-check"></i> 使用这张图
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

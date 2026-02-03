@@ -38,6 +38,138 @@ class NanoBananaAPI:
             print(f"❌ Google Gen AI 客户端初始化失败: {str(e)}")
             self.client = None
     
+    def combine_two_images(self, image1_path, image2_path, description, style="cute", aspect_ratio="512x512"):
+        """融合两张图片 - 将第二张图的特征应用到第一张图上
+        
+        Args:
+            image1_path: 第一张图片路径（基础图，如照片）
+            image2_path: 第二张图片路径（参考图，如画作）
+            description: 融合指令描述
+            style: 输出风格
+            aspect_ratio: 输出尺寸
+        
+        Returns:
+            生成图片的路径
+        """
+        try:
+            print("🎨 开始使用Gemini 2.5 Flash Image 融合两张图片...")
+            print(f"📁 基础图: {image1_path}")
+            print(f"📁 参考图: {image2_path}")
+            print(f"📝 融合指令: {description}")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Google Gen AI客户端未配置，请检查GEMINI_API_KEY环境变量")
+            
+            # 读取并压缩两张图片（减少API传输时间）
+            from io import BytesIO
+
+            from PIL import Image
+
+            # 读取并压缩图片1
+            img1 = Image.open(image1_path)
+            if img1.width > 1024 or img1.height > 1024:
+                ratio = min(1024 / img1.width, 1024 / img1.height)
+                new_size = (int(img1.width * ratio), int(img1.height * ratio))
+                img1 = img1.resize(new_size, Image.Resampling.LANCZOS)
+                print(f"📏 图1已压缩到: {new_size}")
+            
+            # 转换为字节
+            buffer1 = BytesIO()
+            img1.save(buffer1, format='PNG', optimize=True)
+            image1_bytes = buffer1.getvalue()
+            
+            # 读取并压缩图片2
+            img2 = Image.open(image2_path)
+            if img2.width > 1024 or img2.height > 1024:
+                ratio = min(1024 / img2.width, 1024 / img2.height)
+                new_size = (int(img2.width * ratio), int(img2.height * ratio))
+                img2 = img2.resize(new_size, Image.Resampling.LANCZOS)
+                print(f"📏 图2已压缩到: {new_size}")
+            
+            buffer2 = BytesIO()
+            img2.save(buffer2, format='PNG', optimize=True)
+            image2_bytes = buffer2.getvalue()
+            
+            print(f"✅ 已读取两张图片")
+            print(f"   图1: {len(image1_bytes)} 字节")
+            print(f"   图2: {len(image2_bytes)} 字节")
+            
+            # 构建提示词
+            prompt = description
+            print(f"📝 最终提示词: {prompt}")
+            
+            # 配置
+            config = types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                temperature=0.9,
+                top_p=0.95
+            )
+            
+            # 构建内容 - 提示词在前，两张图片在后（按Gemini要求的顺序）
+            contents = [
+                prompt,
+                types.Part.from_bytes(data=image1_bytes, mime_type='image/png'),
+                types.Part.from_bytes(data=image2_bytes, mime_type='image/png')
+            ]
+            
+            print(f"🔥 正在调用Gemini 2.5 Flash Image...")
+            
+            # 调用API
+            response = self.client.models.generate_content(
+                model='models/gemini-2.5-flash-image',
+                contents=contents,
+                config=config
+            )
+            
+            # 提取生成的图像
+            if not response or not hasattr(response, 'candidates') or not response.candidates:
+                print("❌ API返回无效响应")
+                return None
+            
+            candidate = response.candidates[0]
+            if not hasattr(candidate, 'content') or not candidate.content:
+                print("❌ 响应中没有content")
+                return None
+            
+            # 提取图片数据
+            image_parts = [
+                part.inline_data.data
+                for part in candidate.content.parts
+                if hasattr(part, 'inline_data') and part.inline_data
+            ]
+            
+            if not image_parts:
+                print("❌ 响应中没有生成图片")
+                return None
+            
+            print("✅ 成功生成融合图片")
+            
+            # 保存图片
+            from io import BytesIO
+
+            from PIL import Image
+            image = Image.open(BytesIO(image_parts[0]))
+            
+            # 保存到uploads文件夹
+            import uuid
+            output_filename = f"combined_{uuid.uuid4().hex}.jpg"
+            output_path = os.path.join(self.upload_folder, 'combined', output_filename)
+            
+            # 确保目录存在
+            os.makedirs(os.path.dirname(output_path), exist_ok=True)
+            
+            image.save(output_path, 'JPEG', quality=95)
+            print(f"✅ 图片已保存: {output_path}")
+            
+            return output_path
+            
+        except Exception as e:
+            print(f"❌ 图片融合失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return None
+    
     def generate_image_from_reference(self, sketch_path, description="", style="cute", aspect_ratio="512x512", temperature=1, top_p=0.95, seed=None, require_skeleton=False):
         """参考图+文字描述生成图片 - 使用Gemini 2.5 Flash Image模型
         
@@ -144,8 +276,8 @@ class NanoBananaAPI:
                     # 使用Gemini 2.5 Flash Image - 更接近官网设置
                     config_kwargs = {
                         'response_modalities': ["IMAGE"],  # 明确要求返回图片
-                        'temperature': temperature,  # 使用传入的temperature参数
-                        'top_p': top_p,  # 核采样参数，控制多样性
+                        'temperature': 0.8,  # 降低temperature以加快生成
+                        'top_p': 0.9,  # 稍微降低多样性以加快生成
                     }
                     
                     # 只在需要时指定宽高比（可能是限制因素）
@@ -525,7 +657,7 @@ class NanoBananaAPI:
                     print(f"🎯 3D模式 - 清理后的提示词: {image_prompt}")
                 else:
                     # 简化的提示词构建，保持原始意图
-                    image_prompt = f"{text_prompt}, {style_desc}, 适合儿童观看的内容"
+                    image_prompt = f"{text_prompt}, {style_desc}"
             
             print(f"📝 最终提示词: {image_prompt}")
             
@@ -998,4 +1130,133 @@ CRITICAL: All 4 views must show the EXACT SAME character, just from different an
             
         except Exception as e:
             print(f"❌ 多视角图片生成错误: {str(e)}")
+            return None
+    
+    def analyze_artwork_with_vision(self, image_path, lesson_type, aspects, prompt_override=None):
+        """使用Gemini Vision分析学生作品
+        
+        Args:
+            image_path: 作品图片路径
+            lesson_type: 课程类型（如'formal_hairstyle'）
+            aspects: 评价维度列表（如['发型的线条流畅度', '发丝的层次感', '整体造型的美感']）
+        
+        Returns:
+            dict: 包含分析结果的字典
+            {
+                'highlights': [亮点1, 亮点2, 亮点3],
+                'suggestions': [建议1, 建议2, 建议3],
+                'overall': '总体评价'
+            }
+        """
+        try:
+            print(f"🔍 开始使用Gemini Vision分析作品...")
+            print(f"📁 图片路径: {image_path}")
+            print(f"📚 课程类型: {lesson_type}")
+            print(f"📊 评价维度: {aspects}")
+            
+            # 检查客户端
+            if not self.client:
+                raise Exception("Google Gen AI客户端未配置")
+            
+            # 读取并压缩图片
+            from io import BytesIO
+
+            from PIL import Image
+            
+            img = Image.open(image_path)
+            if img.width > 1024 or img.height > 1024:
+                ratio = min(1024 / img.width, 1024 / img.height)
+                new_size = (int(img.width * ratio), int(img.height * ratio))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+                print(f"📏 图片已压缩到: {new_size}")
+            
+            buffer = BytesIO()
+            img.save(buffer, format='PNG', optimize=True)
+            image_bytes = buffer.getvalue()
+            
+            # 构建分析提示词
+            if prompt_override:
+                prompt = prompt_override
+            else:
+                prompt = f"""你是一位专业的儿童美术教师，正在点评一位10-14岁学生的AI生成作品。
+
+课程主题：{lesson_type.replace('formal_', '').replace('_', ' ')}
+
+请从以下3个维度分析这幅作品：
+1. {aspects[0]}
+2. {aspects[1]}
+3. {aspects[2]}
+
+要求：
+1. 语气温和友好，适合儿童阅读
+2. 多鼓励，少批评
+3. 具体指出画面中的优点（至少3个）
+4. 给出可操作的改进建议（至少3个）
+5. 用简洁的语言总结整体印象
+
+请以JSON格式返回：
+{{
+    "highlights": ["具体亮点1", "具体亮点2", "具体亮点3"],
+    "suggestions": ["具体建议1", "具体建议2", "具体建议3"],
+    "overall": "一句话总体评价"
+}}
+
+注意：
+- highlights要具体描述画面中的优点，不要泛泛而谈
+- suggestions要给出明确的改进方向，让孩子知道下次怎么做
+- 语言要简单直白，避免专业术语"""
+
+            print(f"📝 分析提示词已构建")
+            
+            # 配置
+            config = types.GenerateContentConfig(
+                temperature=0.7,
+                top_p=0.9
+            )
+            
+            # 构建内容
+            contents = [
+                types.Part.from_bytes(data=image_bytes, mime_type='image/png'),
+                prompt
+            ]
+            
+            print(f"🔥 正在调用Gemini 2.5 Flash分析...")
+            
+            # 调用API
+            response = self.client.models.generate_content(
+                model='models/gemini-2.5-flash',
+                contents=contents,
+                config=config
+            )
+            
+            if not response or not response.text:
+                print("❌ Vision分析返回空结果")
+                return None
+            
+            # 解析JSON响应
+            import re
+            response_text = response.text.strip()
+            
+            # 提取JSON（可能被markdown代码块包裹）
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(1)
+            
+            try:
+                result = json.loads(response_text)
+                print("✅ Vision分析完成")
+                print(f"   亮点数量: {len(result.get('highlights', []))}")
+                print(f"   建议数量: {len(result.get('suggestions', []))}")
+                return result
+            except json.JSONDecodeError as e:
+                print(f"⚠️ JSON解析失败，尝试提取文本: {e}")
+                # 如果JSON解析失败，返回原始文本
+                return {
+                    'highlights': ['作品很有创意', '色彩运用大胆', '整体效果不错'],
+                    'suggestions': ['可以注意细节处理', '尝试更多风格', '继续保持创作热情'],
+                    'overall': response_text[:100]
+                }
+            
+        except Exception as e:
+            print(f"❌ Vision分析错误: {str(e)}")
             return None
