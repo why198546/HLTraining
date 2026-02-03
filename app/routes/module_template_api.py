@@ -191,23 +191,56 @@ def save_module_template():
         data = request.json
         lesson_key = data.get('lesson_key')
         module_key = data.get('module_key')
-        encouragement = data.get('encouragement', '').strip()
-        aspects = data.get('aspects', [])
         mode = data.get('mode', 'text')
-        raw_prompt = data.get('raw_prompt', '').strip()
         
         if not lesson_key or not module_key:
             return jsonify({'success': False, 'error': '缺少必要参数'})
         
-        # 验证
-        if mode == 'structured':
-            if not encouragement:
-                return jsonify({'success': False, 'error': '鼓励语不能为空'})
-            if not aspects or not all(a.strip() for a in aspects):
-                return jsonify({'success': False, 'error': '评价维度不能为空'})
-        elif mode == 'text':
-            if not raw_prompt:
-                return jsonify({'success': False, 'error': '纯文字提示词不能为空'})
+        # 根据模块类型准备不同的数据结构
+        template_data = {}
+        
+        if module_key == 'module2':
+            # 模块二：双模板模式
+            traditional_prompt = data.get('traditional_prompt', '').strip()
+            vision_extraction_prompt = data.get('vision_extraction_prompt', '').strip()
+            
+            if not traditional_prompt:
+                return jsonify({'success': False, 'error': '通用提示词不能为空'})
+            if not vision_extraction_prompt:
+                return jsonify({'success': False, 'error': 'AI提取特征提示词不能为空'})
+            
+            template_data = {
+                'mode': 'dual',
+                'traditional_prompt': traditional_prompt,
+                'vision_extraction_prompt': vision_extraction_prompt
+            }
+        else:
+            # 模块一和模块三：传统模式
+            encouragement = data.get('encouragement', '').strip()
+            aspects = data.get('aspects', [])
+            raw_prompt = data.get('raw_prompt', '').strip()
+            
+            # 验证：只有模块三才强制要求鼓励语和评价维度
+            if module_key == 'module3':
+                if mode == 'structured':
+                    if not encouragement:
+                        return jsonify({'success': False, 'error': '鼓励语不能为空'})
+                    if not aspects or not all(a.strip() for a in aspects):
+                        return jsonify({'success': False, 'error': '评价维度不能为空'})
+                elif mode == 'text':
+                    if not raw_prompt:
+                        return jsonify({'success': False, 'error': '纯文字提示词不能为空'})
+            else:
+                # 模块一：只验证raw_prompt（纯文字模式）
+                if mode == 'text' and not raw_prompt:
+                    return jsonify({'success': False, 'error': '纯文字提示词不能为空'})
+            
+            template_data = {
+                'encouragement': encouragement,
+                'aspects': [a.strip() for a in aspects if a.strip()],
+                'mode': mode,
+                'raw_prompt': raw_prompt
+            }
         
         # 初始化教师的模块模板字典（如果为空）
         # 重要：创建新的字典副本，确保SQLAlchemy能检测到变化
@@ -226,12 +259,7 @@ def save_module_template():
             current_app.logger.info(f"为 {current_user.username} 创建课程 {lesson_key} 的模板字典")
         
         # 更新该课程的该模块模板
-        module_templates_copy[lesson_key][module_key] = {
-            'encouragement': encouragement,
-            'aspects': [a.strip() for a in aspects if a.strip()],
-            'mode': mode,
-            'raw_prompt': raw_prompt
-        }
+        module_templates_copy[lesson_key][module_key] = template_data
         
         # 重新赋值整个对象（这样SQLAlchemy才能检测到变化）
         current_user.module_templates = module_templates_copy
